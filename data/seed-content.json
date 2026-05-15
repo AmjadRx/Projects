@@ -4,10 +4,10 @@
   "personal": {
     "name": "Amjad Rehawi",
     "tagline": "Hardware engineer for things that move themselves.",
-    "subTagline": "Senior honors double major (EE + ME) at Santa Clara University, translating an EV power-electronics stack into autonomous drone and aerospace hardware.",
+    "subTagline": "Senior honors EE + ME at Santa Clara University. Pivoting from EV / power electronics into drones and aerospace — with the Raven eVTOL swarm as the proof.",
     "location": "Santa Clara, CA",
-    "email": "arehawi@scu.edu",
-    "phone": "",
+    "email": "arihawi@scu.edu",
+    "phone": "(530) 407-6321",
     "website": "https://amjadrehawi.com",
     "linkedin": "https://www.linkedin.com/in/amjadrehawi",
     "gpa": "3.8",
@@ -16,167 +16,216 @@
     "degree": "B.S. Electrical Engineering & B.S. Mechanical Engineering (Honors)"
   },
   "brandThesis": {
-    "headline": "The same stack that runs an EV — battery, BMS, thermal, control, sensors — runs a drone.",
-    "body": "I'm building the hardware spine for autonomous flight. Cells, busbars, BMS, motor drives, IMU and lidar fusion, vehicle control. The work I've done on FSAE traction packs and STMicro motor-drive validation maps directly onto eVTOL propulsion, swarm coordination, and aerospace-grade power electronics. Raven is the proof — an 8-stage roadmap from single-tilt-rotor airframe to a 4-drone autonomous swarm."
+    "headline": "The same skill stack that ships a 420 V electric race car is what makes an autonomous aircraft fly itself.",
+    "body": "Power electronics, BMS, CAN bus, STM32 firmware, PCB safety review. That's the stack I've been building on Bronco Racing's >400 V Formula SAE car and on motor-drive validation at STMicroelectronics — and it's the stack the next generation of unmanned aircraft will run on. Raven is the pivot in flight: an 8-stage roadmap from a tilt-rotor eVTOL to a 4-drone autonomous swarm with onboard AI, sensor-fusion collision avoidance, and wireless autonomous charging at home base."
   },
   "about": {
     "heading": "About",
     "paragraphs": [
-      "Senior honors student at Santa Clara University, graduating 2027 with a double major in Electrical and Mechanical Engineering. 3.8 GPA. I learn by building the full stack — schematic, PCB, firmware, mechanical, control — and shipping the result to a hard deadline.",
-      "Across the past two years I've worked on a 600 V FSAE traction pack with a custom slave-board BMS (144 thermistors), validated motor-drive ICs at STMicroelectronics, and built PalmSync — an embedded heart-rate device that lifted accuracy from 76% to 93% and won the SCU CrossFit Maker Challenge. Each project sharpened a different layer of the same vertical: cells, power electronics, sensing, firmware, control.",
-      "Raven is where it all converges. An eVTOL roadmap I'm running solo — Stage 1 builds the airframe and tilt-rotor mechanism, the mid stages layer in IMU and lidar autonomy, the final stages prove out a 4-drone autonomous swarm. The thesis is simple: the hardware engineering needed for safe autonomous flight is the hardware engineering I've been doing on cars, and I'm here to do it on aircraft."
+      "Senior honors student at Santa Clara University, double major in Electrical and Mechanical Engineering. 3.8 GPA. Faculty-nominated for the Possible Career Accelerator (1 of 25). SolidWorks CSWP and MakerLab certified. A-Levels from the University of Cambridge in Computer Science (A*, 92%) and Physics (A).",
+      "Over the past two years I've worked across high-voltage motorsport electronics on Bronco Racing's Formula SAE EV (420 V / 540 V BMS, CAN bus, charging, PCB safety review), and across motor-drive validation at STMicroelectronics — debugging a custom traction-motor inverter on Lauterbach JTAG, authoring parameterization guides on PWM and space-vector modulation, building an end-to-end STM32 proximity-sensing system from ADC to speaker amp.",
+      "Raven is where it all converges. A tilt-rotor eVTOL I'm building as my senior design project, on a self-directed 8-stage roadmap toward a 4-drone autonomous swarm. The thesis is simple: motor-inverter debug is ESC debug. SVM is the same math that drives a brushless drone motor. JTAG-traced firmware on a 540 V pack is the same discipline that keeps an autonomous aircraft from falling out of the sky."
     ]
   },
   "stats": [
     { "label": "GPA / 4.00", "value": "3.8" },
-    { "label": "BMS pack voltage", "value": "600 V" },
-    { "label": "Thermistors managed", "value": "144" },
-    { "label": "Accuracy improvement", "value": "+17 pp" },
-    { "label": "Hackathons won", "value": "2" },
-    { "label": "Patents filed", "value": "1" }
+    { "label": "FSAE BMS voltage", "value": "540 V" },
+    { "label": "Thermistors integrated", "value": "140+" },
+    { "label": "Raven roadmap stages", "value": "8" },
+    { "label": "Career Accelerator", "value": "1 / 25" },
+    { "label": "Patents pending", "value": "1" }
   ],
   "projects": [
     {
       "slug": "raven",
       "name": "Raven",
-      "subtitle": "An 8-stage solo roadmap from tilt-rotor eVTOL to a 4-drone autonomous swarm.",
-      "status": "Stage 1 — in progress",
-      "dates": "2025 — 2028",
-      "type": "Flagship · eVTOL R&D",
+      "subtitle": "Tilt-rotor eVTOL — the first airframe in a 4-drone autonomous swarm with onboard AI and wireless autonomous charging.",
+      "status": "Stage 1 / 8 — in progress",
+      "dates": "Feb 2026 — present",
+      "type": "Flagship · eVTOL R&D · Senior Design",
       "color": "cyan",
-      "summary": "Raven is a self-directed eVTOL program. I'm building it the way a startup would build a flight vehicle: hardware first, vertically integrated, on a fixed timeline. Eight stages, each with a deliverable I can fly or measure. The end state is a coordinated 4-drone swarm running shared mission state on aerospace-grade autonomy hardware.",
-      "tags": ["eVTOL", "tilt-rotor", "autonomy", "power electronics", "swarm", "firmware"],
+      "summary": "Raven is a tilt-rotor eVTOL — fixed-wing in cruise, three-motor VTOL in hover — built as the first airframe in a planned 4-drone autonomous swarm with onboard AI, sensor-fusion collision avoidance, and wireless autonomous charging at home base. Custom redesign on top of the Flightory Stallion FPV airframe: re-spec'd to PA612-CF15 carbon-fiber composite, custom carbon-fiber tubes, self-selected avionics, and a modular multi-segment fuselage. MECH115 Advanced CAD group project (Spring 2026); designated senior design project.",
+      "tags": ["eVTOL", "tilt-rotor", "PA612-CF15", "FEA", "CFD", "STM32", "autonomy", "swarm"],
       "hero": {
-        "pitch": "EV-stack hardware engineer translating battery / BMS / drive / control experience into aerospace.",
+        "pitch": "Fixed-wing in cruise, three-motor VTOL in hover — the first airframe in a 4-drone autonomous swarm.",
         "highlights": [
-          "Tilt-rotor airframe with two wing-tip rotors and a tail rotor",
-          "Custom Li-ion pack + BMS with cell balancing and thermal monitoring",
-          "STM32-based flight controller with IMU + barometer + GPS fusion",
-          "Mid-stage: lidar + visual-inertial odometry, full GNC stack",
-          "Late-stage: shared mission state across 4 vehicles"
+          "Tilt-rotor configuration: 2 wing-mounted motors active in fixed-wing, all 3 motors active in VTOL",
+          "Eppler E205 airfoil, CFD-optimized for 60–70 km/h cruise",
+          "Primary structure in PA612-CF15 carbon-fiber composite, printed on a Bambu P2S Combo / X2D",
+          "Modular fuselage (FUS 1–5 L/R), detachable wings, interchangeable nose for payload swaps",
+          "Snap-fit wing locks with torsion springs, AC hinges, M3 inserts, V-tail with rudders",
+          "Self-selected programmable servos for ailerons, flaps, rudders, tail",
+          "FAA Part 107 paperwork done early in Stage 1"
         ]
       },
       "sections": [
         {
-          "heading": "Why I'm building this",
-          "body": "Recruiters at Skydio, Anduril, Shield AI, Zipline and AeroVironment all want hardware engineers who can own a propulsion / autonomy stack end-to-end. The fastest way to prove I can do that is to actually do it — solo, on a clock, in public. Raven is the proof artifact."
+          "heading": "What \"I designed the parts\" means",
+          "body": "Starting from stock Stallion STLs but changing material, constraints, specs and CAD geometry to match new design objectives. Every part is reverse-engineered, re-validated, re-optimized.",
+          "items": [
+            "CAD: re-spec to PA612-CF15 load constraints; modify geometry where stock parts don't survive Raven's flight envelope",
+            "FEA: static loading on the carbon-fiber main spar (bending), motor mounts (thrust + vibration), tail boom mount (aerodynamic loads)",
+            "CFD: airfoil performance plus full-airframe flow at cruise",
+            "Materials characterization: tensile and torsion testing on PA612-CF15 printed coupons; FDM/FFF print-setting tuning",
+            "Kinematics: aileron/rudder servo-to-pushrod linkages, snap-fit lock with torsion springs",
+            "Electronics & avionics: flight controller, ESCs, motors, receiver, GPS selection for Stage 1; FAA Part 107-compliant wiring"
+          ]
+        },
+        {
+          "heading": "Why this is the pivot in flight",
+          "body": "Motor-inverter debug at STMicroelectronics is ESC debug here. Space-vector modulation is the math that drives every brushless motor on this airframe. JTAG-traced firmware on a 540 V FSAE pack is the same discipline that keeps an autonomous aircraft from falling out of the sky. Raven is the proof that the EV power-electronics stack ports cleanly into aerospace."
+        },
+        {
+          "heading": "Stage 1 work (May 2026)",
+          "body": "Printing parts in PA612-CF15; tensile / torsion testing on coupons; FDM/FFF print-setting optimization; FEA on main spar, motor mounts, and tail boom mount; CFD pass on the full airframe at cruise; servo selection and programming; avionics integration; RC test flight prep; FAA Part 107 registration; engineering report."
         }
       ],
       "roadmap": [
-        { "n": 1, "title": "Airframe + tilt-rotor mechanism", "desc": "Carbon-tube boom, V-tail, two-axis tilt mechanism with redundant servos.", "status": "in-progress" },
-        { "n": 2, "title": "Power system + BMS", "desc": "Li-ion pack, custom slave-board BMS, telemetry, thermal cutoffs.", "status": "next" },
-        { "n": 3, "title": "Flight controller bring-up", "desc": "Custom flight controller, IMU + baro + GPS fusion, manual hover.", "status": "future" },
-        { "n": 4, "title": "Autonomous hover + waypoint", "desc": "RTK GPS + altitude hold, mission planner integration.", "status": "future" },
-        { "n": 5, "title": "Lidar + visual odometry", "desc": "Companion compute for VIO, indoor flight without GPS.", "status": "future" },
-        { "n": 6, "title": "Full GNC stack", "desc": "Closed-loop guidance, obstacle avoidance, automated transition to forward flight.", "status": "future" },
-        { "n": 7, "title": "2-drone coordination", "desc": "Mesh networking, shared world state, formation flight.", "status": "future" },
-        { "n": 8, "title": "4-drone autonomous swarm", "desc": "Coordinated mission execution, dynamic role assignment, fault-tolerant handoff.", "status": "future" }
+        { "n": 1, "title": "Mechanical build + RC flight", "desc": "Airframe complete; off-the-shelf flight controller, ESCs, motors, receiver, GPS; manual RC control; FAA Part 107 done early.", "status": "in-progress" },
+        { "n": 2, "title": "Autonomous flight", "desc": "Programmable flight controller; GPS waypointing; basic mission planning.", "status": "next" },
+        { "n": 3, "title": "4-drone swarm", "desc": "Build 3 more Raven airframes; coordinated synchronized flight.", "status": "future" },
+        { "n": 4, "title": "Application — object detection", "desc": "Swarm flies pre-programmed open-field pattern, detects pre-trained objects, reports GPS coordinates to HQ.", "status": "future" },
+        { "n": 5, "title": "HQ-side AI", "desc": "AI lives at HQ; drones stream live video; HQ does analysis, decision-making, and mid-mission re-planning.", "status": "future" },
+        { "n": 6, "title": "Onboard control AI", "desc": "AI moves onboard for adaptive systems-level control in harsh / uncertain conditions (fire, wind, turbulence).", "status": "future" },
+        { "n": 7, "title": "Onboard sensor-fusion AI", "desc": "Fixed-wing ↔ VTOL transition, onboard object detection, swarm-internal + foreign-object collision avoidance.", "status": "future" },
+        { "n": 8, "title": "Full IoT + wireless autonomous charging", "desc": "HQ AI dispatches coverage areas; drones return-to-base, land in wireless charging stations, recharge. Zero human in the loop.", "status": "future" }
       ]
     },
     {
       "slug": "fsae-bronco-racing",
       "name": "Bronco Racing FSAE",
-      "subtitle": "600 V traction pack and slave-board BMS for SCU's Formula SAE electric car.",
-      "status": "Active",
-      "dates": "2024 — present",
-      "type": "Team · Power electronics",
+      "subtitle": "HV & co-electrical lead on Santa Clara's >400 V Formula SAE EV. 420 V / 540 V BMS, CAN bus, programmable charging, PCB safety review.",
+      "status": "Active — HV & Co-Electrical Lead",
+      "dates": "Sep 2023 — present",
+      "type": "Team · High-voltage power electronics",
       "color": "cyan",
-      "summary": "High-voltage subsystem work on Bronco Racing's electric FSAE car: a 600 V traction pack with a custom slave-board BMS, 144 thermistors, cell-level balancing, and the supporting isolation and pre-charge electronics.",
-      "tags": ["FSAE", "battery", "BMS", "power electronics", "PCB"],
+      "summary": "End-to-end ownership of the tractive system electrical stack on Bronco Racing's Formula SAE Electric car. BMS programming, programmable external charging system, CAN bus architecture, STM32 firmware, PCB safety review, and 140+ thermistors physically integrated into the accumulator harness.",
+      "tags": ["FSAE EV", "BMS", "CAN bus", "STM32", "PCB", "Orion BMS 2", "thermal", "HV safety"],
       "hero": {
-        "pitch": "600 V traction pack + custom BMS.",
+        "pitch": "End-to-end electrical ownership on a >400 V FSAE EV — BMS, CAN, charging, PCB review, thermal harness.",
         "highlights": [
-          "144 thermistors for distributed pack temperature sensing",
-          "Cell-level balancing and per-cell voltage sensing",
-          "Pack-level isolation monitor and pre-charge / discharge circuit"
+          "Programmed a 420 V / 540 V BMS — cell-voltage monitoring, temperature sensing, SoC algorithms, safety interlocks",
+          "Configured Orion BMS 2 for the accumulator charging system; designed thermal-management expansion modules",
+          "Designed and built a programmable external charging system with current/voltage control and thermal-based safety shutoff; verified FSAE EV rules compliance",
+          "Designed schematic + PCB sections for the shutdown and charging shutdown circuits; caught protection-logic errors before fab",
+          "Reviewed precharge, discharge, and IMD (insulation monitoring) PCB designs for FSAE EV compliance",
+          "Architected the vehicle CAN bus network; wrote STM32 firmware for real-time sensor interfacing and diagnostics",
+          "Built a Python GUI for real-time CAN message monitoring and automated thermal-management diagnostics",
+          "Soldered and integrated 140+ thermistors into the accumulator harness; placement optimization improved measurement accuracy by ~50%"
         ]
       },
       "sections": [
         {
-          "heading": "Lessons that map to drones",
-          "body": "The cell-spec → BMS → telemetry → pack-mechanical chain is the same chain a drone power system runs, just at lower voltage. The discipline of treating the pack as a safety-critical subsystem — isolation monitoring, fault response, thermal envelope — is exactly what an eVTOL pack needs."
+          "heading": "What I own",
+          "items": [
+            "Battery management system (Orion + custom)",
+            "Programmable external charging system + safety protocols",
+            "Shutdown circuit and charging shutdown circuit schematics + PCB sections",
+            "Vehicle CAN bus network architecture and STM32 firmware",
+            "Python GUI for CAN diagnostics on the thermal subsystem",
+            "Thermistor placement strategy and accumulator wiring harness",
+            "Tractive system layout — HV routing and subsystem placement"
+          ]
+        },
+        {
+          "heading": "Leadership",
+          "body": "I lead team training on precision soldering, thermal system architecture, and HV safety protocols. I coordinate cross-functional handoffs between BMS, CAN, power electronics, and thermal management."
         }
       ]
     },
     {
       "slug": "stmicroelectronics",
       "name": "STMicroelectronics",
-      "subtitle": "Motor-drive IC validation — Santa Clara, CA.",
+      "subtitle": "Application Engineer Intern — debugged a custom traction motor inverter on Lauterbach JTAG; authored SVM/PWM guides for ST customers.",
       "status": "Completed",
-      "dates": "Internship",
-      "type": "Internship · Power IC validation",
+      "dates": "Jun 2025 — Dec 2025",
+      "type": "Internship · Application engineering",
       "color": "purple",
-      "summary": "Validation engineering work in STMicro's motor-drive IC group. Bench-characterized motor-drive silicon across supply, temperature, and load conditions, and authored validation reports feeding product-release reviews.",
-      "tags": ["motor drive", "gate driver", "validation", "lab automation"],
+      "summary": "Supported Global Key Account Customers (GKAC) in microcontroller project development across automotive and industrial applications. Bridged ST silicon and customer products. Motor-inverter debug, embedded firmware bring-up, parameterization guides, and competitive teardowns.",
+      "tags": ["STM32", "Lauterbach", "StellarStudio", "SVM", "PWM", "motor inverter", "ADC", "DAC"],
       "hero": {
-        "pitch": "Bench-validation of motor-drive ICs across operating conditions.",
+        "pitch": "Debugged a custom traction motor inverter on Lauterbach JTAG — and translated the math to ST customers.",
         "highlights": [
-          "Built test rigs to sweep supply, temperature, and load",
-          "Characterized propagation delay, dead-time, and shoot-through margin on prototype silicon",
-          "Authored validation reports used in product-release reviews"
+          "Debugged a custom traction motor inverter using Lauterbach JTAG hardware and StellarStudio IDE — resolved PWM timing faults, gate-driver issues, and current-sensing calibration errors",
+          "Diagnosed independently that the DC bus required stabilization; proposed and implemented a parallel-capacitor fix between inverter and supply",
+          "Built an STM32-based proximity sensing system end to end: ADC signal processing → timed interrupt logic → PWM/DAC audio output → analog low-pass filter → amplifier → speaker",
+          "Identified firmware bugs in motor control algorithms and provided corrected code",
+          "Authored parameterization guides covering PWM and space-vector modulation (SVM) theory for internal and customer-facing use",
+          "Conducted hardware teardowns and reverse-engineering analysis of competitive automotive electronics modules; delivered Excel pivot-table analyses and PowerPoint presentations to ST marketing teams"
         ]
       },
       "sections": [
         {
-          "heading": "What I took away",
-          "body": "Pre-silicon assumptions break in lab. The discipline of designing a test to falsify a datasheet number — not confirm it — is the discipline I bring to every hardware bring-up now."
+          "heading": "Why this transfers to drones",
+          "body": "Motor-inverter debug ↔ drone ESC debug. SVM / PWM is the same math that drives brushless drone motors. JTAG / Lauterbach is the same toolset used for flight-controller firmware. The pivot from EV to drone is a continuation, not a switch."
         }
       ]
     },
     {
       "slug": "palmsync",
       "name": "PalmSync",
-      "subtitle": "Embedded heart-rate device that won the CrossFit Maker Challenge.",
-      "status": "Shipped · Hackathon win",
-      "dates": "2024",
-      "type": "Hackathon · Wearable",
+      "subtitle": "Biometric wellness wearable — stress monitoring + smart ambient lighting. 1st Place, Asearis Hackathon. Patent pending.",
+      "status": "1st Place · Patent pending",
+      "dates": "Sep 2025 — Oct 2025",
+      "type": "Hackathon · Wearable · Patent",
       "color": "cyan",
-      "summary": "A wrist-worn heart-rate monitor designed to survive heavy lifting. Combined a pressure-compensated front-end with motion-artifact rejection — accuracy went from a 76% baseline to 93% in real-world CrossFit conditions.",
-      "tags": ["wearable", "PPG", "DSP", "hackathon"],
+      "summary": "Dual-purpose biometric wellness device combining real-time stress monitoring with smart ambient lighting. PPG (HR/HRV) + EDA (electrodermal activity) + thermal sensors on an ESP32 for wireless, with an AI-powered analytics platform turning raw biosignals into actionable wellness insights. Concept to working prototype in under 6 weeks.",
+      "tags": ["PPG", "EDA", "ESP32", "AI analytics", "patent", "wearable"],
       "hero": {
-        "pitch": "Wrist wearable that survives heavy lifting.",
+        "pitch": "Stress monitoring + smart ambient lighting in one device. Concept to working prototype in under 6 weeks.",
         "highlights": [
-          "Pressure-compensated front-end with adaptive gain",
-          "On-device motion-artifact rejection",
-          "Accuracy: 76% → 93% on CrossFit workout dataset",
-          "Won the SCU CrossFit Maker Challenge"
+          "Team Captain & Product Lead, 3-engineer team",
+          "Concept to working prototype in under 6 weeks",
+          "Sensors: PPG (HR/HRV), EDA (electrodermal activity), thermal",
+          "Compute / connectivity: ESP32 (wireless)",
+          "Analytics: AI-powered platform turning raw biosignals into actionable wellness insights",
+          "BOM tradeoffs against a $14.82 target — cost, wearability, manufacturability",
+          "Positioned for a $49.99 retail price point in a $50B+ wearable-tech market",
+          "1st Place, Asearis Hackathon · Patent currently being pursued"
         ]
       }
     },
     {
       "slug": "engr172-build-a-bronco",
-      "name": "Build-A-Bronco",
-      "subtitle": "SCU ENGR 172 capstone — embedded vehicle build and demo.",
-      "status": "Completed",
-      "dates": "Coursework",
-      "type": "Coursework · Robotics",
+      "name": "Build-a-Bronco",
+      "subtitle": "ENGR 172 Applied Entrepreneurship — modular multi-color 3D-printed Bronco mascot. SCU Athletics client, bookstore sales imminent.",
+      "status": "Active — bookstore launch ~3 weeks",
+      "dates": "Jan 2026 — present",
+      "type": "Coursework · Applied entrepreneurship",
       "color": "purple",
-      "summary": "A small autonomous ground vehicle for a timed obstacle course. Worked across powertrain, control electronics, and firmware on a custom build.",
-      "tags": ["robotics", "embedded", "controls"],
+      "summary": "Modular, multi-color 3D-printed Bronco mascot where parts cross-fit assemble like Lego. Client: SCU Athletics (~10,000 customer base). Sales channel: SCU Campus Bookstore, launching about three weeks from May 2026. Instructor: Dr. Christopher Kitts.",
+      "tags": ["CAD", "3D printing", "product design", "market research", "AI analytics"],
       "hero": {
-        "pitch": "Autonomous obstacle-course vehicle, built end-to-end.",
+        "pitch": "Modular Lego-style Bronco mascot, going on sale at the SCU Bookstore.",
         "highlights": [
-          "Motor driver electronics for a small DC-motor drivetrain",
-          "Line-following with closed-loop control and obstacle override",
-          "Mechanical chassis integrated with the electronics stack"
+          "Designed and ran the Build-a-Bronco Product Design Survey; collected customer-needs data",
+          "AI-aided data analysis to turn raw survey responses into graphical interpretations",
+          "Researched AI applications in manufacturing, detailed design, and product packaging",
+          "Designed the Bronco from scratch in CAD; designed the cross-fit snap-together assembly",
+          "Optimized for 3D printability — orientation, supports, tolerances",
+          "Optimized print settings, materials, and multi-color printing strategy in the SCU Maker Lab"
         ]
       }
     },
     {
-      "slug": "crossfit-maker",
-      "name": "CrossFit Maker Challenge",
-      "subtitle": "Patent-pending wearable that earned the team-of-three top prize.",
-      "status": "Patent filed",
-      "dates": "2024",
-      "type": "Award · IP",
+      "slug": "crossfit-megatrons",
+      "name": "CrossFit Maker Challenge — Megatrons",
+      "subtitle": "Sponsored by CrossFit LLC, tied to the CrossFit Games' 20th anniversary commemorative product. Past Phase A, in Phase B (manufacturing).",
+      "status": "Phase B — manufacturing & shipping",
+      "dates": "Mar 2026 — present",
+      "type": "Sponsored project · Product design",
       "color": "cyan",
-      "summary": "PalmSync's underlying motion-artifact rejection technique was novel enough to file. Provisional patent submitted with two co-inventors. Won the SCU CrossFit Maker Challenge.",
-      "tags": ["patent", "wearable", "DSP"],
+      "summary": "CrossFit LLC-sponsored commemorative desk sculpture tied to the CrossFit Games' 20th anniversary. Visited every CrossFit gym in the South Bay; designed quantitative and qualitative research instruments; passed Phase A on the April 17 pitch.",
+      "tags": ["product design", "field research", "AI image gen", "CAD"],
       "hero": {
-        "pitch": "Wearable IP filed off the back of a hackathon win.",
+        "pitch": "Sponsored commemorative product design, grounded in South Bay field research.",
         "highlights": [
-          "Provisional patent on the motion-rejection technique",
-          "Co-authored with two SCU engineering peers"
+          "Visited every CrossFit gym in the South Bay; interviewed gymgoers",
+          "Designed a quantitative Commemorative Desk Sculpture Survey + structured interviewer guide",
+          "Synthesized gymgoer preferences vs. CrossFit-as-sponsor priorities",
+          "Multiple concept sketches and design iterations; Gemini AI image generation for early ideation",
+          "SVG / CAD design iterations",
+          "Built and delivered the April 17 pitch that passed Phase A"
         ]
       }
     }
@@ -186,86 +235,133 @@
       {
         "title": "Power electronics & batteries",
         "tier": "deep",
-        "items": ["Li-ion pack design", "BMS architecture", "Bus-bar layout", "Cell balancing", "Isolation monitoring", "Thermal envelope"]
+        "items": ["420 V / 540 V BMS (Orion + custom)", "Programmable charging systems", "Precharge / discharge / IMD", "Motor inverter debug", "Space-vector modulation (SVM)", "PWM", "DC bus stabilization", "Thermal management", "SMPS fundamentals"]
       },
       {
-        "title": "Hardware design",
+        "title": "Embedded firmware & analog",
         "tier": "deep",
-        "items": ["Schematic + PCB", "SOLIDWORKS", "Mechanical bring-up", "Lab bench validation"]
+        "items": ["STM32 (L476 hands-on)", "C", "ARM Assembly", "ARM Cortex-M", "Timers / ADC / DAC / DMA", "GPIO / Interrupts", "PWM", "ESP32", "End-to-end analog signal chains"]
       },
       {
-        "title": "Firmware & embedded",
-        "tier": "strong",
-        "items": ["STM32", "C / C++", "CAN / SPI / I²C / UART", "Sensor fusion"]
-      },
-      {
-        "title": "Controls & autonomy",
-        "tier": "strong",
-        "items": ["PID + state-space", "Kalman filtering", "Lidar / visual odometry (learning)", "ROS2 (learning)"]
-      },
-      {
-        "title": "Tooling",
-        "tier": "strong",
-        "items": ["Python", "MATLAB / Simulink", "Git", "Lab automation"]
-      },
-      {
-        "title": "Domain knowledge",
+        "title": "PCB design & safety review",
         "tier": "deep",
-        "items": ["FSAE EV rules", "Aerospace-grade reliability mindset", "Propulsion trade studies", "eVTOL airframe basics"]
+        "items": ["Schematic capture", "PCB layout review", "FSAE EV rules compliance", "Shutdown / charging shutdown circuits", "Protection-logic review", "Precision soldering"]
+      },
+      {
+        "title": "CAN & comms",
+        "tier": "deep",
+        "items": ["CAN bus architecture", "Python diagnostics GUI", "SPI", "UART", "I²C", "Ethernet", "JTAG (Lauterbach)"]
+      },
+      {
+        "title": "CAD & mechanical",
+        "tier": "strong",
+        "items": ["SolidWorks (CSWP)", "Fusion 360", "FEA", "CFD", "Kinematics", "Drawings + GD&T basics"]
+      },
+      {
+        "title": "Materials & manufacturing",
+        "tier": "strong",
+        "items": ["PA612-CF15 carbon-fiber composite", "Tensile & torsion testing", "FDM/FFF print-setting tuning", "Bambu P2S / X2D", "Composite handling"]
+      },
+      {
+        "title": "Languages & tooling",
+        "tier": "strong",
+        "items": ["C", "Python", "MATLAB", "Verilog (Vivado ML)", "ARM Assembly", "LTSpice", "STM32CubeMX", "StellarStudio", "Keil µVision", "Git"]
+      },
+      {
+        "title": "Product & systems",
+        "tier": "strong",
+        "items": ["Systems integration across power, firmware, mechanical, comms", "BOM tradeoffs", "Market sizing", "Customer research", "Technical communication"]
       }
     ]
   },
   "experience": [
     {
+      "company": "Bronco Racing / SCU Formula SAE",
+      "role": "Electrical Specialist → HV & Co-Electrical Lead",
+      "location": "Santa Clara, CA",
+      "dates": "Sep 2023 — present",
+      "bullets": [
+        "Programmed a 420 V / 540 V BMS with cell-voltage monitoring, temperature sensing, SoC algorithms, and safety interlocks; configured Orion BMS 2 for the accumulator charging system.",
+        "Designed and built a programmable external charging system with current/voltage control and thermal-based safety shutoff; verified high-voltage compliance to FSAE EV rules.",
+        "Designed schematic + PCB sections for the shutdown and charging shutdown circuits; reviewed precharge, discharge, and IMD circuits and caught protection-logic errors before fab.",
+        "Architected the vehicle CAN bus network; wrote STM32 firmware for real-time sensor interfacing and diagnostics; built a Python GUI for CAN monitoring and thermal-subsystem diagnostics.",
+        "Soldered and integrated 140+ thermistors into the accumulator harness; placement optimization improved measurement accuracy by ~50%.",
+        "Lead team training on precision soldering, thermal architecture, and HV safety; coordinate handoffs across BMS, CAN, power electronics, and thermal."
+      ]
+    },
+    {
       "company": "STMicroelectronics",
-      "role": "Motor-Drive IC Validation Intern",
+      "role": "Application Engineer Intern",
       "location": "Santa Clara, CA",
-      "dates": "Internship",
+      "dates": "Jun 2025 — Dec 2025",
       "bullets": [
-        "Bench-characterized motor-drive silicon across supply, temperature, and load conditions.",
-        "Built test rigs and automated capture routines for validation sweeps.",
-        "Authored validation reports cited in product-release reviews."
+        "Debugged a custom traction motor inverter using Lauterbach JTAG and StellarStudio IDE — resolved PWM timing faults, gate-driver issues, and current-sensing calibration errors.",
+        "Diagnosed independently that the DC bus required stabilization; proposed and implemented a parallel-capacitor fix between inverter and supply.",
+        "Built an STM32-based proximity sensing system end to end: ADC → timed interrupts → PWM/DAC audio → analog LPF → amplifier → speaker.",
+        "Identified firmware bugs in motor-control algorithms and supplied corrected code; authored PWM and space-vector modulation parameterization guides for internal and customer use.",
+        "Conducted hardware teardowns and reverse-engineering of competitive automotive electronics modules; delivered Excel pivot-table analyses and PowerPoint presentations to ST marketing."
       ]
     },
     {
-      "company": "SCU Bronco Racing (FSAE EV)",
-      "role": "HV Battery & BMS",
+      "company": "SCU Math & Computer Science",
+      "role": "Peer Educator / TA / Grader",
       "location": "Santa Clara, CA",
-      "dates": "2024 — present",
+      "dates": "Sep 2024 — Mar 2025",
       "bullets": [
-        "Contributed to the team's 600 V traction pack — cell-level voltage sensing, balancing, and mechanical pack work.",
-        "Owned slave-board BMS schematic and PCB work supporting 144 thermistors across the pack.",
-        "Helped author the HV subsystem rules-compliance package for FSAE EV."
+        "Assistant to Dr. Fady El Chidiac; tutored advanced mathematics and programming.",
+        "Graded student work and supported in-class instruction."
       ]
     },
     {
-      "company": "SCU CrossFit Maker Challenge",
-      "role": "Hackathon Lead — PalmSync",
-      "location": "Santa Clara, CA",
-      "dates": "2024",
+      "company": "BetterEDU Inc.",
+      "role": "Founding Technical Intern",
+      "location": "Phoenix, AZ (remote)",
+      "dates": "Jun 2024 — Aug 2024",
       "bullets": [
-        "Led a three-person team to first place with PalmSync, a pressure-compensated PPG wearable.",
-        "Designed the front-end and on-device DSP that lifted heart-rate accuracy from 76% to 93%.",
-        "Filed a provisional patent on the motion-rejection technique with two co-inventors."
+        "Managed Firebase and Firestore databases for an EdTech platform.",
+        "Debugged the iOS app through systematic analysis and testing.",
+        "Built company website infrastructure; extracted analytics data; implemented technical documentation."
+      ]
+    },
+    {
+      "company": "Odyssey CyberSecurity",
+      "role": "Cybersecurity Intern",
+      "location": "Nicosia, Cyprus",
+      "dates": "May 2023 — Aug 2023",
+      "bullets": [
+        "Linux kernel operations and cybersecurity protocols.",
+        "Conducted simulated penetration testing for vulnerability identification.",
+        "Observed real-time cybersecurity monitoring for critical infrastructure; applied embedded-systems security knowledge."
       ]
     }
   ],
   "honors": [
-    { "title": "SCU Honors Program", "year": "2023 — 2027", "note": "University Honors track." },
-    { "title": "CrossFit Maker Challenge — Winner", "year": "2024", "note": "First place, three-person team." },
-    { "title": "Provisional patent (PalmSync)", "year": "2024", "note": "Motion-rejection technique for pressure-compensated PPG." }
+    { "title": "Possible Career Accelerator Fellow", "year": "Mar — May 2025", "note": "1 of 25 students, faculty-nominated by Dr. Andy Wolfe." },
+    { "title": "1st Place — Asearis Hackathon (PalmSync)", "year": "Sep — Oct 2025", "note": "Team Captain & Product Lead on a 3-engineer team. Patent pending." },
+    { "title": "Robotics Team Captain — First Tech Challenge", "year": "2021 — 2023", "note": "Led 8–10 students in Nicosia, Cyprus. Multiple awards including the Innovator Award." },
+    { "title": "Stanford Inspirit AI Leadership Fellow & Ambassador", "year": "Jun — Nov 2021", "note": "Built an AI model to detect exoplanets in NASA TESS data." },
+    { "title": "MCC Representative — MENA Organization, SCU", "year": "Feb — Nov 2024", "note": "Multicultural Center representative." },
+    { "title": "SolidWorks Certified Professional (CSWP)", "year": "—", "note": "Certified." },
+    { "title": "SCU MakerLab Certification", "year": "—", "note": "Certified." },
+    { "title": "A-Level Computer Science · University of Cambridge", "year": "2023", "note": "A* (92%). Physics A." }
   ],
   "education": [
     {
       "school": "Santa Clara University",
       "degree": "B.S. Electrical Engineering & B.S. Mechanical Engineering (Honors)",
-      "details": "GPA 3.8 · Expected 2027 · University Honors Program",
-      "coursework": "Power Electronics, Embedded Systems, Control Systems, Electromechanical Energy Conversion, Linear Systems, Thermodynamics, Mechanics of Materials, Solid Modeling, Circuits, Signals & Systems."
+      "details": "GPA 3.8 · Expected 2027 · University Honors Program · Possible Career Accelerator (1 of 25, faculty-nominated)",
+      "coursework": "Advanced & Real-Time Embedded Systems, Microprocessor System Design, Electronics Design, Computer Architecture, Material Science, Thermodynamics, Static & Dynamic Mechanics, Strength of Materials, Differential Equations, Statistics, Logic Design."
+    },
+    {
+      "school": "University of Cambridge",
+      "degree": "A-Levels (Computer Science, Physics)",
+      "details": "2021 — 2023 · Computer Science A* (92%) · Physics A",
+      "coursework": "Computer Science, Physics."
     }
   ],
   "contact": {
     "heading": "Let's build hardware that moves.",
-    "primaryCTA": "arehawi@scu.edu",
+    "primaryCTA": "arihawi@scu.edu",
     "secondaryCTA": "LinkedIn"
   }
 }
