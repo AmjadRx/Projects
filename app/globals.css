@@ -1,0 +1,134 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-cyan: 61 224 255;
+  --color-navy: 11 15 23;
+  --color-navy-2: 15 21 33;
+  --color-navy-3: 22 29 44;
+  --color-purple: 124 92 255;
+  --color-ink: 233 238 248;
+  --color-ink-dim: 170 179 197;
+  --color-ink-mute: 107 115 133;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-navy text-ink font-display antialiased;
+    background-image:
+      radial-gradient(circle at 20% 10%, rgb(var(--color-purple) / 0.08), transparent 40%),
+      radial-gradient(circle at 80% 30%, rgb(var(--color-cyan) / 0.06), transparent 45%),
+      radial-gradient(circle at 50% 110%, rgb(var(--color-cyan) / 0.05), transparent 50%);
+    background-attachment: fixed;
+    background-color: rgb(var(--color-navy));
+  }
+
+  ::selection {
+    background-color: rgb(var(--color-cyan) / 0.3);
+    color: rgb(var(--color-ink));
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply tracking-tight;
+  }
+}
+
+@layer components {
+  .wrap {
+    @apply mx-auto w-full max-w-wrap px-6 md:px-8;
+  }
+
+  .kicker {
+    @apply inline-flex items-center gap-2 rounded-full border border-cyan/30 bg-cyan/5 px-3 py-1 text-xs font-mono uppercase tracking-widest text-cyan;
+  }
+
+  .kicker-purple {
+    @apply inline-flex items-center gap-2 rounded-full border border-purple/30 bg-purple/5 px-3 py-1 text-xs font-mono uppercase tracking-widest text-purple;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-md border border-white/8 bg-white/3 px-2 py-1 text-xs font-mono text-ink-dim;
+    border-color: rgb(255 255 255 / 0.08);
+    background-color: rgb(255 255 255 / 0.03);
+  }
+
+  .chip-cyan {
+    @apply border-cyan/30 bg-cyan/5 text-cyan;
+  }
+
+  .chip-purple {
+    @apply border-purple/30 bg-purple/10 text-purple;
+  }
+
+  .card {
+    @apply relative rounded-2xl border border-white/8 bg-navy-2/60 backdrop-blur-sm;
+    border-color: rgb(255 255 255 / 0.08);
+  }
+
+  .card-hover {
+    @apply transition-all duration-300 hover:border-cyan/30 hover:bg-navy-3/80 hover:shadow-glow;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center gap-2 rounded-lg border border-cyan/40 bg-cyan/10 px-5 py-3 font-mono text-sm text-cyan transition-all duration-200 hover:border-cyan hover:bg-cyan/20 hover:shadow-glow;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/3 px-5 py-3 font-mono text-sm text-ink transition-all duration-200 hover:border-ink/40 hover:bg-white/5;
+    border-color: rgb(255 255 255 / 0.15);
+    background-color: rgb(255 255 255 / 0.03);
+  }
+
+  .input {
+    @apply w-full rounded-lg border border-white/10 bg-navy-3/60 px-3 py-2 font-mono text-sm text-ink placeholder-ink-mute focus:border-cyan/50 focus:outline-none focus:ring-1 focus:ring-cyan/30;
+    border-color: rgb(255 255 255 / 0.1);
+  }
+
+  .textarea {
+    @apply input min-h-[88px] resize-y leading-relaxed;
+  }
+
+  .label {
+    @apply mb-1 block font-mono text-xs uppercase tracking-wider text-ink-mute;
+  }
+
+  .section-heading {
+    @apply text-3xl font-bold tracking-tight md:text-4xl;
+  }
+
+  .section-sub {
+    @apply mt-2 max-w-xl text-ink-dim;
+  }
+
+  .hairline {
+    @apply h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent;
+  }
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgb(var(--color-ink-mute) / 0.25);
+  border-radius: 4px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--color-ink-mute) / 0.45);
+}
+
+.fadein {
+  animation: fadeinUp 0.6s ease-out both;
+}
+@keyframes fadeinUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
