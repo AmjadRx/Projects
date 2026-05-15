@@ -1,5 +1,6 @@
 import Nav from '@/components/Nav';
 import Footer from '@/components/Footer';
+import Reveal from '@/components/Reveal';
 import Hero from '@/components/sections/Hero';
 import Stats from '@/components/sections/Stats';
 import BrandThesisSection from '@/components/sections/BrandThesis';
@@ -21,14 +22,14 @@ export default async function Home() {
       <Nav />
       <main>
         <Hero personal={content.personal} />
-        <Stats stats={content.stats} />
-        <BrandThesisSection thesis={content.brandThesis} />
-        <AboutSection about={content.about} />
-        <ProjectsGrid projects={content.projects} />
-        <SkillsSection skills={content.skills} />
-        <ExperienceSection experience={content.experience} />
-        <HonorsSection honors={content.honors} />
-        <ContactSection contact={content.contact} personal={content.personal} />
+        <Reveal><Stats stats={content.stats} /></Reveal>
+        <Reveal><BrandThesisSection thesis={content.brandThesis} /></Reveal>
+        <Reveal><AboutSection about={content.about} /></Reveal>
+        <Reveal><ProjectsGrid projects={content.projects} /></Reveal>
+        <Reveal><SkillsSection skills={content.skills} /></Reveal>
+        <Reveal><ExperienceSection experience={content.experience} /></Reveal>
+        <Reveal><HonorsSection honors={content.honors} /></Reveal>
+        <Reveal><ContactSection contact={content.contact} personal={content.personal} /></Reveal>
       </main>
       <Footer content={content} />
     </>
