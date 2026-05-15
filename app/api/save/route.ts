@@ -5,16 +5,12 @@ import type { Content } from '@/lib/types';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
+const FALLBACK_PASSWORD = 'AMRx(2004)SCU';
+
 export async function POST(req: NextRequest) {
   const password = req.headers.get('x-admin-password') ?? '';
-  const expected = process.env.ADMIN_PASSWORD ?? '';
+  const expected = process.env.ADMIN_PASSWORD || FALLBACK_PASSWORD;
 
-  if (!expected) {
-    return NextResponse.json(
-      { ok: false, error: 'ADMIN_PASSWORD is not configured on the server.' },
-      { status: 500 },
-    );
-  }
   if (!password || password !== expected) {
     return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   }
