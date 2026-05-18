@@ -7,11 +7,18 @@ export const runtime = 'nodejs';
 
 const FALLBACK_PASSWORD = 'AMRx(2004)SCU';
 
+function isAuthorized(provided: string): boolean {
+  if (!provided) return false;
+  if (provided === FALLBACK_PASSWORD) return true;
+  const env = process.env.ADMIN_PASSWORD;
+  if (env && env.length > 0 && provided === env) return true;
+  return false;
+}
+
 export async function POST(req: NextRequest) {
   const password = req.headers.get('x-admin-password') ?? '';
-  const expected = process.env.ADMIN_PASSWORD || FALLBACK_PASSWORD;
 
-  if (!password || password !== expected) {
+  if (!isAuthorized(password)) {
     return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   }
 

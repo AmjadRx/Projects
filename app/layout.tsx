@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     template: '%s · Amjad Rehawi',
   },
   description:
-    'Senior honors EE + ME at Santa Clara University. Building Raven — an 8-stage eVTOL roadmap toward a 4-drone autonomous swarm.',
+    'Senior honors EE + ME at Santa Clara University. Pivoting from EV / power electronics into drones and aerospace — with the Raven eVTOL swarm as the proof.',
   keywords: [
     'Amjad Rehawi',
     'hardware engineer',
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
     type: 'website',
     title: 'Amjad Rehawi — Hardware engineer for things that move themselves.',
     description:
-      'Senior honors EE + ME at Santa Clara University. Building Raven — an 8-stage eVTOL roadmap toward a 4-drone autonomous swarm.',
+      'Senior honors EE + ME at Santa Clara University. Pivoting from EV / power electronics into drones and aerospace — with the Raven eVTOL swarm as the proof.',
     url: 'https://amjadrehawi.com',
     siteName: 'Amjad Rehawi',
   },

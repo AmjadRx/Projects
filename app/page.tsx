@@ -22,14 +22,30 @@ export default async function Home() {
       <Nav />
       <main>
         <Hero personal={content.personal} />
-        <Reveal><Stats stats={content.stats} /></Reveal>
-        <Reveal><BrandThesisSection thesis={content.brandThesis} /></Reveal>
-        <Reveal><AboutSection about={content.about} /></Reveal>
-        <Reveal><ProjectsGrid projects={content.projects} /></Reveal>
-        <Reveal><SkillsSection skills={content.skills} /></Reveal>
-        <Reveal><ExperienceSection experience={content.experience} /></Reveal>
-        <Reveal><HonorsSection honors={content.honors} /></Reveal>
-        <Reveal><ContactSection contact={content.contact} personal={content.personal} /></Reveal>
+        <Reveal>
+          <Stats stats={content.stats} />
+        </Reveal>
+        <Reveal>
+          <BrandThesisSection thesis={content.brandThesis} />
+        </Reveal>
+        <Reveal>
+          <AboutSection about={content.about} />
+        </Reveal>
+        <Reveal>
+          <ProjectsGrid projects={content.projects} />
+        </Reveal>
+        <Reveal>
+          <SkillsSection skills={content.skills} />
+        </Reveal>
+        <Reveal>
+          <ExperienceSection experience={content.experience} />
+        </Reveal>
+        <Reveal>
+          <HonorsSection honors={content.honors} />
+        </Reveal>
+        <Reveal>
+          <ContactSection contact={content.contact} personal={content.personal} />
+        </Reveal>
       </main>
       <Footer content={content} />
     </>

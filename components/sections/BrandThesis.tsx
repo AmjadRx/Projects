@@ -2,18 +2,26 @@ import type { BrandThesis } from '@/lib/types';
 
 export default function BrandThesisSection({ thesis }: { thesis: BrandThesis }) {
   return (
-    <section className="wrap py-12 md:py-16">
-      <div className="relative overflow-hidden rounded-2xl border border-cyan/20 bg-gradient-to-br from-navy-2 via-navy-3 to-navy-2 p-8 md:p-12">
-        <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-cyan/8 blur-3xl" />
-        <div className="absolute -bottom-20 -left-20 h-72 w-72 rounded-full bg-purple/10 blur-3xl" />
-        <div className="relative">
-          <span className="kicker">Brand thesis</span>
-          <h2 className="mt-5 text-2xl font-semibold leading-tight tracking-tight text-ink md:text-3xl">
+    <section className="wrap py-20 md:py-32">
+      <div className="grid grid-cols-1 gap-10 md:grid-cols-12">
+        <div className="md:col-span-4">
+          <div className="section-eyebrow">
+            <span className="text-cyan">003</span>
+            <span
+              className="inline-block h-px w-8"
+              style={{ background: 'rgb(255 255 255 / 0.2)' }}
+            />
+            <span>Thesis</span>
+          </div>
+          <div className="mt-4 font-mono text-[12px] uppercase tracking-[0.18em] text-cyan">
+            EV → Drone
+          </div>
+        </div>
+        <div className="md:col-span-8">
+          <h2 className="display-lg text-ink">
             {thesis.headline}
           </h2>
-          <p className="mt-5 max-w-3xl text-base leading-relaxed text-ink-dim md:text-lg">
-            {thesis.body}
-          </p>
+          <p className="lead mt-8">{thesis.body}</p>
         </div>
       </div>
     </section>

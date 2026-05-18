@@ -3,19 +3,21 @@ import AnimatedNumber from '@/components/AnimatedNumber';
 
 export default function Stats({ stats }: { stats: Stat[] }) {
   return (
-    <section className="wrap py-10">
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-6">
-        {stats.map((s, i) => (
-          <div
-            key={s.label}
-            className="card group relative overflow-hidden px-4 py-5 transition-all duration-300 hover:-translate-y-0.5 hover:border-cyan/30 hover:shadow-glow"
-            style={{ animationDelay: `${i * 60}ms` }}
-          >
-            <span className="pointer-events-none absolute -top-px left-3 right-3 h-px bg-gradient-to-r from-transparent via-cyan/40 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
-            <div className="font-mono text-[10px] uppercase tracking-widest text-ink-mute">
+    <section className="wrap py-20 md:py-28">
+      <div className="mb-10 flex items-center gap-3">
+        <span className="section-num">002 / METRICS</span>
+        <span className="hairline-x flex-1" />
+      </div>
+      <div
+        className="grid grid-cols-2 gap-px md:grid-cols-3 lg:grid-cols-6"
+        style={{ background: 'rgb(255 255 255 / 0.08)' }}
+      >
+        {stats.map((s) => (
+          <div key={s.label} className="bg-navy px-5 py-8 md:px-6 md:py-10">
+            <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-ink-mute">
               {s.label}
             </div>
-            <div className="mt-2 text-2xl font-semibold tracking-tight text-ink md:text-3xl">
+            <div className="mt-4 text-4xl font-medium tracking-tight text-ink md:text-5xl">
               <AnimatedNumber value={s.value} />
             </div>
           </div>
