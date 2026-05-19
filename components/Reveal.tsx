@@ -8,9 +8,16 @@ interface RevealProps {
   delay?: number;
   className?: string;
   as?: 'div' | 'section' | 'article' | 'header';
+  y?: number;
 }
 
-export default function Reveal({ children, delay = 0, className, as: Tag = 'div' }: RevealProps) {
+export default function Reveal({
+  children,
+  delay = 0,
+  className,
+  as: Tag = 'div',
+  y = 18,
+}: RevealProps) {
   const ref = useRef<HTMLElement | null>(null);
   const [shown, setShown] = useState(false);
 
@@ -36,16 +43,18 @@ export default function Reveal({ children, delay = 0, className, as: Tag = 'div'
     return () => io.disconnect();
   }, []);
 
+  const style: React.CSSProperties = {
+    transitionDelay: shown ? `${delay}ms` : '0ms',
+    transform: shown ? 'translateY(0)' : `translateY(${y}px)`,
+    opacity: shown ? 1 : 0,
+    transitionProperty: 'transform, opacity',
+    transitionDuration: '900ms',
+    transitionTimingFunction: 'cubic-bezier(0.2, 0.7, 0.2, 1)',
+    willChange: shown ? undefined : 'transform, opacity',
+  };
+
   return (
-    <Tag
-      ref={ref as React.RefObject<HTMLDivElement>}
-      style={{ transitionDelay: shown ? `${delay}ms` : '0ms' }}
-      className={cn(
-        'transition-all duration-700 ease-out will-change-transform',
-        shown ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0',
-        className,
-      )}
-    >
+    <Tag ref={ref as React.RefObject<HTMLDivElement>} style={style} className={cn(className)}>
       {children}
     </Tag>
   );

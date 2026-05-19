@@ -38,11 +38,11 @@ function JsonField<T>({
         onChange={(e) => handle(e.target.value)}
       />
       <div className="mt-1 flex items-center justify-between">
-        {hint && <span className="font-mono text-[10px] text-ink-mute">{hint}</span>}
+        {hint && <span className="font-mono text-[10px] text-fg-mute">{hint}</span>}
         {err ? (
           <span className="font-mono text-[10px] text-red-400">⚠ {err}</span>
         ) : (
-          <span className="font-mono text-[10px] text-cyan">✓ valid JSON</span>
+          <span className="font-mono text-[10px] text-accent">✓ valid JSON</span>
         )}
       </div>
     </div>
@@ -75,10 +75,10 @@ function ProjectEditor({
         className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left"
       >
         <div className="min-w-0">
-          <div className={`font-mono text-[10px] uppercase tracking-widest ${project.color === 'purple' ? 'text-purple' : 'text-cyan'}`}>
+          <div className={`font-mono text-[10px] uppercase tracking-widest ${project.color === 'purple' ? 'text-accent-2' : 'text-accent'}`}>
             {project.type || 'Project'}
           </div>
-          <h3 className="mt-1 truncate text-base font-semibold text-ink">{project.name || '(untitled)'}</h3>
+          <h3 className="mt-1 truncate text-base font-semibold text-fg">{project.name || '(untitled)'}</h3>
         </div>
         <div className="flex items-center gap-1">
           <button
@@ -101,12 +101,12 @@ function ProjectEditor({
             }}
             className="btn-secondary px-2 py-1 text-xs hover:!border-red-400/40 hover:!text-red-400"
           >delete</button>
-          <span className="ml-2 font-mono text-xs text-ink-mute">{open ? '▾' : '▸'}</span>
+          <span className="ml-2 font-mono text-xs text-fg-mute">{open ? '▾' : '▸'}</span>
         </div>
       </button>
 
       {open && (
-        <div className="space-y-5 border-t border-white/8 px-5 py-5" style={{ borderTopColor: 'rgb(255 255 255 / 0.08)' }}>
+        <div className="space-y-5 border-t border-line/8 px-5 py-5" style={{ borderTopColor: 'rgb(var(--line) / 0.08)' }}>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
               <span className="label">Slug</span>
@@ -141,7 +141,23 @@ function ProjectEditor({
               >
                 <option value="cyan">cyan</option>
                 <option value="purple">purple</option>
+                <option value="amber">amber</option>
               </select>
+            </div>
+            <div className="md:col-span-2">
+              <span className="label">Image URL</span>
+              <input
+                className="input"
+                placeholder="https://…"
+                value={project.imageUrl ?? ''}
+                onChange={(e) => upd('imageUrl', e.target.value || undefined)}
+              />
+              {project.imageUrl && (
+                <div className="mt-2 overflow-hidden rounded-lg border" style={{ borderColor: 'rgb(var(--line) / 0.08)' }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={project.imageUrl} alt="" className="aspect-video w-full object-cover" />
+                </div>
+              )}
             </div>
             <div className="md:col-span-2">
               <span className="label">Tags (comma-separated)</span>

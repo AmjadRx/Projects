@@ -1,8 +1,15 @@
 import type { Metadata, Viewport } from 'next';
-import { Space_Grotesk, JetBrains_Mono } from 'next/font/google';
+import { Inter, Inter_Tight, JetBrains_Mono, Instrument_Serif } from 'next/font/google';
 import './globals.css';
+import ThemeBoot from '@/components/ThemeBoot';
 
-const display = Space_Grotesk({
+const body = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-body',
+});
+
+const display = Inter_Tight({
   subsets: ['latin'],
   weight: ['300', '400', '500', '600', '700'],
   display: 'swap',
@@ -14,6 +21,14 @@ const mono = JetBrains_Mono({
   weight: ['400', '500', '600'],
   display: 'swap',
   variable: '--font-mono',
+});
+
+const serif = Instrument_Serif({
+  subsets: ['latin'],
+  weight: ['400'],
+  style: ['normal', 'italic'],
+  display: 'swap',
+  variable: '--font-serif',
 });
 
 export const metadata: Metadata = {
@@ -53,15 +68,25 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#0b0f17',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#fafaf9' },
+    { media: '(prefers-color-scheme: dark)', color: '#06080d' },
+  ],
   width: 'device-width',
   initialScale: 1,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${display.variable} ${mono.variable}`}>
-      <body>{children}</body>
+    <html
+      lang="en"
+      className={`${body.variable} ${display.variable} ${mono.variable} ${serif.variable}`}
+      suppressHydrationWarning
+    >
+      <body>
+        <ThemeBoot />
+        {children}
+      </body>
     </html>
   );
 }

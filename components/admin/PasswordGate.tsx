@@ -34,9 +34,9 @@ export default function PasswordGate({ onUnlock }: { onUnlock: (password: string
   return (
     <div className="flex min-h-screen items-center justify-center p-6">
       <form onSubmit={submit} className="card w-full max-w-sm p-6 md:p-8">
-        <div className="font-mono text-xs uppercase tracking-widest text-cyan">⌘ Admin</div>
-        <h1 className="mt-3 text-2xl font-bold tracking-tight text-ink">Sign in</h1>
-        <p className="mt-2 text-sm text-ink-dim">
+        <div className="font-mono text-xs uppercase tracking-widest text-accent">⌘ Admin</div>
+        <h1 className="mt-3 text-2xl font-bold tracking-tight text-fg">Sign in</h1>
+        <p className="mt-2 text-sm text-fg-dim">
           Shared-secret password. Stored in your session only.
         </p>
         <label className="label mt-6">Password</label>
@@ -52,7 +52,7 @@ export default function PasswordGate({ onUnlock }: { onUnlock: (password: string
         <button type="submit" disabled={checking || !value} className="btn-primary mt-5 w-full justify-center">
           {checking ? 'Checking…' : 'Unlock'}
         </button>
-        <a href="/" className="mt-4 block text-center font-mono text-xs uppercase tracking-widest text-ink-mute hover:text-cyan">
+        <a href="/" className="mt-4 block text-center font-mono text-xs uppercase tracking-widest text-fg-mute hover:text-accent">
           ← back to site
         </a>
       </form>
