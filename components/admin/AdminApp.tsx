@@ -139,8 +139,8 @@ export default function AdminApp() {
     return (
       <div className="flex min-h-screen items-center justify-center p-6">
         <div className="card max-w-md p-6 text-center">
-          <h2 className="text-lg font-semibold text-ink">Couldn't load content</h2>
-          <p className="mt-2 text-sm text-ink-dim">{loadError}</p>
+          <h2 className="text-lg font-semibold text-fg">Couldn't load content</h2>
+          <p className="mt-2 text-sm text-fg-dim">{loadError}</p>
           <button onClick={fetchContent} className="btn-primary mt-4">
             Retry
           </button>
@@ -152,7 +152,7 @@ export default function AdminApp() {
   if (!content) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <span className="font-mono text-sm text-ink-mute">Loading admin…</span>
+        <span className="font-mono text-sm text-fg-mute">Loading admin…</span>
       </div>
     );
   }

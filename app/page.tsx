@@ -29,10 +29,10 @@ export default async function Home() {
           <BrandThesisSection thesis={content.brandThesis} />
         </Reveal>
         <Reveal>
-          <AboutSection about={content.about} />
+          <ProjectsGrid projects={content.projects} />
         </Reveal>
         <Reveal>
-          <ProjectsGrid projects={content.projects} />
+          <AboutSection about={content.about} />
         </Reveal>
         <Reveal>
           <SkillsSection skills={content.skills} />

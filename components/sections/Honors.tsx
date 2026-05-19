@@ -1,32 +1,33 @@
 import type { Honor } from '@/lib/types';
-import SectionHeader from '@/components/SectionHeader';
+import Chapter from '@/components/Chapter';
 
 export default function HonorsSection({ honors }: { honors: Honor[] }) {
   return (
-    <section id="honors" className="wrap py-20 md:py-28">
-      <SectionHeader num="008" eyebrow="Recognition" title="Honors, fellowships, certifications." />
-      <div
-        className="grid gap-px"
-        style={{ background: 'rgb(255 255 255 / 0.08)' }}
-      >
+    <section id="honors" className="wrap section">
+      <Chapter
+        num="008"
+        eyebrow="Recognition"
+        title={<>Honors, fellowships, <span className="editorial italic text-fg-dim">certifications.</span></>}
+      />
+      <ul className="border-t border-line/10">
         {honors.map((h, i) => (
-          <div
+          <li
             key={i}
-            className="grid grid-cols-12 items-baseline gap-4 bg-navy px-1 py-6 md:gap-8 md:px-2"
+            className="grid grid-cols-12 items-baseline gap-4 border-b border-line/10 py-6 transition-colors hover:bg-bg-2/40 md:gap-8 md:py-7"
           >
-            <div className="col-span-2 font-mono text-[11px] uppercase tracking-[0.22em] text-cyan md:col-span-2">
+            <div className="col-span-2 font-mono text-[11px] uppercase tracking-[0.22em] text-accent md:col-span-1">
               {String(i + 1).padStart(2, '0')}
             </div>
-            <div className="col-span-10 md:col-span-7">
-              <h3 className="text-lg font-medium text-ink md:text-xl">{h.title}</h3>
-              <p className="mt-1 text-ink-dim">{h.note}</p>
+            <div className="col-span-10 md:col-span-8">
+              <h3 className="text-pretty text-lg font-medium text-fg md:text-xl">{h.title}</h3>
+              <p className="mt-1.5 text-[15px] text-fg-mute md:text-base">{h.note}</p>
             </div>
-            <div className="col-span-12 font-mono text-[11px] uppercase tracking-[0.18em] text-ink-mute md:col-span-3 md:text-right">
+            <div className="col-span-12 font-mono text-[11px] uppercase tracking-[0.18em] text-fg-mute md:col-span-3 md:text-right">
               {h.year}
             </div>
-          </div>
+          </li>
         ))}
-      </div>
+      </ul>
     </section>
   );
 }

@@ -2,8 +2,11 @@
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
-  experimental: {
-    optimizePackageImports: ['three', '@react-three/fiber', '@react-three/drei'],
+  images: {
+    remotePatterns: [
+      { protocol: 'https', hostname: 'cdn.creativeclaw.co' },
+      { protocol: 'https', hostname: 'images.unsplash.com' },
+    ],
   },
 };
 

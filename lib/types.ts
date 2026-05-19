@@ -1,4 +1,4 @@
-export type ProjectColor = 'cyan' | 'purple';
+export type ProjectColor = 'cyan' | 'purple' | 'amber';
 export type RoadmapStatus = 'in-progress' | 'next' | 'future';
 export type SkillTier = 'deep' | 'strong';
 
@@ -15,6 +15,7 @@ export interface Personal {
   graduation: string;
   school: string;
   degree: string;
+  heroImageUrl?: string;
 }
 
 export interface BrandThesis {
@@ -60,6 +61,7 @@ export interface Project {
   color: ProjectColor;
   summary: string;
   tags: string[];
+  imageUrl?: string;
   hero?: ProjectHero;
   sections?: ProjectSection[];
   roadmap?: RoadmapStage[];

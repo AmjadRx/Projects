@@ -13,7 +13,8 @@
     "gpa": "3.8",
     "graduation": "2027",
     "school": "Santa Clara University",
-    "degree": "B.S. Electrical Engineering & B.S. Mechanical Engineering (Honors)"
+    "degree": "B.S. Electrical Engineering & B.S. Mechanical Engineering (Honors)",
+    "heroImageUrl": "https://cdn.creativeclaw.co/u/f80467f6/images/3da01bab-6b0a-4e35-91fd-03f566af1985.jpg"
   },
   "brandThesis": {
     "headline": "The same skill stack that ships a 420 V electric race car is what makes an autonomous aircraft fly itself.",
@@ -44,6 +45,7 @@
       "dates": "Feb 2026 — present",
       "type": "Flagship · eVTOL R&D · Senior Design",
       "color": "cyan",
+      "imageUrl": "https://cdn.creativeclaw.co/u/f80467f6/images/1933b64b-9cea-4af6-90ef-3f29ea8f7873.jpg",
       "summary": "Raven is a tilt-rotor eVTOL — fixed-wing in cruise, three-motor VTOL in hover — built as the first airframe in a planned 4-drone autonomous swarm with onboard AI, sensor-fusion collision avoidance, and wireless autonomous charging at home base. Custom redesign on top of the Flightory Stallion FPV airframe: re-spec'd to PA612-CF15 carbon-fiber composite, custom carbon-fiber tubes, self-selected avionics, and a modular multi-segment fuselage. MECH115 Advanced CAD group project (Spring 2026); designated senior design project.",
       "tags": ["eVTOL", "tilt-rotor", "PA612-CF15", "FEA", "CFD", "STM32", "autonomy", "swarm"],
       "hero": {
@@ -99,6 +101,7 @@
       "dates": "Sep 2023 — present",
       "type": "Team · High-voltage power electronics",
       "color": "cyan",
+      "imageUrl": "https://cdn.creativeclaw.co/u/f80467f6/images/9b0767d0-a06f-4d24-b5b8-39c2224a0fe8.jpg",
       "summary": "End-to-end ownership of the tractive system electrical stack on Bronco Racing's Formula SAE Electric car. BMS programming, programmable external charging system, CAN bus architecture, STM32 firmware, PCB safety review, and 140+ thermistors physically integrated into the accumulator harness.",
       "tags": ["FSAE EV", "BMS", "CAN bus", "STM32", "PCB", "Orion BMS 2", "thermal", "HV safety"],
       "hero": {
@@ -141,6 +144,7 @@
       "dates": "Jun 2025 — Dec 2025",
       "type": "Internship · Application engineering",
       "color": "purple",
+      "imageUrl": "https://cdn.creativeclaw.co/u/f80467f6/images/035f8a26-643b-4924-89a7-bfd43809771a.jpg",
       "summary": "Supported Global Key Account Customers (GKAC) in microcontroller project development across automotive and industrial applications. Bridged ST silicon and customer products. Motor-inverter debug, embedded firmware bring-up, parameterization guides, and competitive teardowns.",
       "tags": ["STM32", "Lauterbach", "StellarStudio", "SVM", "PWM", "motor inverter", "ADC", "DAC"],
       "hero": {
@@ -169,6 +173,7 @@
       "dates": "Sep 2025 — Oct 2025",
       "type": "Hackathon · Wearable · Patent",
       "color": "cyan",
+      "imageUrl": "https://cdn.creativeclaw.co/u/f80467f6/images/44ec0cec-122d-41bc-85c3-a12b3bda1197.jpg",
       "summary": "Dual-purpose biometric wellness device combining real-time stress monitoring with smart ambient lighting. PPG (HR/HRV) + EDA (electrodermal activity) + thermal sensors on an ESP32 for wireless, with an AI-powered analytics platform turning raw biosignals into actionable wellness insights. Concept to working prototype in under 6 weeks.",
       "tags": ["PPG", "EDA", "ESP32", "AI analytics", "patent", "wearable"],
       "hero": {

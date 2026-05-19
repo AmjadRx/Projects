@@ -51,7 +51,19 @@ export default function PersonalTab({
         <Field label="Degree">
           <input className="input" value={value.degree} onChange={(e) => upd('degree', e.target.value)} />
         </Field>
+        <Field
+          label="Hero image URL"
+          hint="Renders behind the homepage hero and inside the right-side product card. Use the full HTTPS URL (e.g. from Unsplash or a CDN)."
+        >
+          <input className="input" value={value.heroImageUrl ?? ''} onChange={(e) => upd('heroImageUrl', e.target.value)} placeholder="https://…" />
+        </Field>
       </div>
+      {value.heroImageUrl && (
+        <div className="mt-5 overflow-hidden rounded-lg border border-line/8" style={{ borderColor: 'rgb(var(--line) / 0.08)' }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={value.heroImageUrl} alt="Hero preview" className="aspect-[16/9] w-full object-cover" />
+        </div>
+      )}
     </div>
   );
 }
