@@ -1,7 +1,19 @@
 # amjadrehawi.com
 
 Personal portfolio for **Amjad Rehawi**: hardware engineer for things that move themselves.
-Built to Build Brief v2. Live at https://amjadrehawi.com (Netlify), Vercel-portable.
+Built to Build Brief v2. Deploys on **Vercel** (primary) or Netlify — no host-specific APIs.
+
+## Deploy on Vercel
+
+1. Go to [vercel.com/new](https://vercel.com/new) and import the `AmjadRx/Projects` repo.
+   Framework preset: **Next.js** (auto-detected). Build command and output: defaults.
+2. Set the environment variables below (Project → Settings → Environment Variables).
+3. Add the custom domain `amjadrehawi.com` under Project → Settings → Domains and point
+   the domain's DNS at Vercel (A record `76.76.21.21` or CNAME `cname.vercel-dns.com`).
+4. Every push to `main` deploys production. Admin saves commit to `main`, which
+   triggers the next deploy automatically.
+
+Security headers ship from `next.config.mjs` (`headers()`), so they apply on any host.
 
 ## Stack
 
@@ -33,8 +45,12 @@ block types render nothing (forward compatible).
 |---|---|---|
 | `ADMIN_PASSWORD` | recommended | Admin login (server-side check; httpOnly session cookie) |
 | `GITHUB_TOKEN` | prod | Fine-grained PAT, this repo only, Contents read/write |
-| `GITHUB_REPO` | prod | e.g. `AmjadRx/Projects` — GitHub-CMS mode is ON only when both this and the token are set |
+| `GITHUB_REPO` | prod | `AmjadRx/Projects` — GitHub-CMS mode is ON only when both this and the token are set |
 | `GITHUB_BRANCH` | optional | defaults to `main` |
+
+To create the token: GitHub → Settings → Developer settings → Fine-grained personal
+access tokens → Generate new token → Repository access: only `AmjadRx/Projects` →
+Permissions → Contents: **Read and write**. Paste it into Vercel as `GITHUB_TOKEN`.
 
 Without `GITHUB_TOKEN` + `GITHUB_REPO` (local dev), `/api/save` and `/api/upload`
 write straight to the local filesystem, so the admin works offline.
