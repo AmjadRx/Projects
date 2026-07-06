@@ -1,0 +1,36 @@
+{
+  "slug": "pipelined-cpu-verilog",
+  "title": "Pipelined CPU in Verilog",
+  "subtitle": "Custom-ISA pipelined processor in Xilinx Vivado",
+  "role": "Coursework",
+  "timeframe": "Jan 2025 - Mar 2025",
+  "status": "completed",
+  "featured": false,
+  "order": 9,
+  "domain": "Digital design",
+  "tags": [
+    "Verilog",
+    "Vivado",
+    "CPU",
+    "pipelining"
+  ],
+  "cover": {
+    "kind": "image",
+    "src": "/media/pipelined-cpu-verilog/cover.jpg",
+    "alt": "Pipelined CPU block diagram"
+  },
+  "links": [],
+  "pitch": "A pipelined CPU with a custom instruction set optimized for arithmetic, a forwarding unit for pipeline efficiency, and hazard detection, validated through simulation and performance analysis.",
+  "highlights": [
+    "Custom instruction set optimized for arithmetic operations",
+    "Forwarding unit and hazard detection",
+    "Validated via simulation and performance analysis in Vivado ML"
+  ],
+  "blocks": [
+    {
+      "id": "v1",
+      "type": "text",
+      "md": "Designed and implemented a pipelined processor in Xilinx Vivado ML with a custom arithmetic-optimized instruction set, a forwarding unit to keep the pipeline fed, and hazard detection. Verified through simulation and performance analysis."
+    }
+  ]
+}

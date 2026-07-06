@@ -1,230 +1,181 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { ArrowLeft } from 'lucide-react';
+import { loadContent, loadProject, loadProjects, lastUpdated } from '@/lib/content';
 import Nav from '@/components/Nav';
 import Footer from '@/components/Footer';
-import Roadmap from '@/components/Roadmap';
-import { loadContent } from '@/lib/content';
-import { findProjectBySlug } from '@/lib/utils';
+import MediaView from '@/components/MediaView';
+import LinkButton from '@/components/LinkButton';
+import ProgressStrip from '@/components/ProgressStrip';
+import BlockRenderer from '@/components/blocks/BlockRenderer';
+import Reveal from '@/components/Reveal';
+import { cn } from '@/lib/utils';
 
-export const revalidate = 0;
-export const dynamic = 'force-dynamic';
+export const dynamic = 'force-static';
+export const dynamicParams = false;
 
-export async function generateMetadata({ params }: { params: { slug: string } }) {
-  const content = await loadContent();
-  const project = findProjectBySlug(content.projects, params.slug);
+export function generateStaticParams() {
+  return loadProjects().map((p) => ({ slug: p.slug }));
+}
+
+export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
+  const project = loadProject(params.slug);
   if (!project) return { title: 'Project not found' };
   return {
-    title: project.name,
-    description: project.subtitle,
+    title: project.title,
+    description: project.pitch,
+    openGraph: {
+      title: project.title,
+      description: project.pitch,
+      images: project.cover.exists !== false ? [project.cover.src] : undefined,
+    },
   };
 }
 
-export default async function ProjectDetail({ params }: { params: { slug: string } }) {
-  const content = await loadContent();
-  const project = findProjectBySlug(content.projects, params.slug);
+const STATUS_LABEL = {
+  'in-progress': 'In progress',
+  active: 'Active',
+  completed: 'Completed',
+  shipped: 'Shipped',
+} as const;
+
+export default function ProjectPage({ params }: { params: { slug: string } }) {
+  const { site, projects } = loadContent();
+  const project = projects.find((p) => p.slug === params.slug);
   if (!project) notFound();
+
+  const idx = projects.findIndex((p) => p.slug === project.slug);
+  const prev = projects[idx - 1];
+  const next = projects[idx + 1];
+  const live = project.status === 'in-progress' || project.status === 'active';
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'CreativeWork',
+    name: project.title,
+    description: project.pitch,
+    author: { '@type': 'Person', name: site.personal.name },
+    keywords: project.tags.join(', '),
+  };
 
   return (
     <>
-      <Nav />
-      <main>
-        {/* HERO */}
-        <section className="relative isolate overflow-hidden">
-          {project.imageUrl && (
-            <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={project.imageUrl}
-                alt=""
-                className="absolute inset-0 h-full w-full object-cover opacity-40 mask-fade-b"
-              />
-              <div
-                className="absolute inset-0"
-                style={{
-                  background:
-                    'linear-gradient(180deg, rgb(var(--bg) / 0.4) 0%, rgb(var(--bg) / 0.85) 70%, rgb(var(--bg)) 100%)',
-                }}
-              />
-            </div>
-          )}
-          <div className="wrap pt-32 pb-16 md:pt-44 md:pb-24">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <Nav name={site.personal.name} items={site.nav} socials={site.socialLinks} />
+      <main className="pb-24 pt-28 md:pt-36">
+        <article className="wrap">
+          <div className="mx-auto max-w-article">
             <Link
               href="/projects"
-              className="btn-ghost -ml-2"
+              className="inline-flex items-center gap-2 text-sm text-ink-mute transition-colors hover:text-accent"
             >
-              ← All projects
+              <ArrowLeft size={15} /> All projects
             </Link>
 
-            <header className="mt-10 md:mt-14">
-              <div className="eyebrow">
-                <span className="eyebrow-num">{project.type}</span>
-                <span className="eyebrow-rule" />
-                <span>{project.dates}</span>
+            <header className="mt-8">
+              <p className="kicker">{project.domain}</p>
+              <h1 className="display-1 mt-4">{project.title}</h1>
+              <p className="body-lg mt-4">{project.subtitle}</p>
+
+              <div
+                className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3 py-4"
+                style={{ borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}
+              >
+                <span className="text-sm font-medium text-ink">{project.role}</span>
+                <span className="kicker">{project.timeframe}</span>
+                <span className={cn('pill', live && 'pill-accent')}>
+                  {live && <span className="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden />}
+                  {project.statusLabel || STATUS_LABEL[project.status]}
+                </span>
               </div>
-              <h1 className="display-3xl text-balance mt-7 text-fg max-w-[18ch]">
-                {project.name}
-              </h1>
-              <p className="lead-xl text-pretty mt-8 max-w-[60ch]">{project.subtitle}</p>
-              <div className="mt-9 flex flex-wrap items-center gap-1.5">
-                <span className="chip chip-accent">{project.status}</span>
-                {project.tags.map((t) => (
-                  <span key={t} className="chip">{t}</span>
+
+              <div className="mt-4 flex flex-wrap gap-1.5">
+                {project.tags.map((tag) => (
+                  <span key={tag} className="chip">{tag}</span>
                 ))}
               </div>
+
+              {project.links.length > 0 && (
+                <div className="mt-6 flex flex-wrap gap-2.5">
+                  {project.links.map((link) => (
+                    <LinkButton key={link.url} {...link} />
+                  ))}
+                </div>
+              )}
             </header>
 
-            {project.imageUrl && (
-              <figure className="mt-14 overflow-hidden rounded-[28px] border border-line/10 bg-bg-2 md:mt-20">
-                <div className="aspect-[16/9] relative">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={project.imageUrl}
-                    alt={`${project.name}`}
-                    className="absolute inset-0 h-full w-full object-cover"
-                  />
-                </div>
-              </figure>
-            )}
-          </div>
-        </section>
-
-        {/* PITCH + HIGHLIGHTS */}
-        {project.hero && (
-          <section className="wrap py-16 md:py-24">
-            <div className="grid grid-cols-1 gap-10 md:grid-cols-12 md:gap-14">
-              <div className="md:col-span-5">
-                <span className="eyebrow">
-                  <span className="eyebrow-num">Pitch</span>
-                </span>
-                <p className="display-lg text-balance mt-6 text-fg">
-                  {project.hero.pitch}
-                </p>
+            <Reveal className="mt-10">
+              <div
+                className="relative aspect-[16/9] w-full overflow-hidden rounded-lg"
+                style={{ border: '1px solid var(--line)' }}
+              >
+                <MediaView media={project.cover} placeholderLabel={project.title} sizes="760px" priority />
               </div>
-              <div className="md:col-span-7">
-                <span className="eyebrow">
-                  <span className="eyebrow-num">Highlights</span>
-                  <span className="eyebrow-rule" />
-                  <span>{project.hero.highlights?.length ?? 0} items</span>
-                </span>
-                {project.hero.highlights?.length > 0 && (
-                  <ul className="mt-7 space-y-4 md:space-y-5">
-                    {project.hero.highlights.map((h, i) => (
-                      <li key={i} className="flex gap-5 text-fg-dim md:text-lg">
-                        <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-accent shrink-0 mt-[0.4em]">
-                          {String(i + 1).padStart(2, '0')}
-                        </span>
-                        <span className="text-pretty">{h}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </div>
-          </section>
-        )}
+            </Reveal>
 
-        {/* SUMMARY — editorial big text */}
-        <section className="wrap py-16 md:py-24 border-t border-line/8">
-          <div className="grid grid-cols-1 gap-10 md:grid-cols-12 md:gap-14">
-            <div className="md:col-span-3">
-              <span className="eyebrow">
-                <span className="eyebrow-num">Summary</span>
-              </span>
-            </div>
-            <div className="md:col-span-9">
-              <p className="text-pretty text-xl leading-[1.5] text-fg-dim md:text-[1.55rem] md:leading-[1.4]">
-                {project.summary}
-              </p>
-            </div>
-          </div>
-        </section>
+            <Reveal className="mt-12">
+              <p className="display-3 !font-medium leading-snug text-ink">{project.pitch}</p>
+            </Reveal>
 
-        {/* CHAPTERS */}
-        {project.sections && project.sections.length > 0 && (
-          <section className="wrap py-16 md:py-24 border-t border-line/8">
-            <div className="mb-12 md:mb-20">
-              <span className="eyebrow">
-                <span className="eyebrow-num">Chapters</span>
-                <span className="eyebrow-rule" />
-                <span>{project.sections.length}</span>
-              </span>
-            </div>
-            <div className="space-y-16 md:space-y-24">
-              {project.sections.map((s, i) => (
-                <article
-                  key={i}
-                  className="grid grid-cols-1 gap-8 md:grid-cols-12 md:gap-14"
-                >
-                  <div className="md:col-span-4">
-                    <div className="sticky top-28">
-                      <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-accent">
-                        Chapter {String(i + 1).padStart(2, '0')}
+            {project.highlights.length > 0 && (
+              <Reveal className="mt-10">
+                <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {project.highlights.map((highlight, i) => (
+                    <li key={i} className="card flex gap-3 p-4">
+                      <span className="font-mono text-[11px] text-accent">
+                        {String(i + 1).padStart(2, '0')}
                       </span>
-                      <h3 className="display-md text-balance mt-4 text-fg">
-                        {s.heading}
-                      </h3>
-                    </div>
-                  </div>
-                  <div className="md:col-span-8">
-                    {s.body && (
-                      <p className="text-pretty text-lg leading-[1.55] text-fg-dim md:text-xl md:leading-[1.5]">
-                        {s.body}
-                      </p>
-                    )}
-                    {s.items && s.items.length > 0 && (
-                      <ul className={`${s.body ? 'mt-7' : ''} space-y-3.5 md:space-y-4`}>
-                        {s.items.map((it, j) => (
-                          <li key={j} className="flex gap-4 text-fg-dim md:text-lg">
-                            <span
-                              aria-hidden
-                              className="mt-[0.7em] inline-block h-px w-4 flex-shrink-0"
-                              style={{ background: 'rgb(var(--accent) / 0.7)' }}
-                            />
-                            <span className="text-pretty">{it}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                </article>
-              ))}
-            </div>
-          </section>
-        )}
+                      <span className="text-sm leading-relaxed text-ink-dim">{highlight}</span>
+                    </li>
+                  ))}
+                </ul>
+              </Reveal>
+            )}
 
-        {/* ROADMAP */}
-        {project.roadmap && project.roadmap.length > 0 && (
-          <section className="wrap py-16 md:py-24 border-t border-line/8">
-            <div className="max-w-[760px] mb-12 md:mb-16">
-              <span className="eyebrow">
-                <span className="eyebrow-num">Roadmap</span>
-                <span className="eyebrow-rule" />
-                <span>{project.roadmap.length} stages</span>
-              </span>
-              <h2 className="display-xl text-balance mt-6 text-fg">
-                8 stages, one airframe <span className="editorial italic text-fg-dim">at a time.</span>
-              </h2>
-              <p className="lead mt-6">
-                Where Raven is today, and what&rsquo;s next.
-              </p>
-            </div>
-            <Roadmap stages={project.roadmap} />
-          </section>
-        )}
+            {project.progress && (
+              <Reveal className="mt-10">
+                <div className="card px-5 py-4">
+                  <ProgressStrip progress={project.progress} />
+                </div>
+              </Reveal>
+            )}
 
-        {/* CTA */}
-        <section className="wrap py-16 md:py-24 border-t border-line/8">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <Link href="/projects" className="btn-secondary">
-              ← All projects
-            </Link>
-            <a href={`mailto:${content.personal.email}`} className="btn-primary">
-              Talk to me about this <span aria-hidden>→</span>
-            </a>
+            <div className="mt-14">
+              <BlockRenderer blocks={project.blocks} slug={project.slug} />
+            </div>
+
+            <nav
+              className="mt-20 grid grid-cols-1 gap-4 pt-8 sm:grid-cols-2"
+              style={{ borderTop: '1px solid var(--line)' }}
+              aria-label="Project navigation"
+            >
+              {prev ? (
+                <Link href={`/projects/${prev.slug}`} className="card group p-5 transition-colors hover:border-accent/50">
+                  <span className="kicker">← Previous</span>
+                  <span className="mt-1.5 block font-semibold text-ink group-hover:text-accent">
+                    {prev.title}
+                  </span>
+                </Link>
+              ) : (
+                <span />
+              )}
+              {next && (
+                <Link
+                  href={`/projects/${next.slug}`}
+                  className="card group p-5 text-right transition-colors hover:border-accent/50"
+                >
+                  <span className="kicker">Next →</span>
+                  <span className="mt-1.5 block font-semibold text-ink group-hover:text-accent">
+                    {next.title}
+                  </span>
+                </Link>
+              )}
+            </nav>
           </div>
-        </section>
+        </article>
       </main>
-      <Footer content={content} />
+      <Footer site={site} lastUpdated={lastUpdated()} />
     </>
   );
 }

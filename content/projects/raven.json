@@ -1,0 +1,225 @@
+{
+  "slug": "raven",
+  "title": "Raven",
+  "subtitle": "A tilt-rotor eVTOL and the first airframe of a 4-drone autonomous swarm",
+  "role": "Founder & Lead Engineer, stealth AI hardware startup",
+  "timeframe": "Feb 2026 - present",
+  "status": "in-progress",
+  "statusLabel": "Stage 1 of 8: electronics integration",
+  "featured": true,
+  "order": 1,
+  "domain": "eVTOL · Autonomy · Power",
+  "tags": [
+    "eVTOL",
+    "tilt-rotor",
+    "autonomy",
+    "carbon fiber",
+    "FEA/CFD",
+    "swarm",
+    "firmware"
+  ],
+  "cover": {
+    "kind": "image",
+    "src": "/media/raven/cover.jpg",
+    "alt": "Raven tilt-rotor eVTOL airframe"
+  },
+  "links": [],
+  "pitch": "Fixed-wing in cruise, three-motor VTOL in hover. Designed, analyzed, and printed in carbon-fiber composite, on an 8-stage roadmap that ends in a fully autonomous 4-drone swarm with wireless charging at home base.",
+  "highlights": [
+    "Airframe structural build complete in PA612-CF15 carbon-fiber composite",
+    "Every part reverse-engineered and re-validated from the stock platform: new material, new constraints, new geometry",
+    "FEA on the main spar, motor mounts, and tail boom; CFD at 60 to 70 km/h cruise",
+    "Tensile and torsion coupon testing to characterize the printed composite",
+    "Designated senior design project and flagship hardware of a stealth AI startup",
+    "FAA Part 107 certification in progress"
+  ],
+  "progress": {
+    "steps": [
+      {
+        "label": "CAD & analysis",
+        "state": "done"
+      },
+      {
+        "label": "Airframe build",
+        "state": "done"
+      },
+      {
+        "label": "Electronics integration",
+        "state": "current"
+      },
+      {
+        "label": "First flight",
+        "state": "todo"
+      },
+      {
+        "label": "Autonomy",
+        "state": "todo"
+      }
+    ]
+  },
+  "blocks": [
+    {
+      "id": "r1",
+      "type": "text",
+      "md": "Raven is a tilt-rotor eVTOL: two wing-mounted motors drive fixed-wing cruise, and a third motor near the tail joins them for vertical takeoff, hover, and landing. The airfoil is an Eppler E205, CFD-optimized for cruise at 60 to 70 km/h. It is built on the geometry of the Flightory Stallion FPV platform, but every part has been reverse-engineered and re-specified: stock LW-PLA/PETG replaced with PA612-CF15 carbon-fiber composite, custom carbon-fiber spar and boom tubes, self-selected programmable servos and avionics, and CAD modified wherever stock parts would not survive Raven's flight envelope."
+    },
+    {
+      "id": "r2",
+      "type": "specTable",
+      "rows": [
+        {
+          "label": "Configuration",
+          "value": "Tilt-rotor; 2 motors in cruise, 3 in VTOL"
+        },
+        {
+          "label": "Airfoil",
+          "value": "Eppler E205, CFD-optimized for 60-70 km/h cruise"
+        },
+        {
+          "label": "Primary structure",
+          "value": "PA612-CF15 carbon-fiber composite, custom carbon-fiber tubes"
+        },
+        {
+          "label": "Modularity",
+          "value": "5-segment fuselage, detachable wing panels, interchangeable nose for payload swaps, V-tail"
+        },
+        {
+          "label": "Analysis",
+          "value": "SolidWorks Simulation + Ansys FEA; Ansys CFD; coupon tensile/torsion testing"
+        },
+        {
+          "label": "Status",
+          "value": "Stage 1 of 8: airframe complete, integrating electronics and flight code"
+        }
+      ]
+    },
+    {
+      "id": "r3",
+      "type": "heading",
+      "text": "Engineering scope"
+    },
+    {
+      "id": "r4",
+      "type": "bullets",
+      "items": [
+        "CAD: re-specified every part to the new material and load constraints; modified geometry where stock parts fail Raven's envelope.",
+        "FEA: static loading on the carbon-fiber main spar (bending), motor mounts (thrust and vibration), and tail boom mount (aerodynamic loads).",
+        "CFD: airfoil performance and full-airframe flow at cruise.",
+        "Materials: tensile and torsion testing on printed PA612-CF15 coupons; FDM/FFF print tuning with mandatory dry storage.",
+        "Kinematics: servo-to-pushrod control linkages and snap-fit wing locks with torsion springs.",
+        "Avionics: flight controller, ESCs, motors, receiver, and GPS selection; FAA Part 107-compliant wiring."
+      ]
+    },
+    {
+      "id": "r5",
+      "type": "heading",
+      "text": "The 8-stage roadmap"
+    },
+    {
+      "id": "r6",
+      "type": "roadmap",
+      "stages": [
+        {
+          "n": 1,
+          "title": "Mechanical build + RC flight",
+          "desc": "Airframe complete; integrating off-the-shelf flight controller, ESCs, motors, GPS. Manual RC control.",
+          "status": "in-progress"
+        },
+        {
+          "n": 2,
+          "title": "Autonomous flight",
+          "desc": "Programmable flight controller, GPS waypointing, basic mission planning.",
+          "status": "next"
+        },
+        {
+          "n": 3,
+          "title": "4-drone swarm",
+          "desc": "Three more airframes; coordinated synchronized flight.",
+          "status": "future"
+        },
+        {
+          "n": 4,
+          "title": "Object detection",
+          "desc": "Swarm flies pre-programmed patterns, detects trained objects, reports GPS coordinates to HQ.",
+          "status": "future"
+        },
+        {
+          "n": 5,
+          "title": "HQ-side AI",
+          "desc": "Drones stream live video; HQ AI does analysis and mid-mission flight-plan updates.",
+          "status": "future"
+        },
+        {
+          "n": 6,
+          "title": "Onboard control AI",
+          "desc": "AI moves onboard for adaptive control in harsh, uncertain conditions.",
+          "status": "future"
+        },
+        {
+          "n": 7,
+          "title": "Onboard sensor fusion",
+          "desc": "Autonomous fixed-wing/VTOL transition, onboard detection, swarm and foreign-object collision avoidance.",
+          "status": "future"
+        },
+        {
+          "n": 8,
+          "title": "Full IoT + wireless charging",
+          "desc": "Drones autonomously return to base, land in wireless charging stations, recharge. Zero human in the loop.",
+          "status": "future"
+        }
+      ]
+    },
+    {
+      "id": "r7",
+      "type": "heading",
+      "text": "Startup context"
+    },
+    {
+      "id": "r8",
+      "type": "text",
+      "md": "Raven is the aircraft half of a two-product system at the stealth AI hardware startup I founded. The other half is an on-premise software brain that takes plain-language missions and coordinates a shared fleet, arbitrating multiple concurrent missions at once. The MVP is a live two-mission demo (a leak and an intrusion handled by one fleet), proven first in simulation and on commodity drones. An example end state: a fire department swarm that patrols a region on schedule, detects and classifies a hazardous fire, and dispatches verified information to first responders with no joystick involved."
+    },
+    {
+      "id": "r9",
+      "type": "gallery",
+      "items": [
+        {
+          "kind": "image",
+          "src": "/media/raven/build-01.jpg",
+          "alt": "Printed PA612-CF15 fuselage segments"
+        },
+        {
+          "kind": "image",
+          "src": "/media/raven/build-02.jpg",
+          "alt": "Wing assembly with carbon spar"
+        }
+      ]
+    },
+    {
+      "id": "r10",
+      "type": "log",
+      "entries": [
+        {
+          "date": "2026-06",
+          "title": "Airframe structural build complete",
+          "md": "All PA612-CF15 segments printed and assembled: 5-part fuselage, detachable wings, V-tail. Moving to electronics integration and flight-code bring-up."
+        },
+        {
+          "date": "2026-04",
+          "title": "FEA and CFD pass",
+          "md": "Static FEA on the main spar, motor mounts, and tail boom mount; CFD validation of the E205 section and full airframe at cruise."
+        },
+        {
+          "date": "2026-03",
+          "title": "Materials characterization",
+          "md": "Tensile and torsion testing on printed PA612-CF15 coupons; dialed FDM settings and dry-storage workflow for the moisture-sensitive filament."
+        },
+        {
+          "date": "2026-02",
+          "title": "Project start",
+          "md": "Selected the Stallion geometry as the base platform and began the full reverse-engineering and re-specification pass in CAD."
+        }
+      ]
+    }
+  ]
+}

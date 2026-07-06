@@ -1,0 +1,362 @@
+{
+  "schemaVersion": 2,
+  "settings": {
+    "themeDefault": "dark",
+    "heroMode": "scene3d",
+    "heroMedia": {
+      "kind": "image",
+      "src": "/media/site/hero.jpg",
+      "alt": "Raven eVTOL airframe"
+    },
+    "showAvailabilityBadge": true
+  },
+  "personal": {
+    "name": "Amjad Rehawi",
+    "tagline": "Hardware engineer for things that move themselves.",
+    "subTagline": "Senior honors double major in Electrical and Mechanical Engineering at Santa Clara University. I build the hardware spine of machines that move on their own: high-voltage battery systems, motor control, embedded firmware, and autonomous aircraft.",
+    "location": "Santa Clara, CA",
+    "email": "arihawi@scu.edu",
+    "phone": "+1 (530) 407-6321",
+    "availability": "Open to Summer 2027 internships and full-time roles for 2027",
+    "gpa": "3.7",
+    "graduation": "2027",
+    "school": "Santa Clara University",
+    "degree": "B.S. Electrical & Mechanical Engineering (Honors)"
+  },
+  "socialLinks": [
+    {
+      "id": "email",
+      "label": "Email",
+      "url": "mailto:arihawi@scu.edu",
+      "icon": "mail",
+      "showInNav": false,
+      "showInFooter": true,
+      "showInContact": true
+    },
+    {
+      "id": "linkedin",
+      "label": "LinkedIn",
+      "url": "https://www.linkedin.com/in/amjad-rehawi-38412b220/",
+      "icon": "linkedin",
+      "showInNav": true,
+      "showInFooter": true,
+      "showInContact": true
+    },
+    {
+      "id": "phone",
+      "label": "Phone",
+      "url": "tel:+15304076321",
+      "icon": "phone",
+      "showInNav": false,
+      "showInFooter": true,
+      "showInContact": true
+    }
+  ],
+  "nav": [
+    {
+      "label": "Projects",
+      "href": "/projects"
+    },
+    {
+      "label": "About",
+      "href": "/#about"
+    },
+    {
+      "label": "Experience",
+      "href": "/#experience"
+    },
+    {
+      "label": "Contact",
+      "href": "/#contact"
+    }
+  ],
+  "stats": [
+    {
+      "label": "Cumulative GPA",
+      "value": "3.7"
+    },
+    {
+      "label": "Max tractive pack voltage (BR2)",
+      "value": "504",
+      "suffix": "V"
+    },
+    {
+      "label": "Thermistor accumulator harness",
+      "value": "140",
+      "suffix": "+"
+    },
+    {
+      "label": "Stages on the Raven roadmap",
+      "value": "8"
+    },
+    {
+      "label": "Place, Asearis Hackathon",
+      "value": "1st"
+    },
+    {
+      "label": "Place, CrossFit Maker Challenge",
+      "value": "2nd"
+    }
+  ],
+  "thesis": {
+    "kicker": "The thesis",
+    "headline": "The same stack that ships a 400-volt race car flies an autonomous aircraft.",
+    "body": "Cells, busbars, BMS, motor drives, CAN, sensor chains, vehicle control. The work I do on FSAE tractive systems and traction inverters at STMicroelectronics is the same engineering that powers eVTOL propulsion, swarm coordination, and aerospace-grade power electronics. Raven is the proof: an 8-stage roadmap from a single tilt-rotor airframe to a 4-drone autonomous swarm.",
+    "pillars": [
+      {
+        "k": "A",
+        "title": "Power electronics",
+        "desc": "420 V / 504 V packs, BMS, charging, precharge, IMD"
+      },
+      {
+        "k": "B",
+        "title": "Motor control",
+        "desc": "Inverter debug, PWM, space-vector modulation"
+      },
+      {
+        "k": "C",
+        "title": "Embedded firmware",
+        "desc": "STM32, CAN, Lauterbach JTAG, full analog signal chains"
+      },
+      {
+        "k": "D",
+        "title": "Systems craft",
+        "desc": "PCB safety review, thermal, mechanical integration"
+      }
+    ]
+  },
+  "about": {
+    "heading": "One stack, two domains: electric vehicles and autonomous aircraft.",
+    "paragraphs": [
+      "I'm a senior honors student at Santa Clara University, graduating in 2027 with a double major in Electrical and Mechanical Engineering and a 3.7 GPA. I learn by building the full stack, schematic to PCB to firmware to mechanical to control, and shipping the result to a hard deadline.",
+      "Since 2023 I've owned the high-voltage electrical stack on SCU's Formula SAE electric cars: programming the Orion BMS 2 on a ~420 V accumulator, designing and reviewing shutdown, precharge, and IMD safety circuits, architecting the vehicle CAN network, and soldering a 140+ thermistor harness whose placement strategy improved measurement accuracy by roughly 50 percent. At STMicroelectronics I debugged a customer's traction motor inverter with Lauterbach JTAG hardware, diagnosed and fixed DC bus instability, and built an STM32 proximity-sensing system end to end.",
+      "Raven is where it converges. It's a tilt-rotor eVTOL I designed and printed in carbon-fiber composite, the first airframe of a planned 4-drone autonomous swarm, and the flagship hardware of the stealth AI hardware startup I founded. FAA Part 107 certification is in progress."
+    ],
+    "facts": [
+      {
+        "label": "Discipline",
+        "value": "EE + ME, Honors"
+      },
+      {
+        "label": "Focus",
+        "value": "Power, firmware, autonomy"
+      },
+      {
+        "label": "Location",
+        "value": "Santa Clara, CA"
+      },
+      {
+        "label": "Availability",
+        "value": "Summer 2027 / FT 2027"
+      }
+    ],
+    "headshot": {
+      "kind": "image",
+      "src": "/media/site/headshot.jpg",
+      "alt": "Amjad Rehawi"
+    }
+  },
+  "skills": {
+    "groups": [
+      {
+        "title": "High-voltage power electronics & batteries",
+        "tier": "deep",
+        "items": [
+          "Li-ion pack architecture",
+          "Orion BMS 2 + custom modules",
+          "Precharge / discharge / IMD circuits",
+          "Programmable charging systems",
+          "DC bus stabilization",
+          "Thermal management",
+          "Space-vector modulation & PWM"
+        ]
+      },
+      {
+        "title": "Embedded firmware & signal chains",
+        "tier": "deep",
+        "items": [
+          "STM32 (L476, Cortex-M)",
+          "C / ARM Assembly",
+          "ADC, timers, interrupts, DMA",
+          "SPI / UART / I2C / PWM / DAC",
+          "End-to-end analog chains: sensor to ADC to IRQ to PWM/DAC to filter to amp",
+          "Lauterbach JTAG"
+        ]
+      },
+      {
+        "title": "CAN bus & diagnostics",
+        "tier": "deep",
+        "items": [
+          "Vehicle CAN architecture",
+          "Custom STM32 CAN firmware",
+          "Python diagnostic GUIs",
+          "Oscilloscope & logic analyzer validation"
+        ]
+      },
+      {
+        "title": "PCB design & safety review",
+        "tier": "deep",
+        "items": [
+          "Schematic ownership",
+          "Layout review",
+          "FSAE EV rules compliance",
+          "Protection-logic verification before fab",
+          "Precision soldering"
+        ]
+      },
+      {
+        "title": "Mechanical CAD, FEA & CFD",
+        "tier": "strong",
+        "items": [
+          "SolidWorks (CSWP certified)",
+          "SolidWorks Simulation",
+          "Ansys FEA / CFD",
+          "Fusion 360",
+          "Kinematics & linkages"
+        ]
+      },
+      {
+        "title": "Materials & manufacturing",
+        "tier": "strong",
+        "items": [
+          "PA612-CF15 carbon-fiber composite",
+          "Tensile & torsion coupon testing",
+          "FDM/FFF print optimization",
+          "3D printability design",
+          "Composite structures"
+        ]
+      },
+      {
+        "title": "Tooling & software",
+        "tier": "familiar",
+        "items": [
+          "Python",
+          "MATLAB / Simulink / Simscape",
+          "Verilog / Vivado",
+          "LTSpice",
+          "STM32CubeMX / Keil",
+          "Git",
+          "Next.js / TypeScript"
+        ]
+      }
+    ]
+  },
+  "experience": [
+    {
+      "company": "Bronco Racing / SCU Formula SAE",
+      "role": "High-Voltage Engineer (BR2, 2027 car)",
+      "location": "Santa Clara, CA",
+      "dates": "Jul 2026 - present",
+      "bullets": [
+        "Own the EV electrical architecture for the 2027 car: BMS, thermal management, charging system, data acquisition, driver display, and all low-voltage electronics.",
+        "Building the charging cart from scratch: rebuilding the shutdown-circuit PCB, wiring, system architecture, CAD and 3D printing, and full documentation.",
+        "Powertrain electronics for an Emrax 228 motor with DTI motor controller on a ~120s4p Molicel P50B pack (~432 V nominal, 504 V max, ~8.6 kWh).",
+        "Exploring in-cell thermal-runaway sensing (DEP BRT) as an FSAE innovation concept; vendor validation cites roughly 12 minutes of pre-vent warning."
+      ]
+    },
+    {
+      "company": "STMicroelectronics",
+      "role": "Application Engineer Intern",
+      "location": "Santa Clara, CA",
+      "dates": "Jun 2025 - Dec 2025",
+      "bullets": [
+        "Debugged a customer's custom traction motor inverter using Lauterbach JTAG hardware and StellarStudio, resolving PWM timing faults, gate-driver issues, and current-sensing calibration errors.",
+        "Independently diagnosed DC bus instability and implemented a parallel-capacitor fix between the inverter and supply.",
+        "Built an STM32 proximity-sensing system end to end: ADC processing, timed interrupts, PWM/DAC audio output, analog low-pass filter, amplifier, speaker.",
+        "Authored PWM and space-vector modulation parameterization guides for internal and customer use; delivered competitive teardown analyses to ST marketing."
+      ]
+    },
+    {
+      "company": "Bronco Racing / SCU Formula SAE",
+      "role": "Electrical Specialist, then High-Voltage & Co-Electrical Lead (BR1, 2026 car)",
+      "location": "Santa Clara, CA",
+      "dates": "Sep 2023 - Jun 2026",
+      "bullets": [
+        "Programmed and configured the Orion BMS 2 for a 100s3p Molicel P45B accumulator (~360 V nominal, ~420 V max): cell monitoring, SoC algorithms, safety interlocks.",
+        "Programmed and installed a 540 V on-board charger and designed the charging cart with current/voltage control, safety shutdown, and deadman lock; verified FSAE EV compliance.",
+        "Designed schematic sections and reviewed PCBs for shutdown, charging-shutdown, precharge, discharge, and IMD circuits; caught protection-logic errors before fabrication.",
+        "Architected the vehicle CAN network, wrote STM32 firmware for sensor interfacing and diagnostics, and built a Python GUI for real-time CAN monitoring.",
+        "Soldered a 140+ thermistor accumulator harness; placement optimization improved measurement accuracy by roughly 50 percent (bench-validated).",
+        "Led team training on precision soldering, thermal architecture, and HV safety."
+      ]
+    },
+    {
+      "company": "BetterEDU Inc.",
+      "role": "Founding Technical Intern",
+      "location": "Phoenix, AZ (remote)",
+      "dates": "Jun 2024 - Aug 2024",
+      "bullets": [
+        "Managed Firebase and Firestore databases for an EdTech platform; debugged the iOS app through systematic testing.",
+        "Built company website infrastructure and implemented technical documentation."
+      ]
+    },
+    {
+      "company": "SCU Dept. of Mathematics & Computer Science",
+      "role": "Peer Educator / TA / Grader",
+      "location": "Santa Clara, CA",
+      "dates": "Sep 2024 - Mar 2025",
+      "bullets": [
+        "Tutored advanced mathematics and programming and graded coursework as assistant to Dr. Fady El Chidiac."
+      ]
+    },
+    {
+      "company": "Odyssey CyberSecurity",
+      "role": "Cyber Security Intern",
+      "location": "Nicosia, Cyprus",
+      "dates": "May 2023 - Aug 2023",
+      "bullets": [
+        "Conducted simulated penetration testing and observed real-time monitoring for critical infrastructure; worked in Linux kernel operations and embedded-systems security."
+      ]
+    }
+  ],
+  "honors": [
+    {
+      "title": "2nd Place, CrossFit Maker Challenge ($1,500)",
+      "year": "2026",
+      "note": "Team Megatrons, sponsored by CrossFit LLC; units shipped and displayed at CrossFit Sundown."
+    },
+    {
+      "title": "1st Place, Asearis Hackathon",
+      "year": "2025",
+      "note": "PalmSync biometric wellness device; team captain of 3 engineers."
+    },
+    {
+      "title": "Possible Career Accelerator Fellow",
+      "year": "2025",
+      "note": "1 of 25 students, faculty-nominated by Dr. Andy Wolfe."
+    },
+    {
+      "title": "SolidWorks Certified Professional (CSWP)",
+      "year": "2025",
+      "note": "Plus MakerLab certification and MATLAB Simulink / Simscape Onramps."
+    },
+    {
+      "title": "Robotics Team Captain, First Tech Challenge",
+      "year": "2021 - 2023",
+      "note": "Led 8 to 10 students in Nicosia, Cyprus; multiple awards including the Innovator Award."
+    },
+    {
+      "title": "Stanford Inspirit AI Leadership Fellow & Ambassador",
+      "year": "2021",
+      "note": "Built an AI model to detect exoplanets in NASA TESS data."
+    }
+  ],
+  "education": [
+    {
+      "school": "Santa Clara University",
+      "degree": "B.S. Electrical & Mechanical Engineering (double major), Honors",
+      "details": "3.7 GPA. Expected 2027. Possible Career Accelerator (1 of 25).",
+      "dates": "2023 - 2027"
+    },
+    {
+      "school": "University of Cambridge (A-Levels)",
+      "degree": "Computer Science A* (92%), Physics A",
+      "details": "Nicosia, Cyprus",
+      "dates": "2021 - 2023"
+    }
+  ],
+  "contact": {
+    "heading": "Let's build hardware that moves.",
+    "body": "Recruiting for battery, power electronics, embedded, or autonomy roles? Curious about Raven? Reach out."
+  }
+}

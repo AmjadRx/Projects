@@ -1,35 +1,42 @@
 import type { Config } from 'tailwindcss';
 
 const config: Config = {
-  content: [
-    './app/**/*.{js,ts,jsx,tsx,mdx}',
-    './components/**/*.{js,ts,jsx,tsx,mdx}',
-  ],
+  content: ['./app/**/*.{ts,tsx}', './components/**/*.{ts,tsx}'],
   theme: {
     extend: {
       colors: {
         bg: 'rgb(var(--bg) / <alpha-value>)',
-        'bg-2': 'rgb(var(--bg-2) / <alpha-value>)',
-        'bg-3': 'rgb(var(--bg-3) / <alpha-value>)',
-        'bg-elev': 'rgb(var(--bg-elev) / <alpha-value>)',
-        fg: 'rgb(var(--fg) / <alpha-value>)',
-        'fg-dim': 'rgb(var(--fg-dim) / <alpha-value>)',
-        'fg-mute': 'rgb(var(--fg-mute) / <alpha-value>)',
-        'fg-soft': 'rgb(var(--fg-soft) / <alpha-value>)',
-        line: 'rgb(var(--line) / <alpha-value>)',
+        surface: 'rgb(var(--surface) / <alpha-value>)',
+        'surface-2': 'rgb(var(--surface-2) / <alpha-value>)',
+        ink: 'rgb(var(--ink) / <alpha-value>)',
+        'ink-dim': 'rgb(var(--ink-dim) / <alpha-value>)',
+        'ink-mute': 'rgb(var(--ink-mute) / <alpha-value>)',
         accent: 'rgb(var(--accent) / <alpha-value>)',
         'accent-2': 'rgb(var(--accent-2) / <alpha-value>)',
-        'accent-warm': 'rgb(var(--accent-warm) / <alpha-value>)',
+        'accent-contrast': 'rgb(var(--accent-contrast) / <alpha-value>)',
+      },
+      borderColor: {
+        line: 'var(--line)',
       },
       fontFamily: {
         display: ['var(--font-display)', 'system-ui', 'sans-serif'],
-        body: ['var(--font-body)', 'system-ui', 'sans-serif'],
         mono: ['var(--font-mono)', 'ui-monospace', 'monospace'],
-        serif: ['var(--font-serif)', 'Georgia', 'serif'],
       },
       maxWidth: {
-        wrap: '1280px',
-        narrow: '920px',
+        wrap: '1200px',
+        article: '760px',
+      },
+      borderRadius: {
+        sm: '6px',
+        md: '12px',
+        lg: '20px',
+      },
+      boxShadow: {
+        card: 'var(--shadow-card)',
+        glow: 'var(--glow)',
+      },
+      transitionTimingFunction: {
+        out: 'cubic-bezier(0.22, 1, 0.36, 1)',
       },
     },
   },

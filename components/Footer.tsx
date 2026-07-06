@@ -1,88 +1,52 @@
-import type { Content } from '@/lib/types';
 import Link from 'next/link';
+import type { Site } from '@/lib/types';
+import LinkIcon from './LinkIcon';
 
-export default function Footer({ content }: { content: Content }) {
+export default function Footer({ site, lastUpdated }: { site: Site; lastUpdated: string }) {
   const year = new Date().getFullYear();
+  const socials = site.socialLinks.filter((s) => s.showInFooter);
   return (
-    <footer className="border-t border-line/10 mt-16">
-      <div className="wrap py-14 md:py-20">
-        <div className="grid grid-cols-1 gap-10 md:grid-cols-12 md:gap-14">
-          <div className="md:col-span-5">
-            <span className="eyebrow">
-              <span className="eyebrow-num">010</span>
-              <span className="eyebrow-rule" />
-              <span>End</span>
-            </span>
-            <p className="display-sm text-pretty mt-6 max-w-md text-fg">
-              {content.personal.tagline}
-            </p>
-            <p className="lead mt-4 max-w-md text-[15px]">
-              Building Raven — an 8-stage eVTOL roadmap toward a 4-drone autonomous swarm.
-            </p>
-          </div>
-          <div className="md:col-span-3 md:col-start-7">
-            <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-fg-mute">
-              Reach
-            </div>
-            <ul className="mt-4 space-y-2 text-fg">
-              <li>
-                <a href={`mailto:${content.personal.email}`} className="hover:text-accent">
-                  {content.personal.email}
+    <footer style={{ borderTop: '1px solid var(--line)' }}>
+      <div className="wrap flex flex-col gap-10 py-14 md:py-16">
+        <div className="flex flex-col justify-between gap-8 md:flex-row md:items-end">
+          <div>
+            <p className="display-3 max-w-md">{site.personal.tagline}</p>
+            <div className="mt-5 flex flex-wrap items-center gap-2">
+              {socials.map((s) => (
+                <a
+                  key={s.id}
+                  href={s.url}
+                  target={s.url.startsWith('http') ? '_blank' : undefined}
+                  rel={s.url.startsWith('http') ? 'noopener noreferrer' : undefined}
+                  className="pill transition-colors hover:border-accent/60 hover:text-accent"
+                >
+                  <LinkIcon icon={s.icon} size={13} />
+                  {s.label}
                 </a>
-              </li>
-              {content.personal.linkedin && (
-                <li>
-                  <a
-                    href={content.personal.linkedin}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:text-accent"
-                  >
-                    LinkedIn
-                  </a>
-                </li>
-              )}
-              {content.personal.phone && (
-                <li className="text-fg-dim">{content.personal.phone}</li>
-              )}
-            </ul>
-          </div>
-          <div className="md:col-span-3">
-            <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-fg-mute">
-              Site
+              ))}
             </div>
-            <ul className="mt-4 space-y-2 text-fg">
-              <li>
-                <Link href="/projects" className="hover:text-accent">
-                  All projects
-                </Link>
-              </li>
-              <li>
-                <Link href="/projects/raven" className="hover:text-accent">
-                  Raven
-                </Link>
-              </li>
-              <li>
-                <Link href="/#contact" className="hover:text-accent">
-                  Contact
-                </Link>
-              </li>
-              <li>
-                <Link href="/admin" className="text-fg-mute hover:text-accent">
-                  Admin
-                </Link>
-              </li>
-            </ul>
           </div>
+          <nav className="flex flex-col gap-2 md:items-end" aria-label="Footer">
+            {site.nav.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="text-sm text-ink-dim transition-colors hover:text-ink"
+              >
+                {item.label}
+              </Link>
+            ))}
+            <Link href="/admin" className="text-sm text-ink-mute transition-colors hover:text-accent">
+              Admin
+            </Link>
+          </nav>
         </div>
-
-        <div className="mt-14 flex flex-wrap items-center justify-between gap-3 border-t border-line/8 pt-8">
-          <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-fg-mute">
-            © {year} {content.personal.name}
-          </div>
-          <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-fg-soft">
-            Last updated · {content.lastUpdated}
-          </div>
+        <div
+          className="flex flex-wrap items-center justify-between gap-3 pt-6"
+          style={{ borderTop: '1px solid var(--line)' }}
+        >
+          <span className="kicker">© {year} {site.personal.name}</span>
+          <span className="kicker">Last updated {lastUpdated}</span>
         </div>
       </div>
     </footer>

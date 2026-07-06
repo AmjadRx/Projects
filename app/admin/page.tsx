@@ -1,11 +1,12 @@
+import type { Metadata } from 'next';
 import AdminApp from '@/components/admin/AdminApp';
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'Admin',
   robots: { index: false, follow: false },
 };
 
-export const dynamic = 'force-dynamic';
+export const dynamic = 'force-static';
 
 export default function AdminPage() {
   return <AdminApp />;

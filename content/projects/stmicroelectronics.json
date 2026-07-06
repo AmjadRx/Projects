@@ -1,0 +1,55 @@
+{
+  "slug": "stmicroelectronics",
+  "title": "STMicroelectronics",
+  "subtitle": "Application Engineer Intern: traction inverter debug and embedded systems",
+  "role": "Application Engineer Intern",
+  "timeframe": "Jun 2025 - Dec 2025",
+  "status": "completed",
+  "featured": true,
+  "order": 3,
+  "domain": "Automotive · Motor control · Embedded",
+  "tags": [
+    "motor inverter",
+    "Lauterbach JTAG",
+    "STM32",
+    "SVM",
+    "PWM",
+    "automotive"
+  ],
+  "cover": {
+    "kind": "image",
+    "src": "/media/stmicroelectronics/cover.jpg",
+    "alt": "Motor inverter bench setup"
+  },
+  "links": [],
+  "pitch": "Supported Global Key Account Customers on microcontroller projects across automotive and industrial applications, acting as the bridge between ST silicon and customer products.",
+  "highlights": [
+    "Debugged a custom traction motor inverter with Lauterbach JTAG and StellarStudio",
+    "Resolved PWM timing faults, gate-driver issues, and current-sensing calibration errors",
+    "Independently diagnosed DC bus instability and implemented a parallel-capacitor fix",
+    "Built an STM32 proximity-sensing system end to end, sensor to speaker",
+    "Authored PWM and space-vector modulation parameterization guides"
+  ],
+  "blocks": [
+    {
+      "id": "s1",
+      "type": "text",
+      "md": "I supported Global Key Account Customers in microcontroller project development across automotive and industrial applications. The core of the internship was hands-on debug of a customer's custom traction motor inverter: working through PWM timing faults, gate-driver issues, and current-sensing calibration errors with Lauterbach JTAG hardware and the StellarStudio IDE, and identifying firmware bugs in the motor control algorithms with corrected code."
+    },
+    {
+      "id": "s2",
+      "type": "bullets",
+      "items": [
+        "Diagnosed independently that the DC bus required stabilization; proposed and implemented a parallel-capacitor fix between the inverter and the power supply.",
+        "Built an STM32-based proximity sensing system end to end: ADC signal processing, timed interrupt logic, PWM/DAC audio output, analog low-pass filter, amplifier stage, speaker.",
+        "Authored parameterization guides covering PWM and space-vector modulation theory for internal and customer-facing use.",
+        "Conducted hardware teardowns of competitive automotive electronics modules and delivered pivot-table analyses and presentations to ST marketing."
+      ]
+    },
+    {
+      "id": "s3",
+      "type": "quote",
+      "text": "Motor-inverter debug is ESC debug. The math doesn't care which side of gravity it's on."
+    }
+  ]
+}

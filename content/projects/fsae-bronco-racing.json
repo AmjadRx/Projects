@@ -1,0 +1,155 @@
+{
+  "slug": "fsae-bronco-racing",
+  "title": "Bronco Racing FSAE",
+  "subtitle": "High-voltage tractive systems for SCU's Formula SAE electric cars",
+  "role": "HV & Co-Electrical Lead (BR1) · HV Engineer (BR2, current)",
+  "timeframe": "Sep 2023 - present",
+  "status": "active",
+  "statusLabel": "BR2 build: competition Jun 2027",
+  "featured": true,
+  "order": 2,
+  "domain": "EV · Battery · Power electronics",
+  "tags": [
+    "FSAE",
+    "battery",
+    "BMS",
+    "CAN",
+    "PCB",
+    "charging",
+    "thermal"
+  ],
+  "cover": {
+    "kind": "image",
+    "src": "/media/fsae-bronco-racing/cover.jpg",
+    "alt": "Bronco Racing accumulator"
+  },
+  "links": [],
+  "pitch": "End-to-end ownership of the >400 V electrical stack across two car generations: BMS, charging, safety circuits, CAN, and thermal management.",
+  "highlights": [
+    "Programmed the Orion BMS 2 on a ~420 V max accumulator: cell monitoring, SoC, safety interlocks",
+    "Designed and reviewed shutdown, precharge, discharge, and IMD PCBs; caught protection-logic errors before fab",
+    "540 V on-board charger install plus a charging cart with safety shutdown and deadman lock",
+    "140+ thermistor harness with ~50 percent measurement-accuracy improvement",
+    "Architected the vehicle CAN network with a custom Python diagnostic GUI",
+    "Now owning BMS, thermal, charging, DAQ, driver display, and LV for the 2027 car"
+  ],
+  "progress": {
+    "steps": [
+      {
+        "label": "BR1 design + build",
+        "state": "done"
+      },
+      {
+        "label": "BR1 bench validation",
+        "state": "done"
+      },
+      {
+        "label": "BR2 design + ordering",
+        "state": "current"
+      },
+      {
+        "label": "BR2 build (Mar 2027)",
+        "state": "todo"
+      },
+      {
+        "label": "Competition (Jun 2027)",
+        "state": "todo"
+      }
+    ]
+  },
+  "blocks": [
+    {
+      "id": "f1",
+      "type": "heading",
+      "text": "BR1 (2026 car): the HV stack, end to end"
+    },
+    {
+      "id": "f2",
+      "type": "text",
+      "md": "As High-Voltage & Co-Electrical Lead I owned the tractive-system electrical stack: programming and configuring the Orion BMS 2 for the accumulator, designing thermal-management expansion modules, programming and installing a 540 V on-board charger, and designing the charging cart with current/voltage control, a safety-shutdown circuit, and a deadman lock. I designed schematic sections for the shutdown and charging-shutdown circuits, reviewed the precharge, discharge, and IMD boards for FSAE EV compliance, and contributed to the tractive-system layout across the vehicle. The 2026 season ended with the HV system bench-validated; the team made a deliberate safety call not to run it at competition."
+    },
+    {
+      "id": "f3",
+      "type": "specTable",
+      "rows": [
+        {
+          "label": "BR1 accumulator",
+          "value": "100s3p, Molicel P45B, ~360 V nominal / ~420 V max"
+        },
+        {
+          "label": "BMS",
+          "value": "Orion BMS 2, custom thermal expansion modules"
+        },
+        {
+          "label": "Charging",
+          "value": "540 V on-board charger + custom charging cart with safety shutdown and deadman lock"
+        },
+        {
+          "label": "Instrumentation",
+          "value": "140+ thermistor harness, ~50% measurement-accuracy improvement"
+        },
+        {
+          "label": "Comms",
+          "value": "Vehicle CAN network, STM32 firmware, Python diagnostic GUI"
+        }
+      ]
+    },
+    {
+      "id": "f4",
+      "type": "heading",
+      "text": "BR2 (2027 car): current scope"
+    },
+    {
+      "id": "f5",
+      "type": "text",
+      "md": "For the 2027 car I'm the HV Engineer across electrical and powertrain: all powertrain electronics for an Emrax 228 motor with a DTI controller, plus the BMS, thermal management, charging system, data acquisition, driver display, and all low-voltage electronics. I'm currently building the charging cart from scratch: rebuilding the shutdown-circuit PCB, soldering, wiring, system architecture, CAD and 3D printing, and documentation."
+    },
+    {
+      "id": "f6",
+      "type": "specTable",
+      "rows": [
+        {
+          "label": "BR2 pack",
+          "value": "~120s4p, Molicel P50B 21700, ~432 V nominal / 504 V max, ~8.6 kWh"
+        },
+        {
+          "label": "Powertrain",
+          "value": "Emrax 228 motor, DTI motor controller"
+        },
+        {
+          "label": "Modules",
+          "value": "Outsourced Enepaq 4p1s modules"
+        },
+        {
+          "label": "My scope",
+          "value": "BMS, thermal, charging, DAQ, driver display, LV electronics, charging cart"
+        }
+      ]
+    },
+    {
+      "id": "f7",
+      "type": "bullets",
+      "heading": "Battery-safety innovation concept (in exploration)",
+      "items": [
+        "Evaluating DEP BRT in-cell thermal-runaway sensors that detect electrochemical change before venting; the vendor's validation cites roughly 12 minutes of pre-vent warning.",
+        "Planned as an FSAE innovation-award concept submission, not a delivered result."
+      ]
+    },
+    {
+      "id": "f8",
+      "type": "gallery",
+      "items": [
+        {
+          "kind": "image",
+          "src": "/media/fsae-bronco-racing/harness.jpg",
+          "alt": "140+ thermistor accumulator harness"
+        },
+        {
+          "kind": "image",
+          "src": "/media/fsae-bronco-racing/charging-cart.jpg",
+          "alt": "Charging cart build"
+        }
+      ]
+    }
+  ]
+}

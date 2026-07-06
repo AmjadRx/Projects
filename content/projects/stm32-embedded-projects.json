@@ -1,0 +1,39 @@
+{
+  "slug": "stm32-embedded-projects",
+  "title": "STM32 Embedded Systems",
+  "subtitle": "A bench of peripherals-to-analog projects on STM32L476",
+  "role": "Personal / coursework",
+  "timeframe": "Sep 2024 - present",
+  "status": "active",
+  "featured": false,
+  "order": 8,
+  "domain": "Embedded · Analog",
+  "tags": [
+    "STM32",
+    "C",
+    "interrupts",
+    "SPI",
+    "DMA",
+    "analog"
+  ],
+  "cover": {
+    "kind": "image",
+    "src": "/media/stm32-embedded-projects/cover.jpg",
+    "alt": "STM32L476 bench"
+  },
+  "links": [],
+  "pitch": "A series of STM32L476 builds exercising the full peripheral set: timers, ADC, GPIO, interrupts, SPI, UART, and DMA, each validated with oscilloscope and logic analyzer.",
+  "highlights": [
+    "LCD stopwatch/timer with joystick input and button-interrupt handlers",
+    "SPI LED light show on a Pololu programmable strip",
+    "IR remote control with a custom parsing algorithm",
+    "Proximity-enabled audio device: low-pass filter, amplifier, and analog speaker driven by PWM"
+  ],
+  "blocks": [
+    {
+      "id": "st1",
+      "type": "text",
+      "md": "Hands-on embedded work on STM32L476 dev boards: a stopwatch/timer device with LCD and interrupt-driven input, an SPI-driven LED light show, an IR remote with a custom protocol parser, and a proximity-enabled audio device that carries a signal from sensor through ADC, interrupts, PWM/DAC, an analog low-pass filter, and an amplifier to a speaker. Everything validated on oscilloscope and logic analyzer."
+    }
+  ]
+}

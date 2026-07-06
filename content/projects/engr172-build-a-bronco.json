@@ -1,0 +1,39 @@
+{
+  "slug": "engr172-build-a-bronco",
+  "title": "Build-a-Bronco",
+  "subtitle": "Modular 3D-printed mascot for SCU Athletics, sold through the campus bookstore",
+  "role": "Design & Fabrication Engineer (team of 5)",
+  "timeframe": "Jan 2026 - present",
+  "status": "shipped",
+  "statusLabel": "25 units sold out in 3 days",
+  "featured": false,
+  "order": 5,
+  "domain": "Product design · Manufacturing",
+  "tags": [
+    "CAD",
+    "3D printing",
+    "DFM",
+    "entrepreneurship"
+  ],
+  "cover": {
+    "kind": "image",
+    "src": "/media/engr172-build-a-bronco/cover.jpg",
+    "alt": "Build-a-Bronco modular mascot"
+  },
+  "links": [],
+  "pitch": "A modular, multi-color 3D-printed Bronco mascot that snap-assembles like Lego, built for SCU Athletics (a ~10,000-person customer base) and sold through the campus bookstore.",
+  "highlights": [
+    "Designed the main product from scratch in CAD across many iterations",
+    "Designed the cross-fit snap-together assembly system",
+    "Optimized for 3D printability: orientation, supports, tolerances, multi-color strategy",
+    "Prototyped and optimized fabrication to mass-produce 25 units, which sold out in 3 days",
+    "One of the course's top-achieving teams (ENGR 172, Dr. Christopher Kitts)"
+  ],
+  "blocks": [
+    {
+      "id": "e1",
+      "type": "text",
+      "md": "For SCU's Applied Entrepreneurship course, our client was SCU Athletics with a roughly 10,000-person customer base and the campus bookstore as the sales channel. I owned design and fabrication: co-developing the concept, designing the product from scratch in CAD across many iterations, designing the snap-together cross-fit assembly system, and optimizing everything for 3D printing, from part orientation and supports to tolerances and the multi-color print strategy in the Maker Lab. We mass-produced 25 units that sold out in 3 days."
+    }
+  ]
+}
