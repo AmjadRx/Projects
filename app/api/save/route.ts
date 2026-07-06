@@ -77,6 +77,18 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // Production servers have a read-only filesystem; saving requires the GitHub CMS.
+    if (process.env.NODE_ENV === 'production') {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            'GitHub CMS is not configured. In your hosting dashboard set GITHUB_TOKEN (fine-grained PAT with Contents read/write on this repo) and GITHUB_REPO (e.g. "AmjadRx/Projects"), then redeploy.',
+        },
+        { status: 503 },
+      );
+    }
+
     // Dev fallback: local filesystem
     for (const f of prepared) {
       const abs = path.join(process.cwd(), f.path);
