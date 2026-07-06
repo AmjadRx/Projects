@@ -69,6 +69,12 @@ export default function Nav({ name, items, socials }: NavProps) {
                 {item.label}
               </Link>
             ))}
+            <Link
+              href="/admin"
+              className="link-underline text-sm text-ink-mute transition-colors hover:text-ink"
+            >
+              Admin
+            </Link>
             {navSocials.map((s) => (
               <a
                 key={s.id}
@@ -82,7 +88,7 @@ export default function Nav({ name, items, socials }: NavProps) {
               </a>
             ))}
             <ThemeToggle />
-            <Link href="/#contact" className="btn-primary !min-h-0 !px-4 !py-2 text-[13px]">
+            <Link href="/contact" className="btn-primary !min-h-0 !px-4 !py-2 text-[13px]">
               Get in touch
             </Link>
           </nav>
@@ -127,6 +133,19 @@ export default function Nav({ name, items, socials }: NavProps) {
                   </Link>
                 </motion.div>
               ))}
+              <motion.div
+                initial={reduced ? false : { opacity: 0, x: -16 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.05 * items.length, duration: 0.35, ease: EASE }}
+              >
+                <Link
+                  href="/admin"
+                  onClick={() => setOpen(false)}
+                  className="block py-3 text-2xl font-semibold tracking-tight text-ink-mute"
+                >
+                  Admin
+                </Link>
+              </motion.div>
               <motion.div
                 initial={reduced ? false : { opacity: 0 }}
                 animate={{ opacity: 1 }}

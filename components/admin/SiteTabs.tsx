@@ -16,7 +16,10 @@ export function SettingsTab({ site, patch }: { site: Site; patch: Patch }) {
       <TabHeader title="Settings" subtitle="Theme, hero mode, availability." />
       <div className="flex flex-col gap-6">
         <ConnectionStatus />
-        <Field label="Default theme">
+        <Field
+          label="Default theme"
+          hint="Applies to first-time visitors. Anyone who has clicked the sun/moon toggle keeps their own choice (stored in a browser cookie) — clear the cookie or toggle again to see the new default yourself."
+        >
           <Select
             value={s.themeDefault}
             options={['dark', 'light'] as const}
@@ -79,6 +82,15 @@ export function PersonalTab({ site, patch }: { site: Site; patch: Patch }) {
         <Field label="Graduation"><Text value={p.graduation} onChange={set('graduation')} /></Field>
         <Field label="School"><Text value={p.school} onChange={set('school')} /></Field>
         <Field label="Degree"><Text value={p.degree} onChange={set('degree')} /></Field>
+        <div className="md:col-span-2">
+          <MediaField
+            label="Photo (shown on the home page)"
+            scope="site"
+            value={p.photo}
+            allowClear
+            onChange={(m) => patch((x) => ({ ...x, personal: { ...x.personal, photo: m } }))}
+          />
+        </div>
       </div>
     </div>
   );

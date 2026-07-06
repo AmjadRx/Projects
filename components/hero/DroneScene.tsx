@@ -13,19 +13,19 @@ interface Palette {
 }
 
 const DARK: Palette = {
-  accent: '#3DE0FF',
-  accent2: '#7C5CFF',
-  body: '#151d2e',
-  bodyDark: '#0d1320',
-  blade: '#e9eef8',
+  accent: '#58A6FF',
+  accent2: '#E3B341',
+  body: '#161c26',
+  bodyDark: '#0e131b',
+  blade: '#e7ebf0',
 };
 
 const LIGHT: Palette = {
-  accent: '#0B8FB3',
-  accent2: '#5B3FE0',
-  body: '#28324a',
-  bodyDark: '#1a2236',
-  blade: '#3d4657',
+  accent: '#1D4ED8',
+  accent2: '#B45309',
+  body: '#2a3342',
+  bodyDark: '#1c2330',
+  blade: '#4b5563',
 };
 
 function useTheme(): Palette {

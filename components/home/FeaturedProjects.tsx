@@ -13,7 +13,7 @@ export default function FeaturedProjects({ projects }: { projects: Project[] }) 
       <Reveal>
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="kicker">03 / Projects</p>
+            <p className="kicker">Projects</p>
             <h2 className="display-2 mt-5">Selected work</h2>
           </div>
           <Link href="/projects" className="link-underline text-sm font-medium text-accent">

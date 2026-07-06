@@ -59,15 +59,15 @@
     },
     {
       "label": "About",
-      "href": "/#about"
+      "href": "/about"
     },
     {
       "label": "Experience",
-      "href": "/#experience"
+      "href": "/experience"
     },
     {
       "label": "Contact",
-      "href": "/#contact"
+      "href": "/contact"
     }
   ],
   "stats": [

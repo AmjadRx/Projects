@@ -1,18 +1,28 @@
 import { createHmac, timingSafeEqual } from 'crypto';
 import type { NextRequest } from 'next/server';
 
-const FALLBACK_PASSWORD = 'AMRx(2004)SCU';
 export const SESSION_COOKIE = 'amr_admin';
 
+/** Admin auth requires the ADMIN_PASSWORD env var. There is no fallback. */
+export function authConfigured(): boolean {
+  return Boolean(process.env.ADMIN_PASSWORD);
+}
+
 function secret(): string {
-  return process.env.ADMIN_PASSWORD || FALLBACK_PASSWORD;
+  return process.env.ADMIN_PASSWORD ?? '';
 }
 
 export function passwordValid(provided: string): boolean {
-  if (!provided) return false;
-  const env = process.env.ADMIN_PASSWORD;
-  if (env && provided === env) return true;
-  return provided === FALLBACK_PASSWORD;
+  if (!provided || !authConfigured()) return false;
+  const expected = secret();
+  const a = Buffer.from(provided);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length) return false;
+  try {
+    return timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
 }
 
 export function sessionToken(): string {
@@ -20,6 +30,7 @@ export function sessionToken(): string {
 }
 
 export function sessionValid(req: NextRequest): boolean {
+  if (!authConfigured()) return false;
   const cookie = req.cookies.get(SESSION_COOKIE)?.value;
   if (!cookie) return false;
   const expected = sessionToken();
