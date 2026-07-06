@@ -22,6 +22,18 @@ export function detectIcon(url: string): string {
     if (host === 'x.com' || host.includes('twitter.com')) return 'x';
     if (host.includes('instagram.com')) return 'instagram';
     if (host.includes('devpost.com')) return 'devpost';
+    if (
+      host.includes('calendly.com') ||
+      host === 'cal.com' ||
+      host.endsWith('.cal.com') ||
+      host.includes('calendar.google.com') ||
+      host.includes('calendar.app.google')
+    ) {
+      return 'calendar';
+    }
+    if (host.includes('meet.google.com') || host.includes('zoom.us') || host.includes('teams.microsoft.com')) {
+      return 'video';
+    }
     if (url.match(/\.pdf($|\?)/) || host.includes('docs.google')) return 'file';
   } catch {
     if (url.match(/\.pdf($|\?)/)) return 'file';

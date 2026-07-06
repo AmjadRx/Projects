@@ -57,6 +57,7 @@ export interface Site {
     graduation: string;
     school: string;
     degree: string;
+    photo?: MediaRef;
   };
   socialLinks: SocialLink[];
   nav: NavItem[];

@@ -45,7 +45,8 @@ function Login({ onAuthed }: { onAuthed: () => void }) {
         body: JSON.stringify({ password }),
       });
       if (!res.ok) {
-        setError(res.status === 401 ? 'Incorrect password.' : `Error ${res.status}`);
+        const data = await res.json().catch(() => ({}));
+        setError(data.error ?? (res.status === 401 ? 'Incorrect password.' : `Error ${res.status}`));
         return;
       }
       onAuthed();

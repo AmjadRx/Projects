@@ -56,18 +56,25 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
+import BackgroundFX from '@/components/BackgroundFX';
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const site = loadSite();
   const themeDefault = site.settings.themeDefault;
-  // Runs before paint: cookie > prefers-color-scheme > site default. No theme flash.
-  const themeScript = `(function(){try{var m=document.cookie.match(/(?:^|; )theme=(dark|light)/);var t=m?m[1]:(window.matchMedia('(prefers-color-scheme: light)').matches?'light':'${themeDefault}');document.documentElement.dataset.theme=t;}catch(e){document.documentElement.dataset.theme='${themeDefault}';}})();`;
+  // Runs before paint. Priority: the visitor's explicit toggle choice (cookie),
+  // else the admin-configured default. No OS override: the admin default must win
+  // for first-time visitors regardless of their system scheme.
+  const themeScript = `(function(){try{var m=document.cookie.match(/(?:^|; )theme=(dark|light)/);document.documentElement.dataset.theme=m?m[1]:'${themeDefault}';}catch(e){document.documentElement.dataset.theme='${themeDefault}';}})();`;
 
   return (
     <html lang="en" data-theme={themeDefault} className={`${display.variable} ${mono.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body>{children}</body>
+      <body>
+        <BackgroundFX />
+        {children}
+      </body>
     </html>
   );
 }

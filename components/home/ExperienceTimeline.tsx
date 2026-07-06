@@ -1,13 +1,21 @@
 import type { Site } from '@/lib/types';
 import Reveal from '@/components/Reveal';
 
-export default function ExperienceTimeline({ experience }: { experience: Site['experience'] }) {
+export default function ExperienceTimeline({
+  experience,
+  showHeader = true,
+}: {
+  experience: Site['experience'];
+  showHeader?: boolean;
+}) {
   return (
     <section id="experience" className="wrap py-20 md:py-32">
-      <Reveal>
-        <p className="kicker">06 / Experience</p>
-        <h2 className="display-2 mt-5">Where I have worked</h2>
-      </Reveal>
+      {showHeader && (
+        <Reveal>
+          <p className="kicker">Experience</p>
+          <h2 className="display-2 mt-5">Where I have worked</h2>
+        </Reveal>
+      )}
       <ol className="relative mt-12 flex flex-col gap-8 border-l pl-6 md:gap-10 md:pl-10" style={{ borderColor: 'var(--line)' }}>
         {experience.map((role, i) => (
           <li key={`${role.company}-${i}`} className="relative">

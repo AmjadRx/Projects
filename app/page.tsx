@@ -4,19 +4,16 @@ import Footer from '@/components/Footer';
 import Hero from '@/components/hero/Hero';
 import Marquee from '@/components/Marquee';
 import StatsBar from '@/components/home/StatsBar';
-import Thesis from '@/components/home/Thesis';
+import AboutTeaser from '@/components/home/AboutTeaser';
 import FeaturedProjects from '@/components/home/FeaturedProjects';
-import About from '@/components/home/About';
-import SkillsSection from '@/components/home/SkillsSection';
-import ExperienceTimeline from '@/components/home/ExperienceTimeline';
-import HonorsList from '@/components/home/HonorsList';
-import ContactSection from '@/components/home/ContactSection';
+import ContactCTA from '@/components/home/ContactCTA';
 
 export const dynamic = 'force-static';
 
 export default function Home() {
   const { site, projects } = loadContent();
   const keywords = site.skills.groups.flatMap((g) => g.items).slice(0, 18);
+  const featured = projects.filter((p) => p.featured);
 
   const personJsonLd = {
     '@context': 'https://schema.org',
@@ -41,15 +38,10 @@ export default function Home() {
         <Marquee items={keywords} />
         <StatsBar stats={site.stats} />
         <div className="hairline wrap" />
-        <Thesis thesis={site.thesis} />
-        <FeaturedProjects projects={projects} />
+        <AboutTeaser site={site} />
         <div className="hairline wrap" />
-        <About about={site.about} />
-        <SkillsSection skills={site.skills} />
-        <div className="hairline wrap" />
-        <ExperienceTimeline experience={site.experience} />
-        <HonorsList honors={site.honors} education={site.education} />
-        <ContactSection site={site} />
+        <FeaturedProjects projects={featured.length > 0 ? featured : projects.slice(0, 3)} />
+        <ContactCTA site={site} />
       </main>
       <Footer site={site} lastUpdated={lastUpdated()} />
     </>

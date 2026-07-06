@@ -11,7 +11,7 @@
     "showAvailabilityBadge": true
   },
   "personal": {
-    "name": "Test",
+    "name": "Amjad Rehawi",
     "tagline": "Hardware engineer for things that move themselves.",
     "subTagline": "Senior honors double major in Electrical and Mechanical Engineering at Santa Clara University. I build the hardware spine of machines that move on their own: high-voltage battery systems, motor control, embedded firmware, and autonomous aircraft.",
     "location": "Santa Clara, CA",
@@ -59,15 +59,15 @@
     },
     {
       "label": "About",
-      "href": "/#about"
+      "href": "/about"
     },
     {
       "label": "Experience",
-      "href": "/#experience"
+      "href": "/experience"
     },
     {
       "label": "Contact",
-      "href": "/#contact"
+      "href": "/contact"
     }
   ],
   "stats": [

@@ -1,9 +1,11 @@
 import {
+  Calendar,
   ExternalLink,
   FileText,
   Globe,
   Mail,
   Phone,
+  Video,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -28,6 +30,8 @@ const LUCIDE_MAP: Record<string, LucideIcon> = {
   globe: Globe,
   file: FileText,
   external: ExternalLink,
+  calendar: Calendar,
+  video: Video,
 };
 
 export default function LinkIcon({ icon, size = 15 }: { icon: string; size?: number }) {

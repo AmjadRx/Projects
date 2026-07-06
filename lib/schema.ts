@@ -124,6 +124,7 @@ export const SiteSchema = z.object({
     graduation: z.string(),
     school: z.string(),
     degree: z.string(),
+    photo: MediaRefSchema.optional(),
   }),
   socialLinks: z.array(
     z.object({
