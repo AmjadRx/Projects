@@ -38,14 +38,18 @@ export async function compressImage(file: File): Promise<File> {
 export function useMediaList(scope: string) {
   const [files, setFiles] = useState<MediaFile[]>([]);
   const [loading, setLoading] = useState(false);
+  const [listError, setListError] = useState<string | null>(null);
   const refresh = useCallback(async () => {
     setLoading(true);
+    setListError(null);
     try {
       const res = await fetch(`/api/upload?scope=${scope}`);
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
       setFiles(data.files ?? []);
-    } catch {
+    } catch (err) {
       setFiles([]);
+      setListError((err as Error).message);
     } finally {
       setLoading(false);
     }
@@ -53,7 +57,7 @@ export function useMediaList(scope: string) {
   useEffect(() => {
     refresh();
   }, [refresh]);
-  return { files, loading, refresh };
+  return { files, loading, listError, refresh };
 }
 
 export async function uploadFile(file: File, scope: string): Promise<{ src: string; kind: 'image' | 'video' }> {
@@ -84,7 +88,7 @@ export function MediaLibrary({
   scope: string;
   onSelect?: (file: MediaFile) => void;
 }) {
-  const { files, loading, refresh } = useMediaList(scope);
+  const { files, loading, listError, refresh } = useMediaList(scope);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -154,6 +158,7 @@ export function MediaLibrary({
         </p>
       </div>
       {error && <p className="mt-2 font-mono text-xs text-red-400">{error}</p>}
+      {listError && <p className="mt-2 font-mono text-xs text-red-400">⚠ {listError}</p>}
 
       {loading ? (
         <p className="mt-4 font-mono text-xs text-ink-mute">Loading media…</p>

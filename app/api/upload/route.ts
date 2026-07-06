@@ -11,6 +11,17 @@ const IMAGE_MAX = 8 * 1024 * 1024;
 const VIDEO_MAX = 25 * 1024 * 1024;
 const SCOPE_RE = /^[a-z0-9-]+$/;
 
+const GH_CONFIG_ERROR =
+  'GitHub CMS is not configured. In your hosting dashboard set GITHUB_TOKEN (fine-grained PAT with Contents read/write on this repo) and GITHUB_REPO (e.g. "AmjadRx/Projects"), then redeploy.';
+
+/** Production filesystems are read-only; media needs the GitHub CMS there. */
+function ghRequiredResponse(): NextResponse | null {
+  if (!ghConfigured() && process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ error: GH_CONFIG_ERROR }, { status: 503 });
+  }
+  return null;
+}
+
 function sanitizeName(name: string): string {
   const ext = path.extname(name).toLowerCase().replace(/[^a-z0-9.]/g, '');
   const base = path
@@ -27,6 +38,8 @@ export async function GET(req: NextRequest) {
   if (!sessionValid(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const scope = req.nextUrl.searchParams.get('scope') ?? '';
   if (!SCOPE_RE.test(scope)) return NextResponse.json({ error: 'Bad scope' }, { status: 400 });
+  const guard = ghRequiredResponse();
+  if (guard) return guard;
 
   try {
     if (ghConfigured()) {
@@ -56,6 +69,8 @@ export async function GET(req: NextRequest) {
 /** POST multipart — upload a file into public/media/{scope}/. */
 export async function POST(req: NextRequest) {
   if (!sessionValid(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const guard = ghRequiredResponse();
+  if (guard) return guard;
 
   let form: FormData;
   try {
@@ -108,6 +123,8 @@ export async function POST(req: NextRequest) {
 /** DELETE {src} — remove a media file. */
 export async function DELETE(req: NextRequest) {
   if (!sessionValid(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const guard = ghRequiredResponse();
+  if (guard) return guard;
   let body: { src?: string };
   try {
     body = await req.json();
