@@ -1,5 +1,22 @@
 const API = 'https://api.github.com';
 
+/** Read an env var defensively: trim whitespace and strip accidentally pasted quotes. */
+function env(name: string): string {
+  return (process.env[name] ?? '').trim().replace(/^["']+|["']+$/g, '');
+}
+
+export function ghToken(): string {
+  return env('GITHUB_TOKEN');
+}
+
+export function ghRepo(): string {
+  return env('GITHUB_REPO');
+}
+
+export function ghBranch(): string {
+  return env('GITHUB_BRANCH') || 'main';
+}
+
 /**
  * GitHub-CMS mode requires BOTH env vars set explicitly:
  *   GITHUB_TOKEN — fine-grained PAT, single repo, Contents read/write
@@ -7,20 +24,20 @@ const API = 'https://api.github.com';
  * Without them, save/upload fall back to the local filesystem (dev mode).
  */
 export function ghConfigured(): boolean {
-  return Boolean(process.env.GITHUB_TOKEN && process.env.GITHUB_REPO);
+  return Boolean(ghToken() && ghRepo());
 }
 
 function repo(): string {
-  return process.env.GITHUB_REPO || '';
+  return ghRepo();
 }
 
 function branch(): string {
-  return process.env.GITHUB_BRANCH || 'main';
+  return ghBranch();
 }
 
 function headers(): HeadersInit {
   return {
-    Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+    Authorization: `Bearer ${ghToken()}`,
     Accept: 'application/vnd.github+json',
     'X-GitHub-Api-Version': '2022-11-28',
   };

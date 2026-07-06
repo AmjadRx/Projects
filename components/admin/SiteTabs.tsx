@@ -5,6 +5,7 @@ import { detectIcon, uid } from '@/lib/utils';
 import LinkIcon from '@/components/LinkIcon';
 import { AddButton, Area, Field, RowControls, Select, TabHeader, Text, Toggle, move } from './fields';
 import { MediaField } from './media';
+import ConnectionStatus from './ConnectionStatus';
 
 type Patch = (fn: (site: Site) => Site) => void;
 
@@ -14,6 +15,7 @@ export function SettingsTab({ site, patch }: { site: Site; patch: Patch }) {
     <div>
       <TabHeader title="Settings" subtitle="Theme, hero mode, availability." />
       <div className="flex flex-col gap-6">
+        <ConnectionStatus />
         <Field label="Default theme">
           <Select
             value={s.themeDefault}

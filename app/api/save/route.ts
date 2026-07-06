@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
         {
           ok: false,
           error:
-            'GitHub CMS is not configured. In your hosting dashboard set GITHUB_TOKEN (fine-grained PAT with Contents read/write on this repo) and GITHUB_REPO (e.g. "AmjadRx/Projects"), then redeploy.',
+            'GitHub CMS is not configured. Open Settings in this admin for a live diagnosis, or set GITHUB_TOKEN and GITHUB_REPO in your hosting dashboard and redeploy.',
         },
         { status: 503 },
       );
