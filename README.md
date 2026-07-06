@@ -1,70 +1,70 @@
-# Amjad Rehawi — Portfolio
+# amjadrehawi.com
 
-Personal portfolio for **Amjad Rehawi**, senior honors EE + ME at Santa Clara University.
-Brand: *Hardware engineer for things that move themselves.*
-
-Live: https://amjadrehawi.com — alias of https://amjad-rehawi.netlify.app
-
----
+Personal portfolio for **Amjad Rehawi**: hardware engineer for things that move themselves.
+Built to Build Brief v2. Live at https://amjadrehawi.com (Netlify), Vercel-portable.
 
 ## Stack
 
-- **Next.js 14** (App Router) · TypeScript · React 18
-- **Tailwind CSS** with CSS-variable brand tokens (no hard-coded hex codes in components)
-- **Three.js + @react-three/fiber + @react-three/drei** — hero drone scene
-- **Netlify Blobs** — canonical content store, with `data/seed-content.json` as the fallback
-- **Netlify Functions / Next.js API routes** — GET `/api/content`, POST `/api/save`
-- Hosted on **Netlify** with `@netlify/plugin-nextjs`
+- **Next.js 14** App Router · TypeScript strict · React 18
+- **Tailwind CSS** with CSS-variable theme tokens; **dual theme** (dark default + light) with cookie persistence and zero-flash inline script
+- **Framer Motion** for scroll reveals, page transitions, mobile menu, gallery lightbox
+- **three + @react-three/fiber** lazy-loaded 3D hero (desktop only, reduced-motion aware)
+- **Git-based CMS**: the admin dashboard commits JSON + media to this repo through the GitHub Contents API, which triggers a redeploy. No database.
+- **zod** validation on every save; **lucide-react** + inline brand SVGs for icons
+
+## Content model
+
+```
+content/
+  site.json            settings, personal, socials, nav, stats, thesis, about,
+                       skills, experience, honors, education, contact
+  projects/*.json      one file per project (slug = filename), block-based body
+public/media/{scope}/  uploaded media per project slug + "site"
+```
+
+Project bodies are composable **blocks**: heading, text (markdown), image, gallery
+(scroll-snap carousel + lightbox), video (file or YouTube/Vimeo embed), specTable,
+bullets, twoCol, quote, linkRow, roadmap, log (dated build-log entries). Unknown
+block types render nothing (forward compatible).
+
+## Environment variables
+
+| Var | Required | Purpose |
+|---|---|---|
+| `ADMIN_PASSWORD` | recommended | Admin login (server-side check; httpOnly session cookie) |
+| `GITHUB_TOKEN` | prod | Fine-grained PAT, this repo only, Contents read/write |
+| `GITHUB_REPO` | prod | e.g. `AmjadRx/Projects` — GitHub-CMS mode is ON only when both this and the token are set |
+| `GITHUB_BRANCH` | optional | defaults to `main` |
+
+Without `GITHUB_TOKEN` + `GITHUB_REPO` (local dev), `/api/save` and `/api/upload`
+write straight to the local filesystem, so the admin works offline.
 
 ## Local dev
 
 ```bash
 npm install
-npm run dev
+npm run dev        # http://localhost:3000, admin at /admin
+npm run build      # production build (all pages static)
+npm run lint       # eslint
+npm run type-check # tsc --noEmit
 ```
 
-Visit `http://localhost:3000`. The dev server reads from Netlify Blobs in production; locally it falls back to the seed JSON when Blobs is unreachable.
+## How saving works
 
-To exercise the admin save flow locally, set:
+1. `/admin` edits a draft of the content JSON in memory.
+2. Save → `POST /api/save` validates the session cookie + zod schemas, then commits
+   each changed file via the GitHub Contents API (or writes locally in dev).
+3. The push triggers the Netlify/Vercel rebuild; the banner says
+   "Saved and committed. Site rebuilds in ~1–2 min."
+4. Media uploads (`POST /api/upload`) are size-checked (images ≤ 8 MB after
+   client-side WebP compression, video ≤ 25 MB) and committed to
+   `public/media/{scope}/`.
 
-```bash
-export ADMIN_PASSWORD="your-secret"
-```
+## Hard content rules
 
-## Deploy
-
-Netlify auto-deploys on push. The only required env var is `ADMIN_PASSWORD`.
-
-## Editing content
-
-Open `/admin`, enter the shared password, edit any tab, click **Save**. Changes go to Netlify Blobs and are picked up by the next public page load — no redeploy needed.
-
-## Directory layout
-
-```
-app/
-  page.tsx              Home
-  projects/             /projects + /projects/[slug]
-  admin/                Admin dashboard
-  api/content/route.ts  GET content (Blobs → seed fallback)
-  api/save/route.ts     POST content (password-gated)
-components/
-  sections/             Home section components
-  admin/                Dashboard UI
-  DroneScene.tsx        R3F hero drone
-data/seed-content.json  Source-of-truth content fallback
-lib/types.ts            Content schema
-lib/content.ts          Blobs read/write helpers
-```
-
-## Brand tokens
-
-| Token | Value |
-|---|---|
-| `cyan` | `#3DE0FF` |
-| `navy` | `#0b0f17` |
-| `navy-2` / `navy-3` | `#0f1521` / `#161d2c` |
-| `purple` | `#7C5CFF` |
-| `ink` / `ink-dim` / `ink-mute` | `#e9eef8` / `#aab3c5` / `#6b7385` |
-| display | Space Grotesk |
-| mono | JetBrains Mono |
+- Documented metrics only; never invent numbers.
+- No patents, anywhere.
+- Raven = flagship project. Stallion = the stock Flightory airframe it is built on.
+- The startup is "a stealth AI hardware startup", never named.
+- FAA Part 107: "in progress".
+- Availability: Summer 2027 internships / full-time 2027.

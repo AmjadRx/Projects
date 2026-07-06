@@ -1,0 +1,50 @@
+{
+  "slug": "crossfit-megatrons",
+  "title": "CrossFit Maker Challenge",
+  "subtitle": "2nd Place product for the CrossFit Games' 20th anniversary",
+  "role": "Team Megatrons (5 engineers)",
+  "timeframe": "Mar 2026 - completed",
+  "status": "shipped",
+  "statusLabel": "2nd Place · $1,500 · shipped",
+  "featured": false,
+  "order": 4,
+  "domain": "Product design · Manufacturing",
+  "tags": [
+    "product design",
+    "field research",
+    "CAD",
+    "3D printing",
+    "pitch"
+  ],
+  "cover": {
+    "kind": "image",
+    "src": "/media/crossfit-megatrons/cover.jpg",
+    "alt": "Megatrons commemorative product"
+  },
+  "links": [],
+  "pitch": "A CrossFit LLC-sponsored challenge to design a commemorative product for the CrossFit Games' 20th anniversary. Our team took 2nd place and a $1,500 prize, and every unit shipped.",
+  "highlights": [
+    "2nd Place and $1,500 prize, sponsored by CrossFit LLC",
+    "Visited every CrossFit gym in the South Bay to interview gymgoers on preferences and frustrations",
+    "AI-assisted ideation with iterative concept sketches, SVG, and CAD design rounds",
+    "All units shipped and displayed at CrossFit Sundown (Santa Clara)",
+    "Team selected to potentially mass-produce the item for the CrossFit Games"
+  ],
+  "blocks": [
+    {
+      "id": "c1",
+      "type": "text",
+      "md": "The Maker Challenge asked teams to design and deliver a commemorative product tied to the CrossFit Games' 20th anniversary. We grounded the design in field research, visiting every CrossFit gym in the South Bay and interviewing gymgoers to document preferences, frustrations, and aspirations. Ideation ran through multiple concept sketches and design iterations, using AI image generation extensively for early visuals before converging in SVG and CAD."
+    },
+    {
+      "id": "c2",
+      "type": "bullets",
+      "items": [
+        "Built and delivered the pitch presentation to the sponsor.",
+        "Placed 2nd of all teams and won the $1,500 prize.",
+        "All units shipped and are displayed at CrossFit Sundown in Santa Clara.",
+        "Team selected to potentially mass-produce the product for the CrossFit Games."
+      ]
+    }
+  ]
+}

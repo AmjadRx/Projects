@@ -1,59 +1,99 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { getStore } from '@netlify/blobs';
-import type { Content } from '@/lib/types';
+import fs from 'fs';
+import path from 'path';
+import { sessionValid } from '@/lib/auth';
+import { ghConfigured, ghDeleteFile, ghPutFile } from '@/lib/github';
+import { ProjectSchema, SiteSchema } from '@/lib/schema';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-const FALLBACK_PASSWORD = 'AMRx(2004)SCU';
+const SITE_PATH = 'content/site.json';
+const PROJECT_RE = /^content\/projects\/[a-z0-9-]+\.json$/;
 
-function isAuthorized(provided: string): boolean {
-  if (!provided) return false;
-  if (provided === FALLBACK_PASSWORD) return true;
-  const env = process.env.ADMIN_PASSWORD;
-  if (env && env.length > 0 && provided === env) return true;
-  return false;
+interface SaveBody {
+  files?: { path: string; data: unknown }[];
+  deletes?: string[];
+}
+
+function validPath(p: string): boolean {
+  return p === SITE_PATH || PROJECT_RE.test(p);
 }
 
 export async function POST(req: NextRequest) {
-  const password = req.headers.get('x-admin-password') ?? '';
-
-  if (!isAuthorized(password)) {
+  if (!sessionValid(req)) {
     return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   }
 
-  let payload: Content;
+  let body: SaveBody;
   try {
-    payload = (await req.json()) as Content;
+    body = await req.json();
   } catch {
     return NextResponse.json({ ok: false, error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  if (!payload || typeof payload !== 'object' || !payload.personal) {
-    return NextResponse.json({ ok: false, error: 'Invalid content shape' }, { status: 400 });
+  const files = body.files ?? [];
+  const deletes = body.deletes ?? [];
+  if (!files.length && !deletes.length) {
+    return NextResponse.json({ ok: false, error: 'Nothing to save' }, { status: 400 });
   }
 
-  const stamped: Content = {
-    ...payload,
-    lastUpdated: new Date().toISOString().slice(0, 10),
-  };
+  // Validate paths + content shape
+  const prepared: { path: string; json: string }[] = [];
+  for (const f of files) {
+    if (!validPath(f.path)) {
+      return NextResponse.json({ ok: false, error: `Invalid path: ${f.path}` }, { status: 400 });
+    }
+    const schema = f.path === SITE_PATH ? SiteSchema : ProjectSchema;
+    const parsed = schema.safeParse(f.data);
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0];
+      return NextResponse.json(
+        { ok: false, error: `${f.path}: ${issue.path.join('.')} ${issue.message}` },
+        { status: 400 },
+      );
+    }
+    prepared.push({ path: f.path, json: JSON.stringify(parsed.data, null, 2) + '\n' });
+  }
+  for (const d of deletes) {
+    if (!validPath(d) || d === SITE_PATH) {
+      return NextResponse.json({ ok: false, error: `Invalid delete: ${d}` }, { status: 400 });
+    }
+  }
 
   try {
-    const store = getStore({ name: 'portfolio-content', consistency: 'strong' });
-    await store.setJSON('main', stamped);
+    if (ghConfigured()) {
+      for (const f of prepared) {
+        await ghPutFile(f.path, Buffer.from(f.json), `content: update ${f.path.replace('content/', '').replace('.json', '')}`);
+      }
+      for (const d of deletes) {
+        await ghDeleteFile(d, `content: remove ${d.replace('content/', '').replace('.json', '')}`);
+      }
+      return NextResponse.json({
+        ok: true,
+        mode: 'github',
+        savedAt: new Date().toISOString(),
+        committed: prepared.length + deletes.length,
+      });
+    }
+
+    // Dev fallback: local filesystem
+    for (const f of prepared) {
+      const abs = path.join(process.cwd(), f.path);
+      fs.mkdirSync(path.dirname(abs), { recursive: true });
+      fs.writeFileSync(abs, f.json);
+    }
+    for (const d of deletes) {
+      const abs = path.join(process.cwd(), d);
+      if (fs.existsSync(abs)) fs.unlinkSync(abs);
+    }
+    return NextResponse.json({
+      ok: true,
+      mode: 'fs',
+      savedAt: new Date().toISOString(),
+      committed: prepared.length + deletes.length,
+    });
   } catch (err) {
-    return NextResponse.json(
-      { ok: false, error: (err as Error)?.message ?? 'Save failed' },
-      { status: 500 },
-    );
+    return NextResponse.json({ ok: false, error: (err as Error).message }, { status: 500 });
   }
-
-  return NextResponse.json(
-    { ok: true, savedAt: new Date().toISOString() },
-    { headers: { 'cache-control': 'no-store' } },
-  );
-}
-
-export function GET() {
-  return NextResponse.json({ ok: false, error: 'Method not allowed' }, { status: 405 });
 }

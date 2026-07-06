@@ -3,7 +3,7 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   experimental: {
-    optimizePackageImports: ['three', '@react-three/fiber', '@react-three/drei'],
+    optimizePackageImports: ['three', '@react-three/fiber', '@react-three/drei', 'lucide-react'],
   },
 };
 

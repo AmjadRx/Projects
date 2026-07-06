@@ -1,53 +1,57 @@
+import { loadContent, lastUpdated } from '@/lib/content';
 import Nav from '@/components/Nav';
 import Footer from '@/components/Footer';
-import Reveal from '@/components/Reveal';
-import Hero from '@/components/sections/Hero';
-import Stats from '@/components/sections/Stats';
-import BrandThesisSection from '@/components/sections/BrandThesis';
-import AboutSection from '@/components/sections/About';
-import ProjectsGrid from '@/components/sections/Projects';
-import SkillsSection from '@/components/sections/Skills';
-import ExperienceSection from '@/components/sections/Experience';
-import HonorsSection from '@/components/sections/Honors';
-import ContactSection from '@/components/sections/Contact';
-import { loadContent } from '@/lib/content';
+import Hero from '@/components/hero/Hero';
+import Marquee from '@/components/Marquee';
+import StatsBar from '@/components/home/StatsBar';
+import Thesis from '@/components/home/Thesis';
+import FeaturedProjects from '@/components/home/FeaturedProjects';
+import About from '@/components/home/About';
+import SkillsSection from '@/components/home/SkillsSection';
+import ExperienceTimeline from '@/components/home/ExperienceTimeline';
+import HonorsList from '@/components/home/HonorsList';
+import ContactSection from '@/components/home/ContactSection';
 
-export const revalidate = 0;
-export const dynamic = 'force-dynamic';
+export const dynamic = 'force-static';
 
-export default async function Home() {
-  const content = await loadContent();
+export default function Home() {
+  const { site, projects } = loadContent();
+  const keywords = site.skills.groups.flatMap((g) => g.items).slice(0, 18);
+
+  const personJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    name: site.personal.name,
+    email: `mailto:${site.personal.email}`,
+    url: 'https://amjadrehawi.com',
+    jobTitle: 'Hardware Engineer',
+    affiliation: { '@type': 'CollegeOrUniversity', name: site.personal.school },
+    sameAs: site.socialLinks.filter((s) => s.url.startsWith('http')).map((s) => s.url),
+  };
+
   return (
     <>
-      <Nav />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }}
+      />
+      <Nav name={site.personal.name} items={site.nav} socials={site.socialLinks} />
       <main>
-        <Hero personal={content.personal} />
-        <Reveal>
-          <Stats stats={content.stats} />
-        </Reveal>
-        <Reveal>
-          <BrandThesisSection thesis={content.brandThesis} />
-        </Reveal>
-        <Reveal>
-          <AboutSection about={content.about} />
-        </Reveal>
-        <Reveal>
-          <ProjectsGrid projects={content.projects} />
-        </Reveal>
-        <Reveal>
-          <SkillsSection skills={content.skills} />
-        </Reveal>
-        <Reveal>
-          <ExperienceSection experience={content.experience} />
-        </Reveal>
-        <Reveal>
-          <HonorsSection honors={content.honors} />
-        </Reveal>
-        <Reveal>
-          <ContactSection contact={content.contact} personal={content.personal} />
-        </Reveal>
+        <Hero site={site} />
+        <Marquee items={keywords} />
+        <StatsBar stats={site.stats} />
+        <div className="hairline wrap" />
+        <Thesis thesis={site.thesis} />
+        <FeaturedProjects projects={projects} />
+        <div className="hairline wrap" />
+        <About about={site.about} />
+        <SkillsSection skills={site.skills} />
+        <div className="hairline wrap" />
+        <ExperienceTimeline experience={site.experience} />
+        <HonorsList honors={site.honors} education={site.education} />
+        <ContactSection site={site} />
       </main>
-      <Footer content={content} />
+      <Footer site={site} lastUpdated={lastUpdated()} />
     </>
   );
 }

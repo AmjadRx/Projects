@@ -1,60 +1,42 @@
 import type { Config } from 'tailwindcss';
 
 const config: Config = {
-  content: [
-    './app/**/*.{js,ts,jsx,tsx,mdx}',
-    './components/**/*.{js,ts,jsx,tsx,mdx}',
-  ],
+  content: ['./app/**/*.{ts,tsx}', './components/**/*.{ts,tsx}'],
   theme: {
     extend: {
       colors: {
-        cyan: {
-          DEFAULT: 'rgb(var(--color-cyan) / <alpha-value>)',
-        },
-        navy: {
-          DEFAULT: 'rgb(var(--color-navy) / <alpha-value>)',
-          2: 'rgb(var(--color-navy-2) / <alpha-value>)',
-          3: 'rgb(var(--color-navy-3) / <alpha-value>)',
-        },
-        purple: {
-          DEFAULT: 'rgb(var(--color-purple) / <alpha-value>)',
-        },
-        ink: {
-          DEFAULT: 'rgb(var(--color-ink) / <alpha-value>)',
-          dim: 'rgb(var(--color-ink-dim) / <alpha-value>)',
-          mute: 'rgb(var(--color-ink-mute) / <alpha-value>)',
-        },
+        bg: 'rgb(var(--bg) / <alpha-value>)',
+        surface: 'rgb(var(--surface) / <alpha-value>)',
+        'surface-2': 'rgb(var(--surface-2) / <alpha-value>)',
+        ink: 'rgb(var(--ink) / <alpha-value>)',
+        'ink-dim': 'rgb(var(--ink-dim) / <alpha-value>)',
+        'ink-mute': 'rgb(var(--ink-mute) / <alpha-value>)',
+        accent: 'rgb(var(--accent) / <alpha-value>)',
+        'accent-2': 'rgb(var(--accent-2) / <alpha-value>)',
+        'accent-contrast': 'rgb(var(--accent-contrast) / <alpha-value>)',
+      },
+      borderColor: {
+        line: 'var(--line)',
       },
       fontFamily: {
         display: ['var(--font-display)', 'system-ui', 'sans-serif'],
         mono: ['var(--font-mono)', 'ui-monospace', 'monospace'],
       },
       maxWidth: {
-        wrap: '1240px',
+        wrap: '1200px',
+        article: '760px',
       },
-      opacity: {
-        3: '0.03',
-        8: '0.08',
-        15: '0.15',
+      borderRadius: {
+        sm: '6px',
+        md: '12px',
+        lg: '20px',
       },
       boxShadow: {
-        glow: '0 0 40px -10px rgb(var(--color-cyan) / 0.3)',
-        'glow-purple': '0 0 40px -10px rgb(var(--color-purple) / 0.3)',
+        card: 'var(--shadow-card)',
+        glow: 'var(--glow)',
       },
-      animation: {
-        'spin-slow': 'spin 20s linear infinite',
-        'spin-reverse': 'spin-reverse 30s linear infinite',
-        fade: 'fade 0.4s ease-out',
-      },
-      keyframes: {
-        'spin-reverse': {
-          from: { transform: 'rotate(360deg)' },
-          to: { transform: 'rotate(0deg)' },
-        },
-        fade: {
-          from: { opacity: '0', transform: 'translateY(6px)' },
-          to: { opacity: '1', transform: 'translateY(0)' },
-        },
+      transitionTimingFunction: {
+        out: 'cubic-bezier(0.22, 1, 0.36, 1)',
       },
     },
   },

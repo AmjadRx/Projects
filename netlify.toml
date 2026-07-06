@@ -5,10 +5,6 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
-[functions]
-  node_bundler = "esbuild"
-  directory = "netlify/functions"
-
 [[headers]]
   for = "/*"
   [headers.values]

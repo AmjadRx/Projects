@@ -1,167 +1,181 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { ArrowLeft } from 'lucide-react';
+import { loadContent, loadProject, loadProjects, lastUpdated } from '@/lib/content';
 import Nav from '@/components/Nav';
 import Footer from '@/components/Footer';
-import Roadmap from '@/components/Roadmap';
-import { loadContent } from '@/lib/content';
-import { findProjectBySlug } from '@/lib/utils';
+import MediaView from '@/components/MediaView';
+import LinkButton from '@/components/LinkButton';
+import ProgressStrip from '@/components/ProgressStrip';
+import BlockRenderer from '@/components/blocks/BlockRenderer';
+import Reveal from '@/components/Reveal';
+import { cn } from '@/lib/utils';
 
-export const revalidate = 0;
-export const dynamic = 'force-dynamic';
+export const dynamic = 'force-static';
+export const dynamicParams = false;
 
-export async function generateMetadata({ params }: { params: { slug: string } }) {
-  const content = await loadContent();
-  const project = findProjectBySlug(content.projects, params.slug);
+export function generateStaticParams() {
+  return loadProjects().map((p) => ({ slug: p.slug }));
+}
+
+export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
+  const project = loadProject(params.slug);
   if (!project) return { title: 'Project not found' };
   return {
-    title: project.name,
-    description: project.subtitle,
+    title: project.title,
+    description: project.pitch,
+    openGraph: {
+      title: project.title,
+      description: project.pitch,
+      images: project.cover.exists !== false ? [project.cover.src] : undefined,
+    },
   };
 }
 
-export default async function ProjectDetail({ params }: { params: { slug: string } }) {
-  const content = await loadContent();
-  const project = findProjectBySlug(content.projects, params.slug);
+const STATUS_LABEL = {
+  'in-progress': 'In progress',
+  active: 'Active',
+  completed: 'Completed',
+  shipped: 'Shipped',
+} as const;
+
+export default function ProjectPage({ params }: { params: { slug: string } }) {
+  const { site, projects } = loadContent();
+  const project = projects.find((p) => p.slug === params.slug);
   if (!project) notFound();
+
+  const idx = projects.findIndex((p) => p.slug === project.slug);
+  const prev = projects[idx - 1];
+  const next = projects[idx + 1];
+  const live = project.status === 'in-progress' || project.status === 'active';
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'CreativeWork',
+    name: project.title,
+    description: project.pitch,
+    author: { '@type': 'Person', name: site.personal.name },
+    keywords: project.tags.join(', '),
+  };
 
   return (
     <>
-      <Nav />
-      <main className="pt-32 md:pt-40">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <Nav name={site.personal.name} items={site.nav} socials={site.socialLinks} />
+      <main className="pb-24 pt-28 md:pt-36">
         <article className="wrap">
-          <Link
-            href="/projects"
-            className="font-mono text-[11px] uppercase tracking-[0.22em] text-ink-mute hover:text-cyan"
-          >
-            ← All projects
-          </Link>
+          <div className="mx-auto max-w-article">
+            <Link
+              href="/projects"
+              className="inline-flex items-center gap-2 text-sm text-ink-mute transition-colors hover:text-accent"
+            >
+              <ArrowLeft size={15} /> All projects
+            </Link>
 
-          <header className="mt-12 md:mt-16">
-            <div className="section-eyebrow">
-              <span className="text-cyan">{project.type}</span>
-              <span
-                className="inline-block h-px w-8"
-                style={{ background: 'rgb(255 255 255 / 0.2)' }}
-              />
-              <span>{project.dates}</span>
-            </div>
-            <h1 className="display-xl mt-6 text-ink">{project.name}</h1>
-            <p className="lead mt-6 max-w-3xl">{project.subtitle}</p>
-            <div className="mt-8 flex flex-wrap items-center gap-1.5">
-              <span className="chip chip-cyan">{project.status}</span>
-              {project.tags.map((t) => (
-                <span key={t} className="chip">
-                  {t}
+            <header className="mt-8">
+              <p className="kicker">{project.domain}</p>
+              <h1 className="display-1 mt-4">{project.title}</h1>
+              <p className="body-lg mt-4">{project.subtitle}</p>
+
+              <div
+                className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3 py-4"
+                style={{ borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}
+              >
+                <span className="text-sm font-medium text-ink">{project.role}</span>
+                <span className="kicker">{project.timeframe}</span>
+                <span className={cn('pill', live && 'pill-accent')}>
+                  {live && <span className="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden />}
+                  {project.statusLabel || STATUS_LABEL[project.status]}
                 </span>
-              ))}
-            </div>
-          </header>
-
-          {project.hero && (
-            <section className="mt-16 md:mt-20">
-              <div
-                className="grid grid-cols-1 gap-px md:grid-cols-12"
-                style={{ background: 'rgb(255 255 255 / 0.08)' }}
-              >
-                <div className="bg-navy p-8 md:col-span-5 md:p-12">
-                  <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-cyan">
-                    Pitch
-                  </div>
-                  <p className="display-md mt-5 text-ink">{project.hero.pitch}</p>
-                </div>
-                <div className="bg-navy p-8 md:col-span-7 md:p-12">
-                  <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-cyan">
-                    Highlights
-                  </div>
-                  {project.hero.highlights?.length > 0 && (
-                    <ul className="mt-5 space-y-3">
-                      {project.hero.highlights.map((h, i) => (
-                        <li key={i} className="flex gap-4 text-ink-dim md:text-lg">
-                          <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-cyan">
-                            {String(i + 1).padStart(2, '0')}
-                          </span>
-                          <span>{h}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
               </div>
-            </section>
-          )}
 
-          <section className="mt-16 grid grid-cols-1 gap-10 md:mt-24 md:grid-cols-12 md:gap-12">
-            <div className="md:col-span-4">
-              <div className="section-eyebrow">
-                <span className="text-cyan">Summary</span>
-              </div>
-            </div>
-            <div className="md:col-span-8">
-              <p className="text-xl leading-relaxed text-ink-dim md:text-2xl">
-                {project.summary}
-              </p>
-            </div>
-          </section>
-
-          {project.sections && project.sections.length > 0 && (
-            <section className="mt-16 md:mt-24">
-              <div
-                className="grid grid-cols-1 gap-px md:grid-cols-2"
-                style={{ background: 'rgb(255 255 255 / 0.08)' }}
-              >
-                {project.sections.map((s, i) => (
-                  <div key={i} className="bg-navy p-8 md:p-10">
-                    <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-cyan">
-                      {String(i + 1).padStart(2, '0')}
-                    </div>
-                    <h3 className="mt-4 text-2xl font-medium text-ink md:text-3xl">{s.heading}</h3>
-                    {s.body && <p className="mt-5 text-ink-dim leading-relaxed">{s.body}</p>}
-                    {s.items && s.items.length > 0 && (
-                      <ul className="mt-5 space-y-3">
-                        {s.items.map((it, j) => (
-                          <li key={j} className="flex gap-3 text-ink-dim">
-                            <span
-                              className="mt-3 inline-block h-px w-4 flex-shrink-0"
-                              style={{ background: 'rgb(61 224 255 / 0.6)' }}
-                            />
-                            <span>{it}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
+              <div className="mt-4 flex flex-wrap gap-1.5">
+                {project.tags.map((tag) => (
+                  <span key={tag} className="chip">{tag}</span>
                 ))}
               </div>
-            </section>
-          )}
 
-          {project.roadmap && project.roadmap.length > 0 && (
-            <section className="mt-16 md:mt-24">
-              <div className="mb-10 max-w-2xl">
-                <div className="section-eyebrow">
-                  <span className="text-cyan">Roadmap</span>
+              {project.links.length > 0 && (
+                <div className="mt-6 flex flex-wrap gap-2.5">
+                  {project.links.map((link) => (
+                    <LinkButton key={link.url} {...link} />
+                  ))}
                 </div>
-                <h2 className="display-lg mt-4 text-ink">8 stages, one airframe at a time.</h2>
-                <p className="lead mt-5">Where Raven is today and what's next.</p>
-              </div>
-              <Roadmap stages={project.roadmap} />
-            </section>
-          )}
+              )}
+            </header>
 
-          <div
-            className="mt-20 flex flex-wrap items-center justify-between gap-4 pt-10 md:mt-32"
-            style={{ borderTop: '1px solid rgb(255 255 255 / 0.08)' }}
-          >
-            <Link href="/projects" className="btn-secondary">
-              ← All projects
-            </Link>
-            <a href={`mailto:${content.personal.email}`} className="btn-primary">
-              Talk to me about this →
-            </a>
+            <Reveal className="mt-10">
+              <div
+                className="relative aspect-[16/9] w-full overflow-hidden rounded-lg"
+                style={{ border: '1px solid var(--line)' }}
+              >
+                <MediaView media={project.cover} placeholderLabel={project.title} sizes="760px" priority />
+              </div>
+            </Reveal>
+
+            <Reveal className="mt-12">
+              <p className="display-3 !font-medium leading-snug text-ink">{project.pitch}</p>
+            </Reveal>
+
+            {project.highlights.length > 0 && (
+              <Reveal className="mt-10">
+                <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {project.highlights.map((highlight, i) => (
+                    <li key={i} className="card flex gap-3 p-4">
+                      <span className="font-mono text-[11px] text-accent">
+                        {String(i + 1).padStart(2, '0')}
+                      </span>
+                      <span className="text-sm leading-relaxed text-ink-dim">{highlight}</span>
+                    </li>
+                  ))}
+                </ul>
+              </Reveal>
+            )}
+
+            {project.progress && (
+              <Reveal className="mt-10">
+                <div className="card px-5 py-4">
+                  <ProgressStrip progress={project.progress} />
+                </div>
+              </Reveal>
+            )}
+
+            <div className="mt-14">
+              <BlockRenderer blocks={project.blocks} slug={project.slug} />
+            </div>
+
+            <nav
+              className="mt-20 grid grid-cols-1 gap-4 pt-8 sm:grid-cols-2"
+              style={{ borderTop: '1px solid var(--line)' }}
+              aria-label="Project navigation"
+            >
+              {prev ? (
+                <Link href={`/projects/${prev.slug}`} className="card group p-5 transition-colors hover:border-accent/50">
+                  <span className="kicker">← Previous</span>
+                  <span className="mt-1.5 block font-semibold text-ink group-hover:text-accent">
+                    {prev.title}
+                  </span>
+                </Link>
+              ) : (
+                <span />
+              )}
+              {next && (
+                <Link
+                  href={`/projects/${next.slug}`}
+                  className="card group p-5 text-right transition-colors hover:border-accent/50"
+                >
+                  <span className="kicker">Next →</span>
+                  <span className="mt-1.5 block font-semibold text-ink group-hover:text-accent">
+                    {next.title}
+                  </span>
+                </Link>
+              )}
+            </nav>
           </div>
         </article>
       </main>
-      <Footer content={content} />
+      <Footer site={site} lastUpdated={lastUpdated()} />
     </>
   );
 }

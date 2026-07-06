@@ -1,52 +1,26 @@
 'use client';
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { cn } from '@/lib/utils';
+import { motion, useReducedMotion } from 'framer-motion';
+import { EASE } from '@/lib/utils';
 
 interface RevealProps {
-  children: ReactNode;
+  children: React.ReactNode;
   delay?: number;
   className?: string;
-  as?: 'div' | 'section' | 'article' | 'header';
 }
 
-export default function Reveal({ children, delay = 0, className, as: Tag = 'div' }: RevealProps) {
-  const ref = useRef<HTMLElement | null>(null);
-  const [shown, setShown] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    if (typeof IntersectionObserver === 'undefined') {
-      setShown(true);
-      return;
-    }
-    const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setShown(true);
-            io.unobserve(entry.target);
-          }
-        });
-      },
-      { threshold: 0.12, rootMargin: '0px 0px -40px 0px' },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-
+export default function Reveal({ children, delay = 0, className }: RevealProps) {
+  const reduced = useReducedMotion();
+  if (reduced) return <div className={className}>{children}</div>;
   return (
-    <Tag
-      ref={ref as React.RefObject<HTMLDivElement>}
-      style={{ transitionDelay: shown ? `${delay}ms` : '0ms' }}
-      className={cn(
-        'transition-all duration-700 ease-out will-change-transform',
-        shown ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0',
-        className,
-      )}
+    <motion.div
+      className={className}
+      initial={{ opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-80px' }}
+      transition={{ duration: 0.6, delay, ease: EASE }}
     >
       {children}
-    </Tag>
+    </motion.div>
   );
 }

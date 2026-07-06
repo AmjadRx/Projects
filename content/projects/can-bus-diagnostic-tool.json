@@ -1,0 +1,36 @@
+{
+  "slug": "can-bus-diagnostic-tool",
+  "title": "CAN Bus Diagnostic Tool",
+  "subtitle": "Custom hardware + Python GUI for real-time CAN monitoring",
+  "role": "Personal project",
+  "timeframe": "Sep 2023 - present",
+  "status": "active",
+  "featured": false,
+  "order": 7,
+  "domain": "Embedded · Tooling",
+  "tags": [
+    "CAN",
+    "STM32",
+    "Python",
+    "diagnostics"
+  ],
+  "cover": {
+    "kind": "image",
+    "src": "/media/can-bus-diagnostic-tool/cover.jpg",
+    "alt": "CAN diagnostic GUI"
+  },
+  "links": [],
+  "pitch": "A custom STM32-based interface between a vehicle CAN bus and a computer, with a Python GUI for real-time monitoring, filtering, and automated diagnostics. Validated on the FSAE car.",
+  "highlights": [
+    "Custom hardware interface (STM32 + Arduino Uno) between CAN and host",
+    "Python GUI with live message filtering and automated diagnostics",
+    "Validated on the FSAE vehicle's thermal-management subsystem"
+  ],
+  "blocks": [
+    {
+      "id": "cb1",
+      "type": "text",
+      "md": "Built to make the FSAE car's CAN traffic visible and debuggable: a custom STM32-based hardware bridge to the host computer and a Python GUI that filters live messages and runs automated diagnostics. It became the team's standard tool for validating the thermal-management subsystem."
+    }
+  ]
+}
