@@ -152,8 +152,8 @@
     ],
     "headshot": {
       "kind": "image",
-      "src": "/media/site/headshot.jpg",
-      "alt": "Amjad Rehawi"
+      "src": "/media/site/profile-pic-sf.webp",
+      "alt": ""
     }
   },
   "skills": {
