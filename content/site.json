@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "settings": {
-    "themeDefault": "light",
+    "themeDefault": "dark",
     "heroMode": "media",
     "heroMedia": {
       "kind": "image",
