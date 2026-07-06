@@ -1,8 +1,8 @@
 {
   "schemaVersion": 2,
   "settings": {
-    "themeDefault": "light",
-    "heroMode": "scene3d",
+    "themeDefault": "dark",
+    "heroMode": "media",
     "heroMedia": {
       "kind": "image",
       "src": "/media/site/hero.jpg",
