@@ -19,8 +19,8 @@
   ],
   "cover": {
     "kind": "image",
-    "src": "/media/palmsync/cover.jpg",
-    "alt": "PalmSync prototype"
+    "src": "/media/palmsync/asearis.png",
+    "alt": ""
   },
   "links": [],
   "pitch": "A dual-purpose biometric wellness device combining real-time stress monitoring with smart ambient lighting. Concept to working prototype in under 6 weeks; 1st place at the Asearis Hackathon.",
