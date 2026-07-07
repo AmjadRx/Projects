@@ -17,8 +17,8 @@
   ],
   "cover": {
     "kind": "image",
-    "src": "/media/smart-plant-care/cover.jpg",
-    "alt": "Smart plant care prototype"
+    "src": "/media/smart-plant-care/heypossible-image.png",
+    "alt": ""
   },
   "links": [],
   "pitch": "An IoT plant monitor built in the faculty-nominated Possible Career Accelerator: soil, light, and temperature sensing on STM32 with a sensor-to-app protocol and a care-recommendation dashboard.",
