@@ -2,7 +2,7 @@
   "schemaVersion": 2,
   "settings": {
     "themeDefault": "dark",
-    "heroMode": "media",
+    "heroMode": "scene3d",
     "heroMedia": {
       "kind": "image",
       "src": "/media/site/hero.jpg",
