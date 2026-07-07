@@ -35,7 +35,7 @@
       "url": "mailto:arihawi@scu.edu",
       "icon": "mail",
       "showInNav": false,
-      "showInFooter": true,
+      "showInFooter": false,
       "showInContact": true
     },
     {
@@ -44,7 +44,7 @@
       "url": "https://www.linkedin.com/in/amjad-rehawi-38412b220/",
       "icon": "linkedin",
       "showInNav": true,
-      "showInFooter": true,
+      "showInFooter": false,
       "showInContact": true
     },
     {
@@ -53,7 +53,16 @@
       "url": "tel:+15304076321",
       "icon": "phone",
       "showInNav": false,
-      "showInFooter": true,
+      "showInFooter": false,
+      "showInContact": true
+    },
+    {
+      "id": "ffed5496",
+      "label": "Calendly",
+      "url": "https://calendly.com/rehawi/30min",
+      "icon": "calendar",
+      "showInNav": false,
+      "showInFooter": false,
       "showInContact": true
     }
   ],
