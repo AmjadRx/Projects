@@ -21,7 +21,12 @@
     "gpa": "3.7",
     "graduation": "2027",
     "school": "Santa Clara University",
-    "degree": "B.S. Electrical & Mechanical Engineering (Honors)"
+    "degree": "B.S. Electrical & Mechanical Engineering (Honors)",
+    "photo": {
+      "kind": "image",
+      "src": "/media/site/profile-pic-sf.webp",
+      "alt": ""
+    }
   },
   "socialLinks": [
     {
