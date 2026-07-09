@@ -20,8 +20,8 @@
   ],
   "cover": {
     "kind": "image",
-    "src": "/media/raven/cover.jpg",
-    "alt": "Raven tilt-rotor eVTOL airframe"
+    "src": "/media/raven/img-7414.webp",
+    "alt": ""
   },
   "links": [],
   "pitch": "Fixed-wing in cruise, three-motor VTOL in hover. Designed, analyzed, and printed in carbon-fiber composite, on an 8-stage roadmap that ends in a fully autonomous 4-drone swarm with wireless charging at home base.",
