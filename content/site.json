@@ -2,7 +2,7 @@
   "schemaVersion": 2,
   "settings": {
     "themeDefault": "dark",
-    "heroMode": "scene3d",
+    "heroMode": "media",
     "heroMedia": {
       "kind": "image",
       "src": "/media/site/img-7414.webp",
