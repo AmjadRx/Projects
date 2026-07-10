@@ -177,7 +177,7 @@
     {
       "id": "r8",
       "type": "text",
-      "md": "Raven is the aircraft half of a two-product system at the stealth AI hardware startup I founded. The other half is an on-premise software brain that takes plain-language missions and coordinates a shared fleet, arbitrating multiple concurrent missions at once. The MVP is a live two-mission demo (a leak and an intrusion handled by one fleet), proven first in simulation and on commodity drones. An example end state: a fire department swarm that patrols a region on schedule, detects and classifies a hazardous fire, and dispatches verified information to first responders with no joystick involved."
+      "md": "Raven is the aircraft half of a two-product system at the stealth AI hardware startup I founded (pre-seed). The other half is an on-premise software brain that takes plain-language missions and coordinates a shared fleet, arbitrating multiple concurrent missions at once. The MVP is a live two-mission demo (a leak and an intrusion handled by one fleet), proven first in simulation and on commodity drones. An example end state: a fire department swarm that patrols a region on schedule, detects and classifies a hazardous fire, and dispatches verified information to first responders with no joystick involved. For more information, or if you are a VC or an investor, please contact me directly."
     },
     {
       "id": "r9",
