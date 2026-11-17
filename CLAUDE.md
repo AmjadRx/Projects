@@ -11,7 +11,7 @@ This repository builds amjadrehawi.com for its owner, Amjad Rehawi. Version 3 is
 - Precedence: where `ARCHITECTURE.md` and the Claude Design handoff bundle disagree, the bundle wins on visual detail, and `ARCHITECTURE.md` wins on behavior, data, security, and content rules. `DESIGN_DIRECTION.md` is the fallback for visuals wherever the bundle is silent. This file and everything in `docs/` summarize the handoff and never override it; where they differ, the handoff wins and the summary is corrected.
 - When nothing covers a choice: accurate over impressive, fast over heavy, editable over hard-coded, quiet over animated.
 - The build plan is `docs/V3_PLAN.md`. Its resolutions are proposals until the owner answers the matching question in its section 8; until then, the handoff holds.
-- Confirm each library version against that package's own documentation on the day you use it. Prefer the session's documentation, Motion, Vercel, GitHub, and Playwright tools over guessing. Use npm, with one lockfile.
+- Confirm each library version against that package's own documentation on the day you use it. Prefer the session's documentation, Motion, Vercel, GitHub, and Playwright tools over guessing; section 9 of `docs/V3_PLAN.md` says which tool serves which job. Use npm, with one lockfile.
 
 ## Branches and releases
 
@@ -66,6 +66,8 @@ This repository builds amjadrehawi.com for its owner, Amjad Rehawi. Version 3 is
 - Raven's Stage 1 of the 8-stage roadmap is in progress, and stages 2 to 8 are plans. The site makes no flight or hover statement about Raven, and no statement that autonomy software, flight software, or onboard perception exists.
 - Raven's roadmap ends in "coordinated multi-drone autonomy", worded exactly so. FAA Part 107 is "in progress".
 - The hero's thermal view is labelled as an illustration and carries no temperature or telemetry numbers.
+- The hero drawing of Raven is an original, simple tri-tiltrotor outline. Never trace the stock airframe or any commercial aircraft. Its caption reads exactly: "Raven, tri-tiltrotor eVTOL. Illustration, not measured data."
+- The hero never shows invented 3D geometry; the only 3D hero is the owner's own model.
 - Raven is a personal project. The senior design project is a separate team project, and the two are never mixed.
 - Bronco Racing titles, by period, each kept with its own dates:
   - Electrical Specialist, Sep 2023 to Nov 2025.

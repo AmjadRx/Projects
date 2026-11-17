@@ -2,7 +2,7 @@
 
 Phase 0 of the v3 build (`ARCHITECTURE.md` section 14). Written on 2026-11-16 on branch `v3`, created from `main` at commit `0b35c7a`. This file and the root `CLAUDE.md` are the only changes in this phase. Section 14 lists only this plan; `CLAUDE.md` is added at the owner's request so that every later session loads the standing rules. Phase 1 starts only after the owner has read this plan and says go.
 
-**Handoff used.** Revision 3 of `ARCHITECTURE.md` and `CONTENT_RULES.md`, revision 2 of `DESIGN_DIRECTION.md`, and the rules and seed files as they stood at 22:13 local time. The handoff moved from revision 1 to revision 3 while this survey ran, so every finding below was checked again against revision 3. Section 2 pins the exact files. Before each phase the handoff is compared with these pins, and if any file differs, this plan is updated first.
+**Handoff used.** Revision 3 of `ARCHITECTURE.md` and `CONTENT_RULES.md`, revision 2 of `DESIGN_DIRECTION.md`, and the rules and seed files as they stood at 22:13 local time on 2026-11-16. The handoff moved from revision 1 to revision 3 while this survey ran, so every finding below was checked again against revision 3; section 2.1 lists what changed. Section 2 pins the exact files. On 2026-11-17, at the owner's request, every file was read again in full, and all 17 still match the pins. Before each phase the handoff is compared with these pins, and if any file differs, this plan is updated first.
 
 **How to read it.** The resolutions in section 5 are proposals. Where one depends on a question in section 8, it waits for the owner's answer, and where one departs from the handoff, the handoff holds until the owner says yes. Answers are recorded in section 8 as they arrive. Because this repository is public, weaknesses in the live v2 site are named here only in general terms; the specifics are in the owner's Phase 0 report.
 
@@ -61,6 +61,32 @@ Phase 0 of the v3 build (`ARCHITECTURE.md` section 14). Written on 2026-11-16 on
 **`.mcp.json`.** Never opened. Its status comes from `git ls-files` and `git ls-tree`.
 
 **Versions and platform facts.** The npm registry, queried at 05:56 UTC on 2026-11-17 (21:56 on 2026-11-16 local time), and each package's own documentation, release notes, or licence file, cited in section 4. Independent research agents covered each stack area and were required to cite official sources. Their claims were checked against the registry, against npm dry runs of every public package in the set, and against the code. A separate review pass then checked this plan for completeness, accuracy, and publication safety, and a final cross-check compared it with every verified finding; each item it added was checked against the code or the handoff before it went in.
+
+### 2.1 What changed from revision 1 to revision 3
+
+Found by comparing my first reads of revision 1 with the current files, section by section and rule by rule. Revision 2 followed the owner's answers on 2026-11-16; revision 3, the same evening, changed only content.
+
+| change | revision | where this plan handles it |
+|---|---|---|
+| A site-wide interactive sky from a real star catalog, with a real Milky Way image, the sky over Santa Clara at the visitor's time, three tiers, and still images (`ARCHITECTURE.md` 6A; `DESIGN_DIRECTION.md` 6.0) | 2 | D-50, D-66 to D-68, 4.2 (sky data), 5.6, 5.7, R-05, R-06, R-14, Q-27 to Q-29 |
+| A media system: a block and a viewer for every kind of attachment, an admin media library, and a storage adapter with Vercel Blob for large files (`ARCHITECTURE.md` 13A; `DESIGN_DIRECTION.md` 11) | 2 | D-13, D-17, D-22 to D-30, D-34, D-81, 4.2, R-11, R-18 to R-20, Q-18 to Q-22, Q-24 |
+| The owner is on Vercel Pro (`ARCHITECTURE.md` 13A) | 3 | D-31, D-38, 5.7, R-20 |
+| A `model` hero mode with the owner's own 3D model replaces the procedural 3D scene, `scene3d` (`ARCHITECTURE.md` 6; `DESIGN_DIRECTION.md` 6.1) | 2 | D-11, D-51, D-52, 5.6 |
+| Schema: the media kinds `model`, `document`, and `audio`; `captions` and `store`; `settings.background` and `heroModel`; `gpaLabel`; `contact.resumeRequest`; seven new block types (model3d, document, audio, code, compare, panzoom, repo); mixed galleries (`ARCHITECTURE.md` 4) | 2 | D-01, D-03, D-13, Q-09 |
+| The GPA is printed only with its label, as "Major GPA 3.65"; revision 1 had no GPA and no phone in the seed (`ARCHITECTURE.md` 4, 5, 15; `CONTENT_RULES.md` 2) | 2 | D-08, D-14, Q-23 |
+| Contact links for GitHub, "Book a call", and the phone, and a "Request my resume" email button (`ARCHITECTURE.md` 5, 15; `CONTENT_RULES.md` 2, 4) | 2 | D-41, D-64 |
+| Project order: the senior design project, hidden in revision 1, is now visible, featured, and first; MoonLamp is new at 5; every other project moves down one or two places (seed) | 2 | Q-25, section 6 |
+| The senior design page's six electrical areas and team of five, and the MoonLamp repository link (`CONTENT_RULES.md` 3; seed) | 3 | Q-13, Q-14, D-76, 5.7 |
+| The tools section (`ARCHITECTURE.md` 17) | 2 | Section 9 |
+| Public rules grow from 37 to 40: GPA-LABEL, DBVF-FLOWN, and FIRMWARE-CHECKS are added; no rule is removed or changed (`content-rules.public.json`) | 2 | D-19, 5.7 |
+| Acceptance: item 2 now requires the labelled GPA, item 5 counts eight places for the thermal ramp (it was six), item 6 keeps three.js out of every first load, and items 6a (the sky), 6b (attachments), and 6c (contact) are new (`ARCHITECTURE.md` 15) | 2 | D-08, D-53, D-64, D-67, D-80 |
+| The thermal ramp gains two places: the dawn on the sky's horizon and the thermal view of the 3D viewer (`DESIGN_DIRECTION.md` 2.4) | 2 | D-53 |
+| Budgets: the home page's first load excludes three.js, pdf.js, and viewer code, and the sky's deferred chunk gets its own budget (`ARCHITECTURE.md` 9) | 2 | R-05, D-71 |
+| Security: Blob upload tokens, SVG sanitizing, and parsing in a worker (`ARCHITECTURE.md` 11) | 2 | D-24, D-26, D-81 |
+| Build order: Phase 3 adds every viewer, the storage adapter, and `/dev/blocks`; Phase 5 becomes "Sky and motion" with the `model` hero (`ARCHITECTURE.md` 14) | 2 | Section 10, 5.7, R-22 |
+| The repository is becoming private (`ARCHITECTURE.md` header) | 2 | Q-06, R-12 |
+
+One correction to this plan's first version: the rule that the hero drawing is an original outline that traces no commercial aircraft was already in revision 1 (`ARCHITECTURE.md` 6). The first version missed it; D-51 now carries it.
 
 ## 3. Keep, replace, remove
 
@@ -280,7 +306,7 @@ Each row gives the handoff's requirement, what v2 does (file and line at `0b35c7
 | D-28 | Word files rendered in the browser; documents parsed in a worker | `docx-preview` renders into the page with no sanitizing (script can arrive through embedded HTML and `javascript:` links), and it needs a DOM, so it cannot run in a worker. | Recommended: ask for a PDF export as the readable file and offer the Word file as a download. The alternative is a sandboxed frame with its own policy (Q-19). |
 | D-29 | Media from the owner's files | The picker accepts any external image address (`components/admin/media.tsx:212-218`), which `next/image` would reject, and `next.config.mjs` sets no image options. | Images from `/media` and the Blob store only; external links only for YouTube and Vimeo. `images.remotePatterns` names the owner's exact Blob store host, never the shared Blob domain (which would let any Blob store use the site's metered optimizer), and `images.localPatterns` covers `/media` and `/sky`. |
 | D-30 | Photos compressed to WebP in the browser, at most 2560 px, the original not kept | `components/admin/media.tsx:16-36` uploads images under 1 MB and every GIF untouched, keeps the original when the WebP is not smaller, and names the canvas output `.webp` even when Safari returns PNG. This has already happened: both `img-7414.webp` files are PNG data (section 6). | Every photo is resized to at most 2560 px and encoded to WebP, through `@jsquash/webp` where the canvas cannot; the original is never kept; the stored extension comes from the output bytes; GIFs are converted. |
-| D-31 | Deploy state through `VERCEL_TOKEN` | None. | Vercel mirrors deployments into GitHub, so the existing GitHub token with Deployments read can report `draft` and `main` and give the save bar its preview address from the deployment record; if a record lacks the address, a non-secret variable holds the draft branch's preview address. A Vercel token would also need a team id on Pro (Q-31). |
+| D-31 | Deploy state through `VERCEL_TOKEN` | None. | Vercel mirrors deployments into GitHub, so the existing GitHub token with Deployments read can report `draft` and `main` and give the save bar its preview address from the deployment record; if a record lacks the address, a non-secret variable holds the draft branch's preview address. A Vercel token would also need the Pro team's id (Q-31). |
 | D-32 | Connection-status panel | Its help text does not match how `lib/auth.ts` works (`components/admin/ConnectionStatus.tsx:97`). | Correct text; rows for `SESSION_SECRET`, the draft branch, Blob, and deploy state. |
 | D-33 | Delete with confirm | `window.confirm` (`ProjectsTab.tsx:231`, `BlockEditor.tsx:278`, `media.tsx:112`). | A styled confirmation dialog, which publish needs anyway for its file list. |
 | D-34 | Repository cards: name, description, language, and last update fetched at build, a plain link as the fallback (13A); every word passes the content check (12) | No repository cards: project links render as plain buttons (`app/projects/[slug]/page.tsx:99-105`). | Fetch inside a cached function with the GitHub token, run the fetched text through the public rules and the blocklist, and fall back to the plain link on a hit or a failed fetch; the content check fails when a linked repository is private, missing, or renamed (Q-14). Project links stay plain links with the seed's label. |
@@ -292,7 +318,7 @@ Each row gives the handoff's requirement, what v2 does (file and line at `0b35c7
 | D-35 | A policy without `unsafe-eval`, `frame-ancestors 'none'`, HSTS, `nosniff`, a referrer policy, a restrictive Permissions-Policy | `next.config.mjs:2-7` sends some headers and no content security policy. | One static policy from `next.config.ts` (nonces would force dynamic rendering, which `ensureStatic` forbids): `default-src 'self'`; `script-src 'self' 'unsafe-inline'`, plus `'wasm-unsafe-eval'` only where decoders run; `style-src 'self' 'unsafe-inline'` (inline styles from `next/image`, React, and Motion); `img-src` and `media-src` `'self' data: blob:` and the owner's exact Blob store host; `connect-src 'self' blob:` and that host, plus the Blob upload API on `/admin`; `worker-src 'self' blob:`; `frame-src https://www.youtube-nocookie.com https://player.vimeo.com`; `frame-ancestors 'none'`; `object-src 'none'`; `base-uri 'self'`; `form-action 'self'`. Development adds `'unsafe-eval'`; previews add the Vercel Toolbar's host only if the owner keeps the toolbar (Q-32). Vercel already sends HSTS on custom domains; it is also set explicitly. Permissions-Policy allows `fullscreen` (self and the two embed hosts) and `clipboard-write` (self) and denies the rest. First shipped report-only on previews. |
 | D-36 | An HMAC-signed, httpOnly, Secure, SameSite=Strict session with an eight-hour expiry and a logout route | See the owner's Phase 0 report. | A token signed with `SESSION_SECRET`, carrying its issue time and expiring after eight hours, in a Strict cookie; logout clears it. |
 | D-37 | Constant-time password comparison | See the owner's Phase 0 report. | Compare HMAC digests of both values. |
-| D-38 | Five attempts per ten minutes per address, then a lockout | See the owner's Phase 0 report. | A Vercel firewall rate-limit rule on `POST /api/auth`: 5 requests per 600 seconds per IP (Hobby allows one rate-limit rule; Pro allows 40). In-memory counters are unreliable on Vercel. The command is recorded in `docs/`. |
+| D-38 | Five attempts per ten minutes per address, then a lockout | See the owner's Phase 0 report. | A Vercel firewall rate-limit rule on `POST /api/auth`: 5 requests per 600 seconds per IP (the owner's Pro plan allows up to 40 such rules). In-memory counters are unreliable on Vercel. The command is recorded in `docs/`. |
 | D-39 | 503 without `ADMIN_PASSWORD` or `SESSION_SECRET` | See the owner's Phase 0 report. | Every admin route returns 503 when either is missing; `/admin` shows a setup notice. |
 | D-40 | Mutating routes check the Origin and validate with zod | See the owner's Phase 0 report. | Both checks on every mutating route. |
 | D-41 | JSON-LD only from fields shown on the page | `app/page.tsx:18-33` and `app/projects/[slug]/page.tsx:53-64` use plain `JSON.stringify` and include fields the page does not show; the project's `CreativeWork` names the owner as sole author (`app/projects/[slug]/page.tsx:58`), against team credit, and the `Person`'s `sameAs` takes every web link, the scheduling link included (`app/page.tsx:26`). | A JSON-LD helper that escapes `<` and takes only shown fields: `Person` with `sameAs` from the LinkedIn and GitHub profile links only, and no telephone; `CreativeWork` naming the owner as a contributor with the seed's role, never sole author; an image only for a non-empty cover. |
@@ -310,7 +336,7 @@ Each row gives the handoff's requirement, what v2 does (file and line at `0b35c7
 | D-48 | Panels rise 16 px once; paragraphs never animate | `components/Reveal.tsx` fades and lifts sections and single paragraphs by 24 px over 0.6 s, and its server HTML starts every revealed element at opacity 0, so content stays hidden until scripts run. | A panel is a glass container without running prose (cards, tables, the title block, readouts, viewers). It rises through one observer that toggles a CSS class; client code sets the hidden start state only on panels still below the fold, so the server HTML never hides content. Paragraphs stay still; the hero headline has its own reveal (D-68). |
 | D-49 | Reduced motion removes animation and loses nothing; one hook, `useMotionOk()`, is false under reduced motion and inside `/admin` (`ARCHITECTURE.md` 8) | `useReducedMotion` returns no value during the server render, so `Reveal`, `PageTransition`, and `ProjectsExplorer` render one tree on the server and another on the client for reduced-motion visitors; the only reduced-motion CSS stops the marquee and smooth scrolling (`app/globals.css:233`), so transitions on the body, buttons, links, and cards keep running. | `useMotionOk()` (false on the server and until mount, under reduced motion, and on `/admin`) with `MotionConfig reducedMotion="user"`, one element tree, and branching only after mount; a global reduced-motion rule also zeroes CSS transitions, animations, and view transitions; a Playwright run with reduced motion fails on hydration errors. |
 | D-50 | The catalog sky behind every public page | `components/BackgroundFX.tsx` draws random dots and arcs on a canvas on every page. | Replaced by `components/sky/` (`ARCHITECTURE.md` 6A); random-dot space art is refused (`DESIGN_DIRECTION.md` 9). |
-| D-51 | Headline in one color; hero modes `drawing`, `model`, `media`; every hero element of `ARCHITECTURE.md` 5; the lens on pointer devices (8) | `components/hero/Hero.tsx:8-26` colors the last words differently; `components/hero/HeroVisual.tsx:25` loads 3D from 768 px; the caption and a second button are hard-coded. | The drawing with the thermal lens by default, the model and media modes, the caption from the architecture, and buttons that say what they do. Every hero element appears at every width, although the phone sketch in `DESIGN_DIRECTION.md` 4 drops the second button. The lens mode follows input capability (`(hover: hover) and (pointer: fine)`), not width. |
+| D-51 | Headline in one color; hero modes `drawing`, `model`, `media`; the drawing an original outline that traces no commercial aircraft (6); every hero element of `ARCHITECTURE.md` 5; the lens on pointer devices (8) | `components/hero/Hero.tsx:8-26` colors the last words differently; `components/hero/HeroVisual.tsx:25` loads 3D from 768 px; the caption and a second button are hard-coded. | The drawing with the thermal lens by default, the model and media modes, the caption from the architecture, and buttons that say what they do. The drawing is a simple tri-tiltrotor outline built from basic shapes, because a faithful plan view of Raven would trace its stock airframe. Every hero element appears at every width, although the phone sketch in `DESIGN_DIRECTION.md` 4 drops the second button. The lens mode follows input capability (`(hover: hover) and (pointer: fine)`), not width. |
 | D-52 | The hero never shows invented 3D geometry | `components/hero/DroneScene.tsx` is a procedural 3D aircraft. | Removed. |
 | D-53 | Tokens in `tokens.css`, no hex value outside it; the ramp only in its eight places; Archivo and B612 Mono | A different palette in `app/globals.css`, Space Grotesk and JetBrains Mono (`app/layout.tsx:7-19`), and literal colors in `app/layout.tsx:51-58`. | `tokens.css` (Blueprint, Whiteprint, the ramp, sky, and glass) mapped with `@theme inline`; a separate action token; the ramp tokens used only by the eight components, checked by a test. Open Graph images, the manifest, the viewport color, the sky shaders, and the viewer materials read a `lib/tokens.ts` generated from `tokens.css`, which is the only file the hex check exempts. Archivo with its width axis and B612 Mono through `next/font` (Q-16). |
 | D-54 | No pills except the availability badge; no chips, tag clouds, or pill rows; no drop shadows in Blueprint; card hover is tilt, highlight, and callouts (`DESIGN_DIRECTION.md` 4, 5.8, 6.3, 9) | Pills and chips in `ProjectCard.tsx`, `ProjectsExplorer.tsx`, `SkillsSection.tsx`, and `Footer.tsx`; a shadow and a cover zoom on card hover (`ProjectCard.tsx:23-29`). | Cards per 5.8. Tilt only for fine pointers, reset on press before navigating. |
@@ -375,7 +401,7 @@ Each row gives the handoff's requirement, what v2 does (file and line at `0b35c7
 | item | conflict | resolution |
 |---|---|---|
 | Phase 0 scope | Section 14 says Phase 0 writes `docs/V3_PLAN.md` and changes nothing else; the owner's request for this phase also asks for a root `CLAUDE.md`. | Both files are committed; the owner's request is the later and more specific instruction. |
-| Publishing during the build | Phase 6 must prove a publish on the preview, but rule 3 and acceptance 14 keep `main` untouched. Branch-specific Preview variables leave every other preview on the default Preview values, and v2's branch helper falls back to `main` (`lib/github.ts:16-18`). | Phase 6 runs against two sandbox branches cut from `v3`, set as the default Preview values of `GITHUB_BRANCH` and `GITHUB_DRAFT_BRANCH` (not only as a `v3` override) or through a Pro custom environment, so no preview can target `main`. The code has no default branch, refuses any write to `main` except the publish merge, and refuses that merge outside production (Q-30). |
+| Publishing during the build | Phase 6 must prove a publish on the preview, but rule 3 and acceptance 14 keep `main` untouched. Branch-specific Preview variables leave every other preview on the default Preview values, and v2's branch helper falls back to `main` (`lib/github.ts:16-18`). | Phase 6 runs against two sandbox branches cut from `v3`, set as the default Preview values of `GITHUB_BRANCH` and `GITHUB_DRAFT_BRANCH` (not only as a `v3` override) or through a custom environment, which the Pro plan offers, so no preview can target `main`. The code has no default branch, refuses any write to `main` except the publish merge, and refuses that merge outside production (Q-30). |
 | Proof that does not resolve | Section 4 says it fails the content check; section 7 lists it among warnings that do not block. | The content check blocks it, judged on the state after the save (a proof to a hidden project counts as unresolved), and the editor also warns before saving. |
 | Contrast | Several specified pairs fall under AA: the specified ink on the Whiteprint action color (about 3.1:1), the mute ink on the raised surface (about 4.0:1 in Blueprint and 4.4:1 in Whiteprint), and the Whiteprint mute ink and line color on the Whiteprint media-well color, where placeholders sit. Dark text on the cold end of the primary button's hover sweep falls near 1:1, and one end of the ramp nearly vanishes on each theme's sheet. | White text on the Whiteprint action color (about 5.2:1); mute ink never on the raised surface; light-on-dark values inside Whiteprint media wells; the sweep runs along a 2 px edge or ends in solid amber before any text; ramp segments are outlined at 3:1 or more; a Vitest check of every text and line token against every surface in both themes (Q-17). |
 | Whiteprint glass and sky tokens | `DESIGN_DIRECTION.md` 2.1 defines glass, sky, and ground tokens for Blueprint only. | The design bundle's values if it has them; otherwise white glass at about 0.72 opacity, the same blur, and no dawn. |
@@ -397,7 +423,7 @@ Each row gives the handoff's requirement, what v2 does (file and line at `0b35c7
 | MoonLamp link | The project is MoonLamp; its link points to a public repository named MoonLight. | Q-14. |
 | Rules that match themselves | Five rule messages and one rule id (the pack-voltage rule) match their own patterns, and `CONTENT_RULES.md` itself trips GPA-LABEL. | The content check scans `content/`, `docs/`, `README.md`, every other committed Markdown file, and component strings, but never `content-rules.public.json` or handoff text. Documents cite rules by id, never quoting a message, a pattern, or a banned phrase, and the pack-voltage rule is named in words because its id trips its own pattern. |
 | Rules that also refuse ordinary wording | Every pattern runs without regard to case. One acronym in TEST-METHODS is also an everyday English verb; DBVF-FLOWN also matches a common contraction and an ordinary verb near the aircraft's name; RF and RAVEN-SOFTWARE apply site-wide, so they would also refuse some future senior design updates. | Keep every rule as given (`CONTENT_RULES.md` 5): a refusal names the rule so the owner can reword, `docs/ADMIN_GUIDE.md` explains these four, and only a new handoff changes a rule (Q-40). |
-| Still and live sky | The still image is rendered at one sidereal time and the live sky shows the visitor's time, so the stars jump at the fade, and easing one fixed-time still to the real time would sweep up to 12 hours of sky. | Render the Blueprint still at 24 hourly sidereal steps for each width class (one small file per visit); the inline head script picks the step nearest the visitor's sky (`ARCHITECTURE.md` 6A) before first paint, and the live sky starts there, within about half an hour of the real sky, so the fade shows no jump (Q-29). |
+| Still and live sky | The still image is rendered at one sidereal time, while the live sky starts from the real sky over Santa Clara at the visitor's time (`ARCHITECTURE.md` 6A), so the stars jump at the fade, and easing one fixed-time still to the real time would sweep up to 12 hours of sky. | Render the Blueprint still at 24 hourly sidereal steps for each width class (one small file per visit); before first paint, the inline head script picks the step nearest the current sidereal time at latitude 37.35 north, longitude 121.94 west. The live sky starts from that step, within half an hour of the real sky, so the fade shows no jump, and then turns at 60 times the real rate, as 6A specifies (Q-29). |
 | Twelve admin tabs | New editors for `seo`, `now`, `background`, `heroModel`, `gpaLabel`, and `resumeRequest` have no tab. | `seo`, `background`, and `heroModel` under Settings; `now` and `gpaLabel` under Personal; `resumeRequest` under Contact; twelve tabs stay. |
 | Sample files for `/dev/blocks` | Phase 3 needs a sample of every attachment kind, but real media only. | Fixtures generated by script (abstract shapes, a test tone, a one-page PDF) under `tests/fixtures/`, served only by the dev route and deleted with it; no third-party sample without the owner's yes. |
 | Revision labels | The three documents carry revisions 3, 3, and 2; `content-rules.public.json` carries version 1; the seed files carry none. | This plan pins the file hashes in section 2. |
@@ -453,13 +479,15 @@ All 15 distinct files exist in git with exact case (Vercel builds on a case-sens
 | R-17 | Pushing `v3` builds a preview of v2 code; if the Vercel project is set to Node 20, every new deployment fails. | A failed preview; production unaffected. | Check the project's Node setting (Q-03). |
 | R-18 | HEVC and MOV video play fully only in Safari. | Videos that do not play for most visitors. | Detect at upload; warn or ask for H.264 (Q-20). |
 | R-19 | GitHub limits content-creating API calls to 80 per minute. | Bulk uploads fail midway. | One commit per batch through the Git Data API. |
-| R-20 | On Pro, Blob storage and transfer and image optimization are metered beyond the included amounts, and a video cover that plays in view is fetched on every visit. | Unexpected cost. | A spend limit and alerts in Vercel (owner); posters first; short cover clips; long videos as embeds. |
+| R-20 | On the owner's Pro plan, Blob storage and transfer and image optimization are metered beyond the included amounts, and a video cover that plays in view is fetched on every visit. | Unexpected cost. | A spend limit and alerts in Vercel (owner); posters first; short cover clips; long videos as embeds. |
 | R-21 | Previews run the admin with Preview variables. Section 14 puts the security work in Phase 6, so an admin route built earlier would run without the full session design; preview and production can share one Blob store; and CI traces could record the bypass header or an admin cookie. | A test delete removes a file production uses, or a preview admin or a trace exposes access. | The owner confirms Vercel Authentication on previews and sets a Preview-only `ADMIN_PASSWORD` and Blob store (Q-44); every admin route built before Phase 6 sits behind the session check; traces only on failure, never with the bypass header or an admin session (D-80); old previews are deleted after release. |
 | R-22 | Phase 2 puts the seed in `content/` while v2 pages still render it: they render skill items as text (the seed's items are objects, which crash the home page), print the GPA after a bare label, and mishandle empty covers, and the seed's nav links to `/log` before it exists. Phase 3 shows the hero in `media` mode while the seed says `drawing`. | A failed or rule-breaking Phase 2 preview, and previews that ignore the seed's hero setting. | Phase 2 adapts those pages (or routes them through an adapter) and stubs `/log`; each phase report says which hero mode the preview shows until Phase 5. |
 
 ## 8. Questions for the owner
 
 Each question has my default in brackets; "defaults are fine" is a valid answer.
+
+**Recorded so far.** Vercel plan: Pro (`ARCHITECTURE.md` 13A; the owner confirmed it on 2026-11-17). Syncing the code to Claude Design waits until after Phase 4 (the owner's choice on 2026-11-17).
 
 ### 8.1 Before Phase 1
 
@@ -497,9 +525,9 @@ Each question has my default in brackets; "defaults are fine" is a valid answer.
 
 - **Q-27** If the sky misses its 220 kB budget: trim React Three Fiber with `createRoot` and a short `extend` list (or use plain `three`), or raise the budget? [Trim first.]
 - **Q-28** Full-tier bloom through a post-processing pass, or glow drawn in the star shader? [Shader glow.]
-- **Q-29** Sky data: HYG with CC BY-SA on the star file, the ESO photograph, a 2K Milky Way everywhere, no labels on unnamed stars, and the live sky starting from the hourly still nearest the visitor's sky (5.7); and is the site non-commercial? [Yes to each; non-commercial.]
+- **Q-29** Sky data: HYG with CC BY-SA on the star file, the ESO photograph, a 2K Milky Way everywhere, no labels on unnamed stars, and the live sky starting from the hourly still nearest the current sky over Santa Clara (5.7); and is the site non-commercial? [Yes to each; non-commercial.]
 - **Q-30** Publish by fast-forward only, refusing when `draft` and `main` have diverged, with Phase 6 tested on sandbox branches? [Yes.]
-- **Q-31** Deploy state and the save bar's preview link through the GitHub token with Deployments read, or a Vercel token, which on Pro also needs a team id? [GitHub token; if a deployment record lacks the address, a non-secret variable holds the draft branch's preview address.]
+- **Q-31** Deploy state and the save bar's preview link through the GitHub token with Deployments read, or a Vercel token, which on the Pro plan also needs the team id? [GitHub token; if a deployment record lacks the address, a non-secret variable holds the draft branch's preview address.]
 - **Q-32** SEO 100 checked on production after the merge, INP from Speed Insights, a small Lighthouse set per push and the full matrix in Phase 7; and do you use the Vercel Toolbar on previews? [Yes; allow the toolbar on previews only if you use it.]
 - **Q-33** Will you create these secrets: `MOTION_TOKEN`, `VERCEL_AUTOMATION_BYPASS_SECRET`, and `CONTENT_BLOCKLIST` in GitHub Actions, and `CONTENT_BLOCKLIST` in Vercel for Production and Preview, with your senior design teammates' and faculty names among its terms, scoped to the senior design page for any name the site shows elsewhere (D-76)? [Yes.]
 - **Q-34** A ruleset on `main` that blocks force pushes and deletions, with you on the bypass list, knowing that GitHub Free stops enforcing rulesets once the repository is private (GitHub Pro keeps them)? [Yes while the repository is public; after that, the publish code's refusal and the pre-push hook stay the guard (R-07).]
@@ -519,24 +547,56 @@ Each question has my default in brackets; "defaults are fine" is a valid answer.
 
 ## 9. Tools for this build
 
-`ARCHITECTURE.md` section 17 asks for this list. It is curated to the build: what this session has, and what each will be used for.
+`ARCHITECTURE.md` section 17 asks for the MCP servers, plugins, and skills this session has, and which of them the build uses for what. Checked on 2026-11-17; a status changes when the owner signs in.
 
-| need | tool | status today | use |
-|---|---|---|---|
-| Next.js, React, Tailwind, three.js, React Three Fiber, pdf.js references | Context7 documentation MCP | present, needs your sign-in | Until then, the official documentation on the web, as in this survey. |
-| Motion and Motion+ | Motion MCP and Motion+ MCP (documentation search, source search, easing generator, transition editor, performance report) | connected | Before every animation, from Phase 5. |
-| Previews, environment variables, build logs, Blob, firewall | Vercel MCP; Vercel CLI | MCP needs your sign-in; CLI not installed | Q-07. |
-| Branches, the pull request, CI results | GitHub MCP; `gh` 2.96.0 | MCP failed to connect; `gh` is signed in as AmjadRx | `gh` for all GitHub work. |
-| Netlify | Netlify connector | available | A read-only check for Q-05 and D-77, with your yes. |
-| Four widths, both themes, reduced motion, keyboard, axe | Playwright MCP and `@playwright/test`; Chromium is cached locally | available | Every phase from 1 on. |
-| Applying the designs | DesignSync; the Claude Design bundle | DesignSync available; bundle not yet delivered | Phase 4. |
-| 3D scene checks | three.js viewer MCP | available | Phases 3 and 5. |
-| Component references | A component-library MCP | not configured in this session | Only if you configure it outside the repository. |
-| Security scans | Aikido MCP | needs sign-in | Optional, alongside gitleaks. |
-| Framework guidance | Skills: Next.js, Cache Components, Next upgrade, Vercel storage, Vercel firewall, environment variables, Motion, frontend design, security review, code review | available | As each phase needs them. |
-| Image, video, and 3D generation | Several generation servers are connected | available | Never used for the owner's hardware, people, or results; abstract atmosphere only where real data cannot supply it, and only with the owner's yes for that item (section 17). |
+### 9.1 MCP servers and connectors
+
+| server | status | use |
+|---|---|---|
+| Motion and Motion+ (`motion`, `motion-plus`) | connected | Documentation and source search, the easing generator, the transition editor, and the performance report, before writing any animation (Phases 1 and 5). |
+| Playwright (Playwright plugin), with `@playwright/test` and a locally cached Chromium | connected | The site at 390, 768, 1024, and 1440 px in both themes, with reduced motion, keyboard paths, and axe, in every phase from 1 on. |
+| three.js 3D Viewer (claude.ai connector) | connected | Scene checks while building the sky and the model viewer (Phases 3 and 5). |
+| Claude Design (`DesignSync`) | available | The Phase 4 design pass from the Claude Design bundle (Q-37); syncing the v3 components back to Claude Design after Phase 4, as the owner chose on 2026-11-17. |
+| Netlify (claude.ai connector) | connected | One read-only check that no Netlify site still builds this repository (Q-05, D-77), with the owner's yes. |
+| Vercel (Vercel plugin) | needs the owner's sign-in | Preview deployments, environment variables, build logs, the Blob store, and the firewall rule (Q-07). Until then, commands for the owner to run, or the Vercel CLI once installed. |
+| Context7 (Context7 plugin) | needs the owner's sign-in | Current API details for Next.js, React, Tailwind, three.js, React Three Fiber, and pdf.js. Until then, each project's official documentation on the web, as in this survey. |
+| Aikido (Aikido plugin) | needs the owner's sign-in | Optional dependency and code scans beside gitleaks. |
+| GitHub (GitHub plugin) | fails to connect: the server rejects its authorization header | Not used. `gh` 2.96.0, signed in as AmjadRx, covers branches, the pull request, and CI results. |
+| A component-library MCP | not configured | Only if the owner configures it outside the repository (`ARCHITECTURE.md` 17). |
+| Image, video, and 3D generation servers | connected | Never used for the owner's hardware, people, or results; abstract atmosphere only where real data cannot supply it, and only with the owner's yes for that item. |
+
+### 9.2 Plugins
+
+| plugin | brings | use |
+|---|---|---|
+| Vercel | the Vercel MCP, the Next.js and Vercel skills, and deployment and performance agents | Phases 1, 3, 6, and 7 |
+| Playwright | the Playwright MCP | every phase |
+| Context7 | the documentation MCP | every phase, once signed in |
+| Frontend design | the frontend-design skill | Phases 4 and 5 |
+| Design | the accessibility-review skill | Phases 4, 5, and 7 |
+| Code review and PR review toolkit | review skills and reviewer agents | before each phase report and the release pull request |
+| Superpowers | process skills | verification before any phase is reported done |
+| Aikido | the security scan MCP | optional |
+
+### 9.3 Skills
+
+| skill | use |
+|---|---|
+| `vercel:nextjs`, `vercel:next-upgrade`, `vercel:next-cache-components` | the Next 16 upgrade, Cache Components, and `ensureStatic` (Phase 1) |
+| `vercel:vercel-storage` | Blob client uploads and the storage adapter (Phases 3 and 6) |
+| `vercel:vercel-firewall` | the login rate-limit rule (Phase 6) |
+| `vercel:env-vars`, `vercel:deployments-cicd`, `vercel:verification` | environment variables, preview deployments, and deploy checks |
+| `motion` | Motion and Motion+ usage (Phases 1 and 5) |
+| `frontend-design:frontend-design` | the design pass and the look of the sky (Phases 4 and 5) |
+| `design:accessibility-review` | the WCAG 2.2 AA review (Phases 4, 5, and 7) |
+| `design-sync` | Claude Design, after Phase 4 |
+| `security-review`, `code-review` | before each phase report and the release |
+| `superpowers:verification-before-completion` | evidence before any claim that a phase is done |
+| `run` | starting the site locally to see a change work |
 
 ## 10. Phase 1, after your go
+
+No Phase 1 work exists yet, so nothing has to be redone for revision 3.
 
 1. Compare the handoff with the pins in section 2, and update this plan first if anything changed.
 2. Confirm the cleanup in Q-01; remove `.mcp.json` and extend `.gitignore`.
