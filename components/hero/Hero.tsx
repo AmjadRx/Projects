@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import type { Site } from '@/lib/types';
+import type { Site } from '@/lib/legacy/types';
 import AvailabilityBadge from '@/components/AvailabilityBadge';
 import HeroVisual from './HeroVisual';
 
@@ -7,6 +7,8 @@ export default function Hero({ site }: { site: Site }) {
   const { personal, settings } = site;
   const [head] = personal.tagline.split(' move themselves.');
   const accented = personal.tagline.includes('move themselves.');
+  // The GPA is only ever printed with its label, and not at all when either is empty.
+  const gpa = personal.gpa && personal.gpaLabel ? `${personal.gpaLabel} ${personal.gpa}` : '';
 
   return (
     <section className="wrap grid grid-cols-1 items-center gap-12 pb-16 pt-28 md:grid-cols-12 md:gap-10 md:pb-24 md:pt-40">
@@ -35,7 +37,8 @@ export default function Hero({ site }: { site: Site }) {
           </Link>
         </div>
         <p className="kicker mt-9">
-          {personal.degree} · {personal.school} · GPA {personal.gpa} · Class of {personal.graduation}
+          {personal.degree} · {personal.school}
+          {gpa && ` · ${gpa}`} · Class of {personal.graduation}
         </p>
       </div>
       <div className="md:col-span-5">

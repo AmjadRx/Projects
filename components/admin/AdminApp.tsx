@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ExternalLink, LogOut } from 'lucide-react';
-import type { Project, Site } from '@/lib/types';
+import type { Project, Site } from '@/lib/legacy/types';
 import { cn } from '@/lib/utils';
 import {
   AboutTab, ContactTab, ExperienceTab, HonorsEduTab, NavTab,
@@ -310,7 +310,7 @@ export default function AdminApp() {
               <span className="font-mono text-xs text-accent-2">● Unsaved changes</span>
             ) : savedMode === 'github' ? (
               <span className="font-mono text-xs text-accent">
-                ✓ Saved and committed. Site rebuilds in ~1–2 min.
+                ✓ Saved and committed. Site rebuilds in ~1 to 2 min.
               </span>
             ) : savedMode === 'fs' ? (
               <span className="font-mono text-xs text-accent">✓ Saved to local files.</span>

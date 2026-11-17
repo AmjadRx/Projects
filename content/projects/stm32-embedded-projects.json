@@ -1,39 +1,47 @@
 {
   "slug": "stm32-embedded-projects",
-  "title": "STM32 Embedded Systems",
-  "subtitle": "A bench of peripherals-to-analog projects on STM32L476",
-  "role": "Personal / coursework",
-  "timeframe": "Sep 2024 - present",
+  "visible": true,
+  "title": "STM32L476 Embedded Systems Suite",
+  "subtitle": "Bare-metal builds on STM32L476 boards",
+  "role": "Personal and coursework",
+  "timeframe": "Sep 2024 to present",
   "status": "active",
+  "statusLabel": "",
+  "maturity": {
+    "step": 4,
+    "label": "Validated with oscilloscope and logic analyzer"
+  },
   "featured": false,
-  "order": 8,
-  "domain": "Embedded · Analog",
+  "order": 10,
+  "domain": "Embedded firmware",
   "tags": [
     "STM32",
     "C",
-    "interrupts",
+    "Timers",
+    "ADC",
     "SPI",
-    "DMA",
-    "analog"
+    "UART",
+    "DMA"
   ],
   "cover": {
     "kind": "image",
-    "src": "/media/stm32-embedded-projects/cover.jpg",
-    "alt": "STM32L476 bench"
+    "src": "",
+    "alt": ""
   },
   "links": [],
-  "pitch": "A series of STM32L476 builds exercising the full peripheral set: timers, ADC, GPIO, interrupts, SPI, UART, and DMA, each validated with oscilloscope and logic analyzer.",
+  "callouts": [],
+  "pitch": "A set of embedded builds on STM32L476 boards covering timers, ADC, GPIO, interrupts, SPI, UART, and DMA.",
   "highlights": [
-    "LCD stopwatch/timer with joystick input and button-interrupt handlers",
-    "SPI LED light show on a Pololu programmable strip",
-    "IR remote control with a custom parsing algorithm",
-    "Proximity-enabled audio device: low-pass filter, amplifier, and analog speaker driven by PWM"
+    "LCD stopwatch and timer with joystick input and button interrupts",
+    "SPI LED light show on a Pololu strip",
+    "IR remote with a custom parsing algorithm",
+    "Proximity-enabled audio device: low-pass filter, amplifier, PWM-driven speaker"
   ],
   "blocks": [
     {
-      "id": "st1",
+      "id": "sm-a",
       "type": "text",
-      "md": "Hands-on embedded work on STM32L476 dev boards: a stopwatch/timer device with LCD and interrupt-driven input, an SPI-driven LED light show, an IR remote with a custom protocol parser, and a proximity-enabled audio device that carries a signal from sensor through ADC, interrupts, PWM/DAC, an analog low-pass filter, and an amplifier to a speaker. Everything validated on oscilloscope and logic analyzer."
+      "md": "Four builds on STM32L476 boards: an LCD stopwatch and timer (joystick input, button interrupts), an SPI LED light show (Pololu strip), an IR remote with a custom parsing algorithm, and a proximity-enabled audio device (low-pass filter, amplifier, PWM-driven speaker). Together they cover timers, ADC, GPIO, interrupts, SPI, UART, and DMA, validated with oscilloscope and logic analyzer."
     }
   ]
 }

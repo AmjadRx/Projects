@@ -1,4 +1,4 @@
-import type { Site } from '@/lib/types';
+import type { Site } from '@/lib/legacy/types';
 import AvailabilityBadge from '@/components/AvailabilityBadge';
 import LinkIcon from '@/components/LinkIcon';
 import Reveal from '@/components/Reveal';

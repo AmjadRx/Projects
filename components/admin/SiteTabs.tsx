@@ -1,6 +1,6 @@
 'use client';
 
-import type { Site, SocialLink } from '@/lib/types';
+import type { Site, SocialLink } from '@/lib/legacy/types';
 import { detectIcon, uid } from '@/lib/utils';
 import LinkIcon from '@/components/LinkIcon';
 import { AddButton, Area, Field, RowControls, Select, TabHeader, Text, Toggle, move } from './fields';
@@ -18,7 +18,7 @@ export function SettingsTab({ site, patch }: { site: Site; patch: Patch }) {
         <ConnectionStatus />
         <Field
           label="Default theme"
-          hint="Applies to first-time visitors. Anyone who has clicked the sun/moon toggle keeps their own choice (stored in a browser cookie) — clear the cookie or toggle again to see the new default yourself."
+          hint="Applies to first-time visitors. Anyone who has clicked the sun/moon toggle keeps their own choice (stored in a browser cookie); clear the cookie or toggle again to see the new default yourself."
         >
           <Select
             value={s.themeDefault}

@@ -1,0 +1,98 @@
+{
+  "slug": "dbvf-senior-design",
+  "visible": true,
+  "title": "SCU Pegasus: Design-Build-Vertical Flight",
+  "subtitle": "Senior design: the electrical system of a search and rescue hexacopter",
+  "role": "Electrical engineer (team project)",
+  "timeframe": "Sep 2026 to present",
+  "status": "in-progress",
+  "statusLabel": "In design",
+  "maturity": {
+    "step": 2,
+    "label": "In design (team)"
+  },
+  "featured": true,
+  "order": 1,
+  "domain": "eVTOL, electrical systems",
+  "tags": [
+    "Hexacopter",
+    "Power distribution",
+    "Payload electronics",
+    "Navigation",
+    "Autonomy",
+    "Communication",
+    "Team project",
+    "Senior design"
+  ],
+  "cover": {
+    "kind": "image",
+    "src": "",
+    "alt": ""
+  },
+  "links": [],
+  "callouts": [],
+  "pitch": "My senior design team, SCU Pegasus, is building a search and rescue hexacopter for the Vertical Flight Society's Design-Build-Vertical Flight student competition. I am the team's electrical engineer.",
+  "highlights": [
+    "Responsible for the electronics, software, and automation of the aircraft",
+    "Six electrical areas, all mine: payload electronics, navigation and GPS, autonomy and physical AI, electrical safety switches and mechanisms, communication and RF, and power distribution",
+    "A team of five students: four mechanical engineers and me, a double major in mechanical and electrical engineering",
+    "Coordinating with the mechanical engineers on structures and payload",
+    "A team project, credited to the team"
+  ],
+  "blocks": [
+    {
+      "id": "db-a",
+      "type": "text",
+      "md": "For academic year 2026 to 2027, my senior design team, SCU Pegasus, is Santa Clara University's entry in the Vertical Flight Society's Design-Build-Vertical Flight (DBVF) student competition, where teams design, build, and fly a small electric VTOL aircraft for a set mission. Our aircraft is a search and rescue hexacopter. It is a team project, and the work is the team's."
+    },
+    {
+      "id": "db-b",
+      "type": "heading",
+      "text": "My part: the electrical system"
+    },
+    {
+      "id": "db-c",
+      "type": "text",
+      "md": "We are a team of five students: four mechanical engineers and me, a double major in mechanical and electrical engineering. I am the team's electrical engineer, responsible for the electronics, software, and automation. I work on all six electrical areas myself, and I coordinate with the mechanical engineers so the electrical system fits the structure and the payload."
+    },
+    {
+      "id": "db-d",
+      "type": "bullets",
+      "heading": "The six electrical areas",
+      "items": [
+        "Payload electronics",
+        "Navigation and GPS",
+        "Autonomy and physical AI",
+        "Electrical safety switches and mechanisms",
+        "Communication and RF",
+        "Power distribution"
+      ]
+    },
+    {
+      "id": "db-e",
+      "type": "callout",
+      "tone": "status",
+      "md": "Status: in design. Photos, drawings, and results will be added here as the build produces them."
+    }
+  ],
+  "progress": {
+    "steps": [
+      {
+        "label": "Proposal and requirements",
+        "state": "done"
+      },
+      {
+        "label": "Architecture and trade studies",
+        "state": "current"
+      },
+      {
+        "label": "Build",
+        "state": "todo"
+      },
+      {
+        "label": "Fly-off",
+        "state": "todo"
+      }
+    ]
+  }
+}

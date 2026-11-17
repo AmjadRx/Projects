@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Upload, X } from 'lucide-react';
-import type { MediaRef } from '@/lib/types';
+import type { MediaRef } from '@/lib/legacy/types';
 import { MediaPlaceholder } from '@/components/MediaView';
 import { IconBtn } from './fields';
 

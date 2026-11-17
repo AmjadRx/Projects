@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import type { Site } from '@/lib/types';
+import type { Site } from '@/lib/legacy/types';
 import AvailabilityBadge from '@/components/AvailabilityBadge';
 import Reveal from '@/components/Reveal';
 

@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { useState } from 'react';
-import type { MediaRef } from '@/lib/types';
+import type { MediaRef } from '@/lib/legacy/types';
 import { cn, embedSrc } from '@/lib/utils';
 
 interface MediaViewProps {
@@ -16,7 +16,7 @@ interface MediaViewProps {
   placeholderLabel?: string;
 }
 
-/** Neutral schematic-grid placeholder per §4.2 — used when media is missing. */
+/** Neutral schematic-grid placeholder per §4.2, used when media is missing. */
 export function MediaPlaceholder({ label, className }: { label?: string; className?: string }) {
   return (
     <div

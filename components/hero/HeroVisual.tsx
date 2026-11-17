@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import { useReducedMotion } from 'framer-motion';
-import type { MediaRef } from '@/lib/types';
+import type { MediaRef } from '@/lib/legacy/types';
 import MediaView, { MediaPlaceholder } from '@/components/MediaView';
 
 const DroneScene = dynamic(() => import('./DroneScene'), { ssr: false });

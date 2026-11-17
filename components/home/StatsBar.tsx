@@ -1,4 +1,4 @@
-import type { Stat } from '@/lib/types';
+import type { Stat } from '@/lib/legacy/types';
 import CountUp from '@/components/CountUp';
 import Reveal from '@/components/Reveal';
 

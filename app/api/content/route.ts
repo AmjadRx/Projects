@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import { ghConfigured, ghGetFile, ghListDir } from '@/lib/github';
-import type { Project, Site } from '@/lib/types';
+import type { Project, Site } from '@/lib/legacy/types';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';

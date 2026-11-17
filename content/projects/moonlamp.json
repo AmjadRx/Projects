@@ -1,0 +1,63 @@
+{
+  "slug": "moonlamp",
+  "visible": true,
+  "title": "MoonLamp",
+  "subtitle": "A 3D-printed moon that shows the real lunar phase",
+  "role": "Personal project",
+  "timeframe": "Sep 2026 to Oct 2026",
+  "status": "active",
+  "statusLabel": "Built and running",
+  "maturity": {
+    "step": 3,
+    "label": "Built; firmware running on the lamp"
+  },
+  "featured": false,
+  "order": 5,
+  "domain": "Embedded, electronics, 3D printing",
+  "tags": [
+    "ESP32",
+    "WS2811",
+    "I2C",
+    "Real-time clock",
+    "3D printing",
+    "Soldering"
+  ],
+  "cover": {
+    "kind": "image",
+    "src": "",
+    "alt": ""
+  },
+  "links": [
+    {
+      "label": "GitHub",
+      "url": "https://github.com/AmjadRx/MoonLight",
+      "icon": "github"
+    }
+  ],
+  "callouts": [],
+  "pitch": "A 3D-printed moon with hand-designed, hand-soldered electronics on an ESP32, lit by a WS2811 strip and kept on time by a real-time clock.",
+  "highlights": [
+    "Designed and 3D-printed the moon shell",
+    "Hand-designed and hand-soldered the electronics on an ESP32",
+    "5 V WS2811 strip, with a PCF8523 real-time clock on I2C and a coin-cell backup",
+    "Firmware running on the lamp: true lunar phase, earthshine, blue moons, and eclipses"
+  ],
+  "blocks": [
+    {
+      "id": "ml-a",
+      "type": "text",
+      "md": "MoonLamp is a personal build: a 3D-printed moon that lights itself to match the real Moon. I designed and 3D-printed the shell and hand-designed and hand-soldered the electronics: an ESP32 driving a 5 V WS2811 strip, with a PCF8523 real-time clock on I2C and a coin-cell backup."
+    },
+    {
+      "id": "ml-b",
+      "type": "text",
+      "md": "The firmware (C/C++ in the Arduino IDE), which I reworked, integrated, and debugged, runs on the lamp and renders the true lunar phase, earthshine, blue moons, and eclipses. The first run was steady, with no flicker."
+    },
+    {
+      "id": "ml-c",
+      "type": "callout",
+      "tone": "status",
+      "md": "Next: the documentation and the code in the project's GitHub repository."
+    }
+  ]
+}

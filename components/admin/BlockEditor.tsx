@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { ChevronDown, ChevronRight, Copy, Plus } from 'lucide-react';
-import type { Block, BlockState, LogEntry, MediaRef, ProjectLink } from '@/lib/types';
+import type { Block, BlockState, LogEntry, MediaRef, ProjectLink } from '@/lib/legacy/types';
 import { detectIcon, uid } from '@/lib/utils';
 import { Area, IconBtn, RowControls, Select, Text, move } from './fields';
 import { MediaField, MediaPicker } from './media';

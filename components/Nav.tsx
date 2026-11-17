@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
-import type { NavItem, SocialLink } from '@/lib/types';
+import type { NavItem, SocialLink } from '@/lib/legacy/types';
 import { cn, EASE } from '@/lib/utils';
 import ThemeToggle from './ThemeToggle';
 import LinkIcon from './LinkIcon';

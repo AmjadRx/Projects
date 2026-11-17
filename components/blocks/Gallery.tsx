@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
-import type { MediaRef } from '@/lib/types';
+import type { MediaRef } from '@/lib/legacy/types';
 import MediaView from '@/components/MediaView';
 import { cn } from '@/lib/utils';
 

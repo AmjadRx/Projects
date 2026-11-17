@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import type { Site } from '@/lib/types';
+import type { Site } from '@/lib/legacy/types';
 import LinkIcon from './LinkIcon';
 
 export default function Footer({ site, lastUpdated }: { site: Site; lastUpdated: string }) {

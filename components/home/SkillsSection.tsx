@@ -1,4 +1,4 @@
-import type { Site } from '@/lib/types';
+import type { Site } from '@/lib/legacy/types';
 import Reveal from '@/components/Reveal';
 import { cn } from '@/lib/utils';
 

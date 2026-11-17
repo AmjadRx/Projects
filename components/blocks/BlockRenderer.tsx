@@ -1,5 +1,5 @@
 import ReactMarkdown from 'react-markdown';
-import type { Block, BlockState, LogEntry, MediaRef, ProjectLink } from '@/lib/types';
+import type { Block, BlockState, LogEntry, MediaRef, ProjectLink } from '@/lib/legacy/types';
 import MediaView from '@/components/MediaView';
 import LinkButton from '@/components/LinkButton';
 import Reveal from '@/components/Reveal';

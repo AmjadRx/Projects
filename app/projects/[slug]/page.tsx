@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-import { loadContent, loadProject, loadProjects, lastUpdated } from '@/lib/content';
+import { loadContent, loadProject, loadProjects, lastUpdated } from '@/lib/legacy/content';
 import Nav from '@/components/Nav';
 import Footer from '@/components/Footer';
 import MediaView from '@/components/MediaView';

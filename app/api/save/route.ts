@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { sessionValid } from '@/lib/auth';
 import { ghConfigured, ghDeleteFile, ghPutFile } from '@/lib/github';
-import { ProjectSchema, SiteSchema } from '@/lib/schema';
+import { ProjectSchema, SiteSchema } from '@/lib/legacy/schema';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';

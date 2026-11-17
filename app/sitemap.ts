@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next';
-import { loadProjects } from '@/lib/content';
+import { loadProjects } from '@/lib/legacy/content';
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const base = 'https://amjadrehawi.com';

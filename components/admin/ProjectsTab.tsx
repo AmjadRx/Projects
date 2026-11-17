@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { ArrowLeft, Copy, Star, Trash2 } from 'lucide-react';
-import type { Project } from '@/lib/types';
+import type { Project } from '@/lib/legacy/types';
 import { slugify, uid } from '@/lib/utils';
 import { AddButton, Area, Field, IconBtn, RowControls, Select, TabHeader, Text, Toggle, move } from './fields';
 import { MediaField } from './media';

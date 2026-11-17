@@ -1,20 +1,26 @@
 {
   "slug": "stmicroelectronics",
+  "visible": true,
   "title": "STMicroelectronics",
-  "subtitle": "Application Engineer Intern: traction inverter debug and embedded systems",
+  "subtitle": "Application engineering on traction inverters and motor control",
   "role": "Application Engineer Intern",
-  "timeframe": "Jun 2025 - Dec 2025",
+  "timeframe": "Jun 2025 to Dec 2025",
   "status": "completed",
+  "statusLabel": "Six months, Santa Clara",
+  "maturity": {
+    "step": 5,
+    "label": "Completed internship"
+  },
   "featured": true,
-  "order": 3,
-  "domain": "Automotive · Motor control · Embedded",
+  "order": 4,
+  "domain": "Motor control, embedded, power",
   "tags": [
-    "motor inverter",
-    "Lauterbach JTAG",
-    "STM32",
+    "Motor control",
+    "Traction inverter",
+    "JTAG",
     "SVM",
     "PWM",
-    "automotive"
+    "Automotive"
   ],
   "cover": {
     "kind": "image",
@@ -22,34 +28,31 @@
     "alt": ""
   },
   "links": [],
-  "pitch": "Supported Global Key Account Customers on microcontroller projects across automotive and industrial applications, acting as the bridge between ST silicon and customer products.",
+  "callouts": [],
+  "pitch": "Six months on the Global Key Account Customers team, bridging ST silicon and customer products, including debugging a customer's 3-phase traction inverter on real hardware.",
   "highlights": [
-    "Debugged a custom traction motor inverter with Lauterbach JTAG and StellarStudio",
-    "Resolved PWM timing faults, gate-driver issues, and current-sensing calibration errors",
-    "Independently diagnosed DC bus instability and implemented a parallel-capacitor fix",
-    "Built an STM32 proximity-sensing system end to end, sensor to speaker",
-    "Authored PWM and space-vector modulation parameterization guides"
+    "Debugged a customer's custom traction motor inverter with Lauterbach JTAG and the StellarStudio IDE",
+    "Independently diagnosed a DC-bus instability and implemented a parallel-capacitor fix, validated under load",
+    "Found firmware bugs in Clarke/Park, space-vector modulation, and PWM code and supplied corrected code",
+    "Produced PWM and SVM parameterization guides"
   ],
   "blocks": [
     {
-      "id": "s1",
+      "id": "st-a",
       "type": "text",
-      "md": "I supported Global Key Account Customers in microcontroller project development across automotive and industrial applications. The core of the internship was hands-on debug of a customer's custom traction motor inverter: working through PWM timing faults, gate-driver issues, and current-sensing calibration errors with Lauterbach JTAG hardware and the StellarStudio IDE, and identifying firmware bugs in the motor control algorithms with corrected code."
+      "md": "As an Application Engineer Intern on the Global Key Account Customers (GKAC) team, I supported customers in microcontroller project development across automotive and industrial applications."
     },
     {
-      "id": "s2",
+      "id": "st-b",
       "type": "bullets",
+      "heading": "The work",
       "items": [
-        "Diagnosed independently that the DC bus required stabilization; proposed and implemented a parallel-capacitor fix between the inverter and the power supply.",
-        "Built an STM32-based proximity sensing system end to end: ADC signal processing, timed interrupt logic, PWM/DAC audio output, analog low-pass filter, amplifier stage, speaker.",
-        "Authored parameterization guides covering PWM and space-vector modulation theory for internal and customer-facing use.",
-        "Conducted hardware teardowns of competitive automotive electronics modules and delivered pivot-table analyses and presentations to ST marketing."
+        "Debugged a customer's custom 3-phase traction motor inverter on real hardware, resolving PWM timing faults, gate-driver issues, and current-sensing calibration errors.",
+        "Independently diagnosed a DC-bus instability, then proposed and implemented a parallel-capacitor fix between the inverter and the power supply, validated under load with oscilloscope and logic analyzer.",
+        "Identified firmware bugs in the motor-control algorithms (Clarke/Park transforms, space-vector modulation, PWM) and supplied corrected code.",
+        "Produced PWM and space-vector-modulation parameterization guides for internal and customer-facing use.",
+        "Ran hardware teardowns and reverse-engineering analysis of competitive automotive electronics modules, catalogued the components against ST's portfolio, and presented the analysis to ST marketing."
       ]
-    },
-    {
-      "id": "s3",
-      "type": "quote",
-      "text": "Motor-inverter debug is ESC debug. The math doesn't care which side of gravity it's on."
     }
   ]
 }

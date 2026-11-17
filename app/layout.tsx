@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Space_Grotesk, JetBrains_Mono } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
-import { loadSite } from '@/lib/content';
+import { loadSite } from '@/lib/legacy/content';
 import './globals.css';
 
 const display = Space_Grotesk({

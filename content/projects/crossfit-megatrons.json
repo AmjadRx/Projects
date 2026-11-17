@@ -1,20 +1,26 @@
 {
   "slug": "crossfit-megatrons",
-  "title": "CrossFit Maker Challenge",
-  "subtitle": "2nd Place product for the CrossFit Games' 20th anniversary",
-  "role": "Team Megatrons (5 engineers)",
-  "timeframe": "Mar 2026 - completed",
+  "visible": true,
+  "title": "The Heritage Hopper",
+  "subtitle": "CrossFit Maker Challenge, 2nd Place",
+  "role": "Project Lead, Team Megatrons (team of 5)",
+  "timeframe": "Mar 2026 to Jun 2026",
   "status": "shipped",
-  "statusLabel": "2nd Place · $1,500 · shipped",
+  "statusLabel": "2nd Place and $1,500; 12 units shipped",
+  "maturity": {
+    "step": 5,
+    "label": "12 production units delivered"
+  },
   "featured": false,
-  "order": 4,
-  "domain": "Product design · Manufacturing",
+  "order": 6,
+  "domain": "Product design, fabrication",
   "tags": [
-    "product design",
-    "field research",
-    "CAD",
-    "3D printing",
-    "pitch"
+    "Product design",
+    "SolidWorks",
+    "SLS",
+    "CNC",
+    "Laser engraving",
+    "Team lead"
   ],
   "cover": {
     "kind": "image",
@@ -22,28 +28,41 @@
     "alt": ""
   },
   "links": [],
-  "pitch": "A CrossFit LLC-sponsored challenge to design a commemorative product for the CrossFit Games' 20th anniversary. Our team took 2nd place and a $1,500 prize, and every unit shipped.",
+  "callouts": [
+    {
+      "label": "Result",
+      "value": "2nd Place"
+    },
+    {
+      "label": "Delivered",
+      "value": "12 units"
+    }
+  ],
+  "pitch": "A working SLS-printed miniature of the 2007 hopper that picked the first CrossFit Games workouts, designed, manufactured, and delivered for a Design-Make-Sell competition sponsored by CrossFit LLC.",
   "highlights": [
-    "2nd Place and $1,500 prize, sponsored by CrossFit LLC",
-    "Visited every CrossFit gym in the South Bay to interview gymgoers on preferences and frustrations",
-    "AI-assisted ideation with iterative concept sketches, SVG, and CAD design rounds",
-    "All units shipped and displayed at CrossFit Sundown (Santa Clara)",
-    "Team selected to potentially mass-produce the item for the CrossFit Games"
+    "2nd Place and a $1,500 prize (team of 5)",
+    "Selected in the top 3 of 17 entries into the production phase",
+    "Field research at 15 CrossFit gyms across the South Bay",
+    "Designed the full CAD in SolidWorks, including the spinning hopper and a concealed push-push coin mechanism",
+    "12 production units shipped and delivered",
+    "Team selected to potentially mass-produce the item; a bulk quote was submitted for up to 450 units"
   ],
   "blocks": [
     {
-      "id": "c1",
+      "id": "cf-a",
       "type": "text",
-      "md": "The Maker Challenge asked teams to design and deliver a commemorative product tied to the CrossFit Games' 20th anniversary. We grounded the design in field research, visiting every CrossFit gym in the South Bay and interviewing gymgoers to document preferences, frustrations, and aspirations. Ideation ran through multiple concept sketches and design iterations, using AI image generation extensively for early visuals before converging in SVG and CAD."
+      "md": "The CrossFit Maker Challenge is the SCU Maker Lab's Design-Make-Sell competition, sponsored by CrossFit LLC, for a CrossFit Games 20th-anniversary commemorative product. Our product, The Heritage Hopper, is a working miniature of the 2007 \"Peanut Roaster\" hopper: the drum spins, the door opens, and it sits on a laser-engraved cherry base with a hidden push-push challenge-coin display mechanism. I was the Project Lead and coordinated directly with CrossFit's point of contact through a shipped QC unit, feedback rounds, and final delivery."
     },
     {
-      "id": "c2",
+      "id": "cf-b",
       "type": "bullets",
+      "heading": "From research to delivery",
       "items": [
-        "Built and delivered the pitch presentation to the sponsor.",
-        "Placed 2nd of all teams and won the $1,500 prize.",
-        "All units shipped and are displayed at CrossFit Sundown in Santa Clara.",
-        "Team selected to potentially mass-produce the product for the CrossFit Games."
+        "Visited 15 CrossFit gyms across the South Bay and interviewed gymgoers in person.",
+        "Designed the full product CAD in SolidWorks, including the spinning hopper mechanism and the concealed coin mechanism (springs, pivot pins, latch).",
+        "Ran the material journey: an iron-filled HTPLA prototype, then matte PETG, then production SLS nylon with a rust-effect finish and thicker walls after the sponsor's drop-test feedback.",
+        "Manufactured the run: SLS and FDM prints, sand-blasting, wood finishing, laser engraving, CNC machining of the first-unit base, coin-mechanism assembly, packaging, and QC.",
+        "Shipped and delivered 12 production units."
       ]
     }
   ]

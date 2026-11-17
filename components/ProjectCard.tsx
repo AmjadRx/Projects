@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import type { Project } from '@/lib/types';
+import type { Project } from '@/lib/legacy/types';
 import MediaView from './MediaView';
 import LinkIcon from './LinkIcon';
 import { cn, detectIcon } from '@/lib/utils';

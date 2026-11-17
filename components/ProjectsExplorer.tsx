@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { LayoutGroup, motion, useReducedMotion } from 'framer-motion';
-import type { Project } from '@/lib/types';
+import type { Project } from '@/lib/legacy/types';
 import ProjectCard from './ProjectCard';
 import { cn, EASE } from '@/lib/utils';
 

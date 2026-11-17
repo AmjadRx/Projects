@@ -1,4 +1,4 @@
-import type { Project } from '@/lib/types';
+import type { Project } from '@/lib/legacy/types';
 import { cn } from '@/lib/utils';
 
 const GLYPH = { done: '✓', current: '◉', todo: '○' } as const;

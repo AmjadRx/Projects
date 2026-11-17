@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import type { Project } from '@/lib/types';
+import type { Project } from '@/lib/legacy/types';
 import ProjectCard from '@/components/ProjectCard';
 import Reveal from '@/components/Reveal';
 

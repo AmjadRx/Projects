@@ -1,21 +1,25 @@
 {
   "slug": "palmsync",
+  "visible": true,
   "title": "PalmSync",
-  "subtitle": "Biometric wellness device: 1st Place, Asearis Hackathon",
-  "role": "Team Captain & Product Lead (3 engineers)",
-  "timeframe": "Sep 2025 - Oct 2025",
+  "subtitle": "Biometric wellness device, 1st Place at the Asearis Hackathon",
+  "role": "Team Captain & Product Lead (3-engineer team)",
+  "timeframe": "Sep 2025 to Oct 2025",
   "status": "completed",
-  "statusLabel": "1st Place · Asearis Hackathon",
+  "statusLabel": "1st Place, Asearis Hackathon",
+  "maturity": {
+    "step": 3,
+    "label": "Working prototype"
+  },
   "featured": false,
-  "order": 6,
-  "domain": "Wearable · Embedded · Product",
+  "order": 8,
+  "domain": "Wearables, embedded, product",
   "tags": [
-    "wearable",
-    "PPG",
-    "EDA",
     "ESP32",
-    "BOM",
-    "hackathon"
+    "Sensors",
+    "Wearables",
+    "Product",
+    "Team lead"
   ],
   "cover": {
     "kind": "image",
@@ -23,19 +27,40 @@
     "alt": ""
   },
   "links": [],
-  "pitch": "A dual-purpose biometric wellness device combining real-time stress monitoring with smart ambient lighting. Concept to working prototype in under 6 weeks; 1st place at the Asearis Hackathon.",
+  "callouts": [
+    {
+      "label": "Result",
+      "value": "1st Place"
+    },
+    {
+      "label": "Concept to prototype",
+      "value": "under 6 weeks"
+    }
+  ],
+  "pitch": "A dual-purpose biometric wellness device that combines real-time stress monitoring with smart ambient lighting, taken from concept to a working prototype in under 6 weeks.",
   "highlights": [
-    "Sensors: PPG (HR/HRV), EDA, and thermal, on a wireless ESP32 platform",
-    "AI-powered analytics turning raw biosignals into actionable wellness insights",
-    "Led the team from concept to working prototype in under 6 weeks",
-    "$14.82 BOM against a $49.99 retail target",
-    "Market research across the $50B+ wearable sector identified an underserved professional segment"
+    "1st Place, Asearis Hackathon (team of 3; team captain)",
+    "PPG, EDA, and thermal sensing on a wireless ESP32",
+    "Built the AI analytics layer",
+    "BOM trade-offs against a $14.82 BOM target and a $49.99 retail target",
+    "Validated sensor accuracy and signal stability across environmental conditions"
   ],
   "blocks": [
     {
-      "id": "p1",
+      "id": "ps-a",
       "type": "text",
-      "md": "PalmSync pairs real-time stress monitoring with responsive ambient lighting. The sensor stack is PPG for heart rate and HRV, electrodermal activity, and thermal sensing, with an ESP32 handling compute and wireless. As team captain I ran the BOM tradeoffs against a $14.82 target, balancing cost, wearability, and manufacturability toward a $49.99 retail price point, and led market research across the $50B+ wearable sector. The project took 1st place at the Asearis Hackathon and is now being explored for business expansion."
+      "md": "PalmSync reads heart rate and HRV (PPG), electrodermal activity (EDA), and temperature on a wireless ESP32, with an AI-powered analytics layer on top. As Team Captain & Product Lead, I led a 3-engineer team from concept to a working prototype in under 6 weeks and built the AI analytics layer myself."
+    },
+    {
+      "id": "ps-b",
+      "type": "bullets",
+      "heading": "Product work",
+      "items": [
+        "Ran BOM trade-offs against a $14.82 BOM target, balancing cost, wearability, and manufacturability.",
+        "Positioned the product at a $49.99 retail target.",
+        "Built structured test procedures and validated sensor accuracy and signal stability across environmental conditions.",
+        "Built the business strategy and a consumer and medical-grade product roadmap."
+      ]
     }
   ]
 }

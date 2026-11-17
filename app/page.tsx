@@ -1,4 +1,4 @@
-import { loadContent, lastUpdated } from '@/lib/content';
+import { loadContent, lastUpdated } from '@/lib/legacy/content';
 import Nav from '@/components/Nav';
 import Footer from '@/components/Footer';
 import Hero from '@/components/hero/Hero';
