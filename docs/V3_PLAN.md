@@ -1,0 +1,553 @@
+# amjadrehawi.com v3: survey and plan
+
+Phase 0 of the v3 build (`ARCHITECTURE.md` section 14). Written on 2026-11-16 on branch `v3`, created from `main` at commit `0b35c7a`. This file and the root `CLAUDE.md` are the only changes in this phase. Section 14 lists only this plan; `CLAUDE.md` is added at the owner's request so that every later session loads the standing rules. Phase 1 starts only after the owner has read this plan and says go.
+
+**Handoff used.** Revision 3 of `ARCHITECTURE.md` and `CONTENT_RULES.md`, revision 2 of `DESIGN_DIRECTION.md`, and the rules and seed files as they stood at 22:13 local time. The handoff moved from revision 1 to revision 3 while this survey ran, so every finding below was checked again against revision 3. Section 2 pins the exact files. Before each phase the handoff is compared with these pins, and if any file differs, this plan is updated first.
+
+**How to read it.** The resolutions in section 5 are proposals. Where one depends on a question in section 8, it waits for the owner's answer, and where one departs from the handoff, the handoff holds until the owner says yes. Answers are recorded in section 8 as they arrive. Because this repository is public, weaknesses in the live v2 site are named here only in general terms; the specifics are in the owner's Phase 0 report.
+
+## Contents
+
+1. Summary
+2. What I read, and how
+3. Keep, replace, remove
+4. Dependency upgrades
+5. Where the handoff and the code disagree
+6. Media the seed refers to
+7. Risks
+8. Questions for the owner
+9. Tools for this build
+10. Phase 1, after your go
+
+## 1. Summary
+
+- **v2 today.** A Next.js 14.2.15 App Router site: 8 pages, 5 API routes, 37 components, 6 library files. Worth keeping as patterns: the git-backed content model, the rule that an unknown block renders nothing, the twelve-tab admin and most of its editors, the connection-status panel, the no-flash theme script, and the inline brand icons. Nearly every public component is replaced, because the design brief refuses most of what they do and the seed needs fields v2 cannot store.
+- **The seed is ready.** It passes all 40 public patterns when they are matched against string values, as the rules file specifies. Every proof and link in it resolves, all 15 media files it names exist with exact case, and its five empty covers are empty on purpose. The schema must treat the empty `settings.heroModel`, which has no `kind`, as "no model" (D-03).
+- **Most handoff targets hold today.** Next.js 16.4.6, React 19.3.1 with stable View Transitions, `ensureStatic`, Tailwind CSS 4.3.5, `motion` 14.14.0, and the Motion+ install method all check out against their own documentation, and every public package in the proposed set resolves in an npm dry run (925 packages, no errors).
+- **Where today's tools differ from the handoff.** TypeScript moves from 5.9.3 to 6.0.3, not 7.0.2 (D-72). The repository upload path tops out near 4 MB, not 10 MB (D-23). Lighthouse cannot score SEO 100 on a preview URL or measure Interaction to Next Paint (D-80). Word files cannot be rendered safely in the site's own origin (D-28). KTX2 textures and in-browser STEP conversion need code evaluation that the planned policy forbids (D-81). The sky's 220 kB budget is tight (R-05).
+- **Two urgent items sit outside the build.** A cleanup described in the owner's Phase 0 report (Q-01), and a decision on whether production gets a Next.js patch before v3 ships (Q-02).
+- **Size.** Revision 2 roughly doubles the build: the sky, the 3D model hero, and nine viewers with in-browser conversion. The phase plan in section 14 of the architecture still fits; Phases 3 and 5 are now the largest.
+
+## 2. What I read, and how
+
+**Handoff**, read in full, read-only, and not copied into this repository:
+
+| file | revision | saved (local time) | sha256, first 12 |
+|---|---|---|---|
+| `ARCHITECTURE.md` | 3 | 22:13:06 | `ab827912fa59` |
+| `CONTENT_RULES.md` | 3 | 22:13:07 | `34c39b15161c` |
+| `DESIGN_DIRECTION.md` | 2 | 22:03:37 | `49886912a0d0` |
+| `content-rules.public.json` | version 1, 40 rules | 22:03:37 | `699154a3980c` |
+| `seed/site.json` | none | 22:03:37 | `a102f85ab807` |
+| `seed/projects/dbvf-senior-design.json` | none | 22:13:07 | `099d214cfaf1` |
+| `seed/projects/moonlamp.json` | none | 22:13:07 | `2b2b392cd5ee` |
+| `seed/projects/raven.json` | none | 22:03:41 | `6628b26ddc60` |
+| `seed/projects/fsae-bronco-racing.json` | none | 22:03:39 | `863ba36b3256` |
+| `seed/projects/stmicroelectronics.json` | none | 22:03:42 | `a51b27619f80` |
+| `seed/projects/crossfit-megatrons.json` | none | 22:03:38 | `0b15f05b2c84` |
+| `seed/projects/engr172-build-a-bronco.json` | none | 22:03:39 | `1165da475f3a` |
+| `seed/projects/palmsync.json` | none | 22:03:40 | `7056315aa315` |
+| `seed/projects/can-bus-diagnostic-tool.json` | none | 22:03:37 | `6943eae1473c` |
+| `seed/projects/stm32-embedded-projects.json` | none | 22:03:41 | `79f1a3d23c7c` |
+| `seed/projects/pipelined-cpu-verilog.json` | none | 22:03:40 | `a0655b3168e2` |
+| `seed/projects/smart-plant-care.json` | none | 22:03:41 | `a793910a2d0b` |
+
+**Repository at `0b35c7a`.** Every file under `app/` (the pages, layout, template, not-found page, robots, sitemap, and the five API routes), every file under `components/` and `lib/`, `app/globals.css`, the configuration files (`package.json`, `next.config.mjs`, `tailwind.config.ts`, `postcss.config.mjs`, `tsconfig.json`, `vercel.json`, `netlify.toml`, `.gitignore`, `.eslintrc.json`, `.prettierrc`), `README.md`, `LICENSE`, the resolved versions in `package-lock.json`, the git history, and the remote branches.
+
+**`content/`.** Read by a script for its media paths, the one purpose `ARCHITECTURE.md` section 0 rule 2 allows. The same script also listed the folder's key names and block types, which only confirm the schema gaps in D-01; no wording was read, and nothing from the folder is used as content.
+
+**`public/media/`.** All 27 tracked files (16 media files and 11 `.gitkeep` placeholders), with byte sizes, pixel dimensions, the real format read from each file's first bytes, and a check for location metadata (none found).
+
+**`.mcp.json`.** Never opened. Its status comes from `git ls-files` and `git ls-tree`.
+
+**Versions and platform facts.** The npm registry, queried at 05:56 UTC on 2026-11-17 (21:56 on 2026-11-16 local time), and each package's own documentation, release notes, or licence file, cited in section 4. Independent research agents covered each stack area and were required to cite official sources. Their claims were checked against the registry, against npm dry runs of every public package in the set, and against the code. A separate review pass then checked this plan for completeness, accuracy, and publication safety, and a final cross-check compared it with every verified finding; each item it added was checked against the code or the handoff before it went in.
+
+## 3. Keep, replace, remove
+
+### 3.1 Repository and configuration
+
+| path | decision | why |
+|---|---|---|
+| `package.json`, `package-lock.json` | replace | The stack in section 4, exact pins, `engines.node`, version 3.0.0, and new scripts: `lint`, `type-check`, `test`, `test:e2e`, `check:content`, and `prebuild` (which runs the content check so a failing check stops the Vercel build). |
+| `next.config.mjs` | replace with `next.config.ts` | `cacheComponents` and `partialPrefetching`, the security headers and policy (D-35), image settings (D-29). `poweredByHeader: false` and `reactStrictMode` carry over; the experimental `optimizePackageImports` list is dropped (lucide-react is optimized by default and drei is unused). |
+| `tailwind.config.ts` | remove | Tailwind 4 reads its theme from CSS: `tokens.css` mapped with `@theme inline`. |
+| `postcss.config.mjs` | replace | `@tailwindcss/postcss` only. Autoprefixer is no longer needed. |
+| `tsconfig.json` | keep, adjust | Strict stays. TypeScript 6 needs no option changes; Next 16 may add its own entries. |
+| `.eslintrc.json` | remove | ESLint 10 reads only flat config. The new `eslint.config.mjs` keeps `react/no-unescaped-entities` off but drops v2's `@next/next/no-img-element` override (`.eslintrc.json:5`), so a raw `img` fails lint, as section 9 sends every image through `next/image`. |
+| `.prettierrc` | keep | Adds the Tailwind class-sorting plugin; Prettier never reformats `content/`. |
+| `.gitignore` | keep, extend | Adds `.mcp.json`, every `.env*` file except `.env.example` (v2 misses `.env.production`), test and Lighthouse output, and the pdf.js and `three` decoder files that a prebuild step copies into `public/pdfjs/` and `public/vendor/`. |
+| `vercel.json` | keep | Framework setting only. |
+| `netlify.toml` | remove | Vercel is the only host; a connected Netlify build would also fail without the Motion+ token (Q-05). |
+| `.mcp.json` | remove from the branch and ignore | Local tool configuration does not belong in the repository (Q-01). |
+| `README.md` | replace | Its availability line is out of date, and it fails four public rules (DASH, IP-CLAIM, BASE-AIRFRAME, AVAIL-OLD). A short, accurate version lands in Phase 1 and the full one in Phase 7. |
+| `LICENSE` | keep, add a notice | MIT covers the code only. A notice says that `content/` and `public/media/` are all rights reserved and that `public/sky/` follows its `CREDITS.md` (Q-43). |
+| new | add | `.env.example` (names only), `.npmrc` (the Motion+ registry line, token from the environment), `.nvmrc`, `eslint.config.mjs`, `vitest.config.ts`, `playwright.config.ts`, a Lighthouse CI config, `.github/workflows/`, `content-rules.public.json`, `docs/ARCHITECTURE.md`, `docs/ADMIN_GUIDE.md`, `docs/CONTENT_RULES.md` (short public-safe summaries, never copies of the handoff), a third-party notices file, `public/sky/` with `CREDITS.md`, `tests/` with generated fixtures (5.7, sample files), and the scripts `check-content.mjs`, `migrate-v2-to-v3.mjs`, `build-sky.mjs` (catalog and texture), `render-stills.mjs`, `copy-vendor.mjs` (pdf.js and decoder files), and `build-tokens.mjs` (writes `lib/tokens.ts` from `tokens.css`). |
+
+### 3.2 Pages and routes
+
+| file | decision | notes |
+|---|---|---|
+| `app/layout.tsx` | replace | The root layout keeps only the fonts, the theme script, and `export const ensureStatic = 'navigation'`. A route group, `app/(site)/layout.tsx`, carries the sheet frame, nav, footer, sky, command palette, analytics, and skip link, so `/admin` gets none of them (D-46). |
+| `app/globals.css` | replace | The Tailwind 4 import, tokens mapped with `@theme inline`, and base styles (the focus ring, reduced-motion rules). The v2 palette and its pill, chip, and uppercase label classes go. |
+| `app/template.tsx` | remove | The page fade gives way to React View Transitions (D-47). |
+| `app/page.tsx` | replace | The section order in `ARCHITECTURE.md` section 5. |
+| `app/about`, `app/experience`, `app/projects`, `app/projects/[slug]`, `app/contact` | replace | Section 5 contents, seed-only copy, async `params`. |
+| `app/admin/page.tsx` | keep the shape | A `noindex` client shell, rebuilt (section 3.5). |
+| `app/not-found.tsx` | replace | "Sheet not found", with links home and to projects. |
+| `app/robots.ts` | keep | Same rules. |
+| `app/sitemap.ts` | replace | Visible projects only, plus `/log`. |
+| new | add | `app/log`, `app/opengraph-image.tsx`, `app/projects/[slug]/opengraph-image.tsx`, `app/manifest.ts`, a site icon (Q-42), and a `/dev/blocks` page in Phase 3 that is removed before release. |
+
+### 3.3 API routes
+
+| file | decision | notes |
+|---|---|---|
+| `app/api/auth` | replace | Section 11's login and session design (D-36 to D-40). |
+| `app/api/content` | replace | Session required; reads the `draft` branch (D-16, D-17). |
+| `app/api/save` | replace | Changed files only, one atomic commit to `draft`, the content check (D-18, D-19). |
+| `app/api/upload` | replace | Byte-level type checks, repository or Blob by size, sanitized SVG (D-23 to D-27). |
+| `app/api/status` | keep, extend | Adds `SESSION_SECRET`, the draft branch, Blob, and deploy state; drops the Netlify check (D-31, D-32). |
+| new | add | `app/api/publish`, a Blob token route, a Blob confirm route, and a session-checked route that streams draft-only media to the admin (D-17). |
+
+### 3.4 Library
+
+| file | decision | notes |
+|---|---|---|
+| `lib/schema.ts` | replace | Schema version 3 in zod 4, the one schema shared by the site, the admin, the API, and the content check (D-01). |
+| `lib/types.ts` | replace | Inferred from the schema (D-10). |
+| `lib/content.ts` | replace | Validates every file at load, filters hidden projects, takes dates from git history rather than file times (D-05, D-06, D-09). |
+| `lib/github.ts` | keep the environment reader, replace the rest | Branch-aware reads and one-commit writes through the Git Data API, with no default branch (D-17, D-18; 5.7). |
+| `lib/auth.ts` | replace | D-36, D-37. |
+| `lib/utils.ts` | keep, fix | `cn`, `slugify`, `detectIcon`, `uid` stay; `embedSrc` gets an exact host allow-list (D-45). `EASE` moves to `lib/motion.ts`. |
+| new | add | `lint.ts`, `media.ts`, `motion.ts` (with `useMotionOk()`), `storage.ts`, the generated `tokens.ts`, the sky helpers (sidereal time, catalog decoder), a JSON-LD helper, and one strings file for interface labels (D-56). |
+
+### 3.5 Components
+
+| component | decision | notes |
+|---|---|---|
+| `Nav`, `ThemeToggle` | replace | `components/nav/`: sticky nav with the heat rule, the sheet-style phone menu with a focus trap, the Blueprint and Whiteprint toggle, and the command palette button (D-55, D-63, D-67). |
+| `Footer` | replace | Tagline, email, footer links, the last-updated date from the latest content commit, the sky credit line, the pause-motion control (D-09, D-67). |
+| `Hero`, `HeroVisual` | replace | Hero modes `drawing`, `model`, and `media` (D-51). |
+| `hero/DroneScene` | remove | Revision 2 removes the procedural 3D scene (D-52). |
+| `BackgroundFX` | remove | Replaced by the catalog sky in `components/sky/` (D-50). |
+| `Reveal`, `PageTransition` | remove | A panel-only rise and View Transitions take their place (D-47 to D-49). |
+| `CountUp`, `Marquee` | remove | Replaced by Motion+ `AnimateNumber` and `Ticker` (D-59). |
+| `MediaView` | replace | Focal point, the "Photo to come" placeholder, video rules, click-to-load embeds, and the viewers (D-07, D-45, D-60, D-61). |
+| `ProjectCard`, `ProjectsExplorer` | replace | Cards per `DESIGN_DIRECTION.md` 5.8; filter per D-58. |
+| `ProgressStrip` | keep, rebuild | An ordered list whose steps carry their state as words (D-69). |
+| `LinkIcon` | keep | Inline brand paths (GitHub, LinkedIn); generic icons from lucide-react. |
+| `LinkButton`, `AvailabilityBadge` | replace | Restyled; the badge stops pulsing. |
+| `blocks/BlockRenderer`, `blocks/Gallery` | replace | One file per block type, computed heading levels, Motion+ `Carousel`, an accessible lightbox (D-63, D-67). |
+| `home/*` (8 used files) | replace | Readouts, thesis, now, selected work, about teaser, tools strip, contact call, the bill of materials, the revision table. |
+| `home/About.tsx`, `home/ContactSection.tsx` | remove | Dead code: nothing imports them. |
+| `admin/AdminApp` | keep the structure, rebuild | Tabs, login, sticky save bar, and the unsaved-changes guard stay; draft, preview, publish, undo, revert, and a sign-in dialog that keeps unsaved edits are added (D-20). |
+| `admin/ProjectsTab`, `admin/SiteTabs`, `admin/BlockEditor` | keep, extend | Every new field and block type; the skills editor is replaced (D-21). |
+| `admin/fields` | keep | Restyled. |
+| `admin/media` | keep the library, rebuild the pipeline | Byte checks, progress, posters, Blob uploads, draft-only previews, and a photo pipeline that always resizes and re-encodes (D-17, D-24, D-30). |
+| `admin/ConnectionStatus` | keep, extend | D-32. |
+| new | add | `components/sheet/`, `components/sky/`, `components/viewers/`, `components/hero/RavenDrawing`, `ThermalLens`, `HeroMedia`, `HeroModel`. |
+
+### 3.6 Content and media
+
+| path | decision | notes |
+|---|---|---|
+| `content/site.json`, `content/projects/*.json` | replace with the seed | Twelve project files and the site file. Underscore keys are stripped on copy; the current seed has none. Until Phase 3 rebuilds the pages, v2's pages must be adapted to render it (R-22). |
+| `public/media/**` | keep as is | No renames. One tracked file is unused by the seed, and three files' bytes do not match their extensions (section 6, Q-26). |
+
+## 4. Dependency upgrades
+
+"Current stable" means the npm `latest` tag at the time of the registry query, confirmed against the source in the "checked" column. Every pin is exact. Every pin is read again from the registry and its release notes on the day of Phase 1 and this section is updated in that commit; `lucide-react` 1.74.0, for example, appeared 16 minutes after the query. Every public package in 4.1 and 4.2 resolves in an `npm install --dry-run`: 804 packages for 4.1 alone and 925 with 4.2 (all but `ktx2-encoder`), with no errors and three expected peer warnings (D-73). The one package still unpinned is Motion+ (Q-04).
+
+### 4.1 Framework, UI, and tooling
+
+| package | v2 (resolved) | current stable | v3 pin | checked | notes |
+|---|---|---|---|---|---|
+| `next` | 14.2.15 | 16.4.6 | 16.4.6 | nextjs.org/blog/next-16-4; github.com/vercel/next.js release v16.4.6 | 16.4.5 was the November security release; nothing older may ship. |
+| `eslint-config-next` | 14.2.15 | 16.4.6 | 16.4.6 | nextjs.org/docs/app/api-reference/config/eslint | Matches `next`. |
+| `react`, `react-dom` | 18.3.1 | 19.3.1 | 19.3.1 | react.dev/blog/2026/09/09/react-19-3; react.dev/versions | The App Router runs the React build inside `next`; these pins govern types, tests, and peer checks. |
+| `@types/react`, `@types/react-dom` | 18.3.28, 18.3.7 | 19.3.0 | 19.3.0 | DefinitelyTyped through the registry; the 19.3.0 typings declare `ViewTransition` | |
+| `typescript` | 5.9.3 | 7.0.2 | 6.0.3 | devblogs.microsoft.com (TypeScript 7.0 and 6.0 announcements); typescript-eslint.io dependency versions | D-72. |
+| `eslint` | 8.57.1 | 10.15.0 | 10.15.0 | eslint.org/version-support | ESLint 9 has been end of life since 2026-08-06 (D-73). |
+| `tailwindcss` | 3.4.19 | 4.3.5 | 4.3.5 | tailwindcss.com/blog/tailwindcss-v4-3; github.com/tailwindlabs/tailwindcss releases | |
+| `@tailwindcss/postcss` | none | 4.3.5 | 4.3.5 | tailwindcss.com Next.js guide | New. |
+| `postcss` | 8.5.14 | 8.5.33 | 8.5.33 | github.com/postcss/postcss releases | Optional as a direct entry. |
+| `autoprefixer` | 10.5.0 | 10.6.2 | remove | tailwindcss.com/docs/upgrade-guide | Tailwind 4 prefixes on its own. |
+| `motion` | none | 14.14.0 | 14.14.0 | motion.dev changelog | Replaces `framer-motion`. `AnimateView` is now free at `motion/react-animate-view`. |
+| `framer-motion` | 11.18.2 | 14.14.0 | remove | motion.dev/docs/react-upgrade-guide | `motion` installs it internally; a direct entry would add a second copy. |
+| `motion-plus` | none | private registry | newest `@motionplus/core` whose peer range includes `motion` 14.14.0 | motion.dev/docs/motion-plus-installation | Installed as `"motion-plus": "npm:@motionplus/core@<exact version>"`. The version can be read only with the owner's token; the docs example `^2.12.0` is stale and would pull a second, older `motion` (Q-04). |
+| `three`, `@types/three` | 0.169.0 | 0.187.0 | 0.187.0 | github.com/mrdoob/three.js release r187 | Exact pin: every r-release can break, and bloom (if kept) caps it below r188. |
+| `@react-three/fiber` | 8.18.0 | 9.8.2 | 9.8.2 | github.com/pmndrs/react-three-fiber release v9.8.2; r3f.docs.pmnd.rs v9 migration guide | Its peer range keeps React below 19.4. |
+| `@react-three/drei` | 9.122.0 (never imported) | 10.7.9 | 10.7.9, added with the viewers | github.com/pmndrs/drei release v10.7.9 | Never in a first load; every CDN default overridden (5.6). |
+| `zod` | 3.25.76 | 4.6.7 | 4.6.7 | zod.dev; zod.dev/v4/changelog | |
+| `react-markdown` | 9.1.0 | 10.1.0 | 10.1.0 | github.com/remarkjs/react-markdown releases | Strict allow-list in v3. |
+| `lucide-react` | 0.454.0 | 1.73.0 | 1.73.0, re-read on Phase 1 day | lucide.dev/guide/version-1 | Every icon v2 uses still exists; 1.74.0 appeared after the query. |
+| `@vercel/analytics` | 2.0.1 | 2.0.1 | 2.0.1 | vercel.com/docs/analytics | Already current. |
+| `@vercel/speed-insights` | none | 2.1.0 | 2.1.0 | vercel.com/docs/speed-insights | New: the field data for Interaction to Next Paint. |
+| `server-only` | none | 0.0.1 | 0.0.1 | nextjs.org data security guide | Guards the modules that read secrets. |
+| `@types/node` | 22.19.19 | 26.6.6 | 26.6.6 (24.19.2 if Node 24) | DefinitelyTyped through the registry | Matches the Node major (Q-03). |
+| `prettier` | 3.8.3 | 3.10.1 | 3.10.1 | prettier.io install page; prettier.io blog 3.10 | |
+| `prettier-plugin-tailwindcss` | none | 0.8.1 | 0.8.1 | github.com/tailwindlabs/prettier-plugin-tailwindcss | Class sorting. |
+| `vitest`, `vite` | none | 5.1.0, 8.3.8 | 5.1.0, 8.3.8 | vitest.dev/blog/vitest-5; vite.dev | Vite is Vitest's required peer. |
+| `@playwright/test` | none | 1.65.1 | 1.65.1 | playwright.dev release notes | |
+| `@axe-core/playwright` | none | 4.14.0 | 4.14.0 | github.com/dequelabs/axe-core-npm releases | Tags `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, `wcag22aa`, plus the best-practice rules for landmarks and headings (`heading-order`, `page-has-heading-one`, `landmark-one-main`, `region`). |
+| `@lhci/cli` | none | 0.16.1 | 0.16.1 | github.com/GoogleChrome/lighthouse-ci releases | Needs Node 22.19 or newer. |
+| `simple-git-hooks` | none | 2.14.0 | 2.14.0 | github.com/toplenboren/simple-git-hooks releases | Pre-commit, commit-msg, and pre-push commands; husky has had no release since 2024-11-18. |
+| `npm` | 11.17.0 locally | 12.2.2 (released 2026-11-03) | the npm bundled with the chosen Node (11.20.0 with Node 26.13.1) | github.com/npm/cli releases; nodejs.org release index | Recorded in `packageManager` after the first Vercel build confirms what it uses; moving to npm 12 is a separate decision. |
+
+### 4.2 Packages that revision 2 adds
+
+| package | current stable | v3 pin | licence | where it runs | checked | notes |
+|---|---|---|---|---|---|---|
+| `react-pdf` | 11.1.0 | 11.1.0 | MIT | public, lazy | github.com/wojtekmaj/react-pdf releases | Pins `pdfjs-dist` exactly. |
+| `pdfjs-dist` | 6.5.438 | 6.5.438 (through `react-pdf`) | Apache-2.0 | public, lazy, worker | github.com/mozilla/pdf.js releases | Needs Node 22.13 or newer. Its standard-fonts folder mixes BSD-licensed fonts with Liberation Sans under GPL-2.0 with a font exception; leave the folder out and use system fonts. |
+| `docx-preview` | 0.4.1 | 0.4.1, only in a sandboxed frame, or not at all | Apache-2.0 | sandbox page | github.com/VolodymyrBaydalka/docxjs | D-28, Q-19. |
+| `shiki` | 4.6.0 | 4.6.0 | MIT | build only | github.com/shikijs/shiki releases; shiki.style/packages/next | Code highlighting with no client code; colors from `tokens.css` variables. |
+| `@vercel/blob` | 2.9.0 | 2.9.0 | Apache-2.0 | admin and server | vercel.com/docs/vercel-blob/client-upload; github.com/vercel/storage releases | Client uploads above the function limit (D-23, D-26). |
+| `file-type` | 22.3.0 | 22.3.0 | MIT | admin and server | github.com/sindresorhus/file-type releases | Type from bytes. |
+| `dompurify`, with `jsdom` on the server | 3.4.18, 31.0.1 | 3.4.18, 31.0.1 | Apache-2.0 chosen; MIT | admin and server | github.com/cure53/DOMPurify releases; npmjs.com/package/jsdom | SVG sanitizing. `jsdom` raises the Node floor (4.3). |
+| `mediabunny` | 1.66.0 | 1.66.0 | MPL-2.0 | admin only | mediabunny.dev; npmjs.com/package/mediabunny | MOV to MP4 without re-encoding; WAV to AAC. |
+| `@mediabunny/aac-encoder` | 1.66.0 | 1.66.0, loaded only when the browser lacks AAC | MPL-2.0, bundles LGPL code | admin only | mediabunny.dev/guide/extensions/aac-encoder | Q-21. |
+| `libheif-js` | 1.23.5 | 1.23.5, loaded only when the browser cannot decode HEIC | LGPL-3.0 | admin only | github.com/catdad-experiments/libheif-js | Q-21. |
+| `@jsquash/webp` | 1.5.0 | 1.5.0 | Apache-2.0 | admin only | github.com/jamsinclair/jSquash | Safari cannot encode WebP from a canvas (D-30). |
+| `react-error-boundary` | 6.1.6 | 6.1.6, or Next's own error boundary | MIT | public | github.com/bvaughn/react-error-boundary releases | Viewer fallbacks show the poster and the download link. |
+| `@gltf-transform/core`, `/extensions`, `/functions` | 4.5.1 | 4.5.1 | MIT | admin only, in a module worker | gltf-transform.dev; github.com/donmccurdy/glTF-Transform tag v4.5.1 | Weld, prune, optional simplify, WebP textures at 2048 px, then Meshopt; shows the triangle count and size. Node names such as `RotorL` and `RotorR` are kept. |
+| `meshoptimizer` | 1.3.0 | 1.3.0 | MIT | admin only | github.com/zeux/meshoptimizer release v1.3 | Encoder and simplifier; visitors use the decoder that ships with `three`. |
+| `draco3dgltf` | 1.5.9 | 1.5.9, only if Draco is chosen | Apache-2.0 | admin only | github.com/google/draco release 1.5.9 | Q-22. |
+| `occt-import-js` | 0.0.23 (no release since 2024-12-03) | 0.0.23, only if in-browser STEP conversion stays | LGPL-2.1 with the Open CASCADE exception | admin only, its own worker | github.com/kovacsv/occt-import-js | 7.6 MB of WebAssembly; needs code evaluation (D-81, Q-22). |
+| `ktx2-encoder` | 0.6.0 | do not use | MIT, bundles Apache-2.0 code | none | github.com/gz65555/ktx2-encoder | Blocked by the policy (D-81); model textures are WebP. |
+| `@react-three/postprocessing`, `postprocessing` | 3.2.2, 6.39.6 | only if bloom stays | MIT; Zlib | public, lazy | github.com/pmndrs/react-postprocessing release v3.2.2; github.com/pmndrs/postprocessing release v6.39.6 | Holds `three` below r188 (Q-28). |
+| `sharp` | 0.35.5 | 0.35.5, dev only | Apache-2.0 (prebuilt libvips is LGPL) | scripts | sharp.pixelplumbing.com/install | Sky textures and still images; `next` already lists it. |
+| `astronomy-engine` | 2.1.19 | 2.1.19, dev only | MIT | tests | github.com/cosinekitty/astronomy | Test oracle for the 20-line sidereal-time formula; never shipped. |
+
+Data for the sky, chosen for clear licences:
+
+| data | version | licence | checked | credit |
+|---|---|---|---|---|
+| HYG star database | v4.4 (8,920 stars to magnitude 6.5; 2,571 to 5.4 for the Light tier) | CC BY-SA 4.0, which applies only to the derived star file | codeberg.org/astronexus/hyg | "HYG Database v4.4, CC BY-SA 4.0" |
+| IAU Working Group on Star Names | the current list | not subject to copyright | exopla.net/star-names/modern-iau-star-names | courtesy credit |
+| ESO Milky Way panorama (eso0932a, S. Brunier) | 6000 x 3000 master | CC BY 4.0 | eso.org/public/images/eso0932a; eso.org/public/outreach/copyright | "ESO/S. Brunier" (required, visible, linked) |
+
+Not chosen: the Yale Bright Star Catalogue (no clear terms for a public site) and the NASA SVS 2020 star maps (built from Gaia data with a non-commercial question upstream).
+
+### 4.3 Node.js
+
+Vercel now offers Node 26.x (its default for new projects), 24.x, and 22.x; Node 20 has been deprecated there since 2026-10-01. Node 26 is Active LTS until 2027-10-20 and reaches end of life on 2029-04-30; Node 24 is in Maintenance LTS until 2028-04-30 (nodejs.org/en/about/previous-releases; vercel.com changelog on Node 26). The toolchain floor is 22.22.2 on Node 22 or 24.15.0 on Node 24, set by `jsdom` 31.0.1; Lighthouse CI alone needs 22.19. Recommendation: `engines.node` set to `26.x` with `.nvmrc` at 26, which needs a local upgrade from 24.19.0 (Q-03).
+
+### 4.4 CI
+
+GitHub Actions, each pinned to a full commit SHA and checked against its releases page: `actions/checkout` v7.0.1, `actions/setup-node` v7.1.0, `actions/upload-artifact` v7.0.2 (github.com/actions), and `gitleaks/gitleaks-action` v3.0.0 running gitleaks 8.30.1 (github.com/gitleaks; free for personal accounts; always redacts). The Vercel CLI 65.16.0 (vercel.com/docs/cli) is used through `npx` only, to script the firewall rule; it is not a dependency.
+
+## 5. Where the handoff and the code disagree
+
+Each row gives the handoff's requirement, what v2 does (file and line at `0b35c7a`), and the proposed v3 resolution. "Q" points to section 8.
+
+### 5.1 Content model and data
+
+| id | handoff | v2 | v3 resolution |
+|---|---|---|---|
+| D-01 | Schema version 3 (`ARCHITECTURE.md` 4) | `lib/schema.ts` has none of: `visible`, `maturity`, `callouts`, `seo`, `now`, `gpaLabel`, `background`, `heroModel`, `resumeRequest`, stat `prefix` and `proof`, skill items as objects, MediaRef `focal`, `captions`, `store`, the kinds `model`, `document`, `audio`, the `drawing` and `model` hero modes, and the nine new block types (file, callout, model3d, document, audio, code, compare, panzoom, repo). | A new `lib/schema.ts` in zod 4: one schema for the site, the admin, the API, and the content check. |
+| D-02 | Keep every field; underscore keys exist only in the seed | Unknown keys are dropped silently on save (`app/api/save/route.ts:56` writes the parsed result), so v2 would erase every v3 field. | Reject unknown keys with their field path instead of dropping them (Q-09). Strip underscore keys only when copying the seed. |
+| D-03 | Every MediaRef has a `kind` | The seed's `settings.heroModel` is `{ "src": "", "alt": "" }` with no `kind`. | An empty `heroModel` means "no model"; the schema supplies `kind: "model"` (Q-09). |
+| D-04 | An unknown block renders nothing | The loose fallback in `lib/schema.ts:68-79` also accepts malformed known blocks, which then reach the renderer. | A known type must pass its own schema; the loose branch accepts only type names outside the known list. |
+| D-05 | One schema shared everywhere | `lib/content.ts:34-47` casts JSON without validating; `app/layout.tsx:68` writes `themeDefault` into an inline script unvalidated. | Validate every file with the shared schema at load, at build, and on save, failing with the field path. A project's slug must equal its file name and be unique; every repository `src` must exist in `public/media` with exact case (on save, in the draft tree); a code block in a language the highlighter lacks falls back to plain text, so a typo cannot fail the build. |
+| D-06 | `visible: false` removes a project from every public list, static params, the sitemap, JSON-LD, and Open Graph images; the admin shows it marked Hidden | No visibility at all: lists, static params, and the sitemap include every file. | One loader for public projects feeds every list, both `generateStaticParams`, previous and next, the sitemap, `/log`, the command palette, proof checks, JSON-LD, the Open Graph routes, and SHEET numbering; client components get small server-built objects, never whole records. The admin marks hidden projects and refuses to hide the last visible one, because a static route needs at least one page. The seed has no hidden project, so a test builds with a hidden fixture and searches the HTML, the RSC payloads, the sitemap, JSON-LD, and Open Graph output for its slug. |
+| D-07 | An empty cover `src` renders the placeholder | `lib/content.ts:24-28` marks any non-`/media/` path as existing, so an empty `src` reaches `next/image` (`components/MediaView.tsx:104-115`) and becomes the project's Open Graph image (`app/projects/[slug]/page.tsx:31`). Five seed covers are empty. | An empty `src` means no media in the schema and the loader: the "Photo to come" placeholder (`DESIGN_DIRECTION.md` 5.7) renders, and no Open Graph image, JSON-LD image, or preload uses it. The cover field gets a Clear action that keeps the MediaRef. |
+| D-08 | The GPA is always `gpaLabel`, a space, and `gpa` (rule GPA-LABEL) | `components/hero/Hero.tsx:38` prints the value after a bare label, and prints the label even when the value is empty. | One helper prints label and value together, and nothing when either is empty, in pages, metadata, JSON-LD, and Open Graph images. `gpaLabel` is required whenever `gpa` is set. |
+| D-09 | "Last updated" from the latest content commit; REV from the project's last content commit | `lib/content.ts:67-87` uses file times, which are clone times on Vercel. Vercel clones only ten commits deep, and of v2's 330 content commits, 296 change no file (the Contents API commits unchanged files), so a shallow clone often holds no commit that touched a given file. | At build, ask the GitHub API for the last commit of each content file at the deployed commit, in a prebuild step that writes a manifest or inside a `'use cache'` function, so `ensureStatic` holds and visitors never trigger GitHub calls; fall back to local git in development. The copyright year also comes from a cached function, because `new Date()` fails a prerender under Cache Components. |
+| D-10 | One schema file | `lib/types.ts` is written by hand beside the schema and drifts from it. | Types inferred from the schema. |
+| D-11 | A migration script converts v2 drafts | None exists. v2's schema allows the hero modes `scene3d` and `media` (`lib/schema.ts:111`), and revision 2 removes `scene3d`. | The shared migration sets `schemaVersion`, adds `now`, `seo`, `gpaLabel`, and `background`, and maps `scene3d` to `drawing`. Launch content still comes from the seed. |
+| D-12 | `/log` merges every log entry, newest first | Log dates mix precision (`2026-08-13`, `2026-07`), and `components/blocks/BlockRenderer.tsx:59` uses the date as an element id, which can repeat when two entries share a date or when `/log` merges projects. | Sort by the ISO prefix with a stable tie-break by project order; unique anchors. |
+| D-13 | Posters reserve their space; audio has a waveform; video may scrub with scroll; a download link beside every viewer (13A) | No schema field holds a poster's size, an audio waveform, a scrub flag, or a per-file download choice. | Small optional fields for each (Q-09, Q-24). |
+| D-14 | An empty `gpa` or `phone` hides every element that shows it | The seed also holds the GPA in an about fact and an education line, and the phone in a contact link, so emptying `personal.gpa` or `personal.phone` in the admin would still publish them. | Keep the seed as given; the content check refuses a save that empties `personal.gpa` or `personal.phone` while the value still appears elsewhere, the about fact prints through the GPA helper (D-08), and a `tel:` link hides when `personal.phone` is empty (Q-23). |
+| D-15 | Status words come from the seed (`CONTENT_RULES.md` 1.2) | Three seed projects have an empty `statusLabel`, and v2 maps each project's `status` value to a display word (`components/ProjectCard.tsx:7-16`, `app/projects/[slug]/page.tsx:36-41`). | Where `statusLabel` is empty, the `status` value prints in sentence case, spelled as the seed has it, and no other fixed word appears (Q-12). |
+
+### 5.2 Admin, API, and storage
+
+| id | handoff | v2 | v3 resolution |
+|---|---|---|---|
+| D-16 | Admin routes require a session | v2 has one branch and no hidden content, so this matters from v3 on (details in the owner's Phase 0 report). | Session required on every admin route, read-only ones included; `no-store`. Without it, v3 would expose the draft branch and hidden projects. |
+| D-17 | Save to `draft`, publish to `main` | Every read and write uses one branch (`lib/github.ts:16-18`), and the media library previews each file from its production `/media/` path (`components/admin/media.tsx:74-80`), which cannot show a file that exists only on `draft`. | Branch-aware helpers: read `draft` (or `main` when there is no draft), write `draft`, publish `main`. The library shows a new upload from a local object address at once and previews draft-only files through a session-checked route that streams them from `draft` with `no-store`. |
+| D-18 | Publish lists the changed files | Every save sends every file (`components/admin/AdminApp.tsx:146-155`) and commits each one separately (`app/api/save/route.ts:65-71`); the last 11 commits on `main` are one save, and 10 of them change nothing. A save also rewrites files it did not change: it writes keys in the schema's order, and the editors store an emptied field as a missing key (`components/admin/ProjectsTab.tsx:62`, `components/admin/SiteTabs.tsx:190`). | Send changed files with the draft head the editor loaded; write one commit through the Git Data API; a moved head returns 409 with a reload prompt. One save, one commit, one preview build. Saving keeps each file's key order and its empty strings, so an unedited file never changes. |
+| D-19 | The content check runs on every save | None. | `lib/lint.ts` runs on the server over every string value that differs from the draft head (never the client's list, never keys or raw JSON text), over each composed string as it will be printed (GPA label and value; stat prefix, value, suffix, and label; callout and fact labels with their values), and over every media file and folder name. Public rules first, then `CONTENT_BLOCKLIST`, with entries trimmed, blank entries dropped, and Unicode-aware word boundaries. A public-rule hit returns the rule id, the field path, and the rule's message; a blocklist hit returns the field and rule, never the matched term. |
+| D-20 | Publish, discard, undo, revert, preview link; an eight-hour session | None of these exist, and a 401 on save shows the login form, after which the reload replaces unsaved edits (`components/admin/AdminApp.tsx:120-122`, `162-166`). | `/api/publish` fast-forwards `main` to `draft`, refuses when the two have diverged (Q-30), and stays disabled while the draft's latest deployment is building or has failed (D-31). Before each save, `draft` is reset to `main` when it holds no unpublished commits; otherwise `main` is merged into it, with conflicts reported. Discard resets `draft`; per-file revert; session undo and redo; the draft preview address in the save bar. When the session expires, the editor keeps its state, asks for the password in a dialog, and retries the save. |
+| D-21 | Editors for every field and block type | No editors for the fields in D-01; the block editor cannot add or edit `twoCol` (`components/admin/BlockEditor.tsx:10-13`) or log-entry photos; the skills editor joins and splits a group's items on commas (`components/admin/SiteTabs.tsx:323-336`), which would cut apart the ten seed skill labels that contain commas and drop their proofs; the hero mode select offers `scene3d` and `media` (`components/admin/SiteTabs.tsx:31-32`); a duplicated project gets a fixed `-copy` slug (`components/admin/ProjectsTab.tsx:214`), and new projects carry no visibility (`components/admin/ProjectsTab.tsx:242-258`). | Editors for all of them. The skills editor becomes one row per item with a project picker for the proof (visible projects only) and reordering, and a test checks that loading and saving the seed's skills changes nothing. The hero mode offers the three v3 modes. New and duplicated projects start hidden and unfeatured with a unique numbered slug. Renaming a slug or deleting a project first lists every reference to update (proofs, nav and `now` links, Markdown links). |
+| D-22 | Guard-rail warnings | None; the availability line and every link address are free text (`components/admin/SiteTabs.tsx:50-53`, `117`). | Missing alt text, missing cover, unresolved proof, broken internal link, empty highlight, missing description for models and documents, an upload that looks like a resume (no resume file is ever served), an availability line that differs from the documented one, a LinkedIn link with another label, and a link outside the allowed kinds. The content check also fails a link to this repository or to a cloud-drive host that the public patterns miss. |
+| D-23 | Repository storage up to 10 MB; images up to 8 MB and video up to 25 MB | `app/api/upload/route.ts:10-11` accepts those sizes through a Vercel Function, which rejects request bodies over 4.5 MB. | Option A (recommended): raw bytes up to 4,000,000 go through the server to the repository, and anything larger goes straight from the browser to Vercel Blob. Option B keeps 10 MB by staging in Blob and committing from the server (Q-18). While Blob is not configured, the admin refuses any file over 4,000,000 bytes with a message that says how to enable Blob, since the handoff's 25 MB limit without Blob cannot pass the function either; the 13A limits replace section 7's. |
+| D-24 | Type checked from bytes; SVG sanitized; every word checked | The client's declared type is trusted (`app/api/upload/route.ts:86-90`), the stored extension is the client's (`app/api/upload/route.ts:26`), any slug-shaped folder is accepted (`app/api/upload/route.ts:12`), and SVG files are stored as uploaded. | `file-type` on the server; the stored extension comes from the detected type, and the folder must be `site` or an existing project slug. SVG is parsed, sanitized, stored only in the repository, and served with a restrictive header. HTML, XML, and JavaScript files and unsanitized SVG are refused in both stores, because the static policy allows inline scripts in the site's origin, and `file` downloads are served with `Content-Disposition: attachment`. At upload, the text of PDFs and Word files (their document properties included) and the part names inside models go through the content check, and a file whose text cannot be read waits for the owner's confirmation. Every photo is re-encoded with its orientation applied and its metadata dropped, and the server confirms that no EXIF remains; video loses its metadata when it is re-wrapped, and the admin warns when a file keeps metadata it cannot remove. |
+| D-25 | Rename and replace in the media library | An upload with an existing name overwrites it silently (`lib/github.ts:61-71`). | Refuse a name collision unless the owner chooses Replace. A rename rewrites every draft reference in the same commit (a Blob rename copies to a new pathname and keeps the old object until a publish); a delete first lists the references in `draft` and `main`. |
+| D-26 | Single-use Blob tokens with type and size | Blob tokens are reusable until they expire, and their type check uses the declared type, not the bytes. | Fixed pathname, no overwrite, short validity, and a nonce marked used by a confirm route that also checks the bytes and deletes a bad upload. Never allow SVG in a Blob token. Vercel now favors OIDC with presigned uploads over `BLOB_READ_WRITE_TOKEN` (Q-18). |
+| D-27 | Save to `draft`; publish to `main` | No equivalent: a Blob file is public at its address as soon as it is uploaded, and a Blob delete or overwrite reaches production at once. | Blob files are immutable (a random suffix, never overwritten; Replace makes a new object). A delete waits until a publish leaves no reference in `main` or `draft`, the publish dialog lists Blob changes, and previews use their own store or prefix. Discard leaves Blob files in place, so the admin lists files that neither branch references and offers to delete them. Download links to Blob files use Blob's download address, because browsers ignore the `download` attribute across origins. |
+| D-28 | Word files rendered in the browser; documents parsed in a worker | `docx-preview` renders into the page with no sanitizing (script can arrive through embedded HTML and `javascript:` links), and it needs a DOM, so it cannot run in a worker. | Recommended: ask for a PDF export as the readable file and offer the Word file as a download. The alternative is a sandboxed frame with its own policy (Q-19). |
+| D-29 | Media from the owner's files | The picker accepts any external image address (`components/admin/media.tsx:212-218`), which `next/image` would reject, and `next.config.mjs` sets no image options. | Images from `/media` and the Blob store only; external links only for YouTube and Vimeo. `images.remotePatterns` names the owner's exact Blob store host, never the shared Blob domain (which would let any Blob store use the site's metered optimizer), and `images.localPatterns` covers `/media` and `/sky`. |
+| D-30 | Photos compressed to WebP in the browser, at most 2560 px, the original not kept | `components/admin/media.tsx:16-36` uploads images under 1 MB and every GIF untouched, keeps the original when the WebP is not smaller, and names the canvas output `.webp` even when Safari returns PNG. This has already happened: both `img-7414.webp` files are PNG data (section 6). | Every photo is resized to at most 2560 px and encoded to WebP, through `@jsquash/webp` where the canvas cannot; the original is never kept; the stored extension comes from the output bytes; GIFs are converted. |
+| D-31 | Deploy state through `VERCEL_TOKEN` | None. | Vercel mirrors deployments into GitHub, so the existing GitHub token with Deployments read can report `draft` and `main` and give the save bar its preview address from the deployment record; if a record lacks the address, a non-secret variable holds the draft branch's preview address. A Vercel token would also need a team id on Pro (Q-31). |
+| D-32 | Connection-status panel | Its help text does not match how `lib/auth.ts` works (`components/admin/ConnectionStatus.tsx:97`). | Correct text; rows for `SESSION_SECRET`, the draft branch, Blob, and deploy state. |
+| D-33 | Delete with confirm | `window.confirm` (`ProjectsTab.tsx:231`, `BlockEditor.tsx:278`, `media.tsx:112`). | A styled confirmation dialog, which publish needs anyway for its file list. |
+| D-34 | Repository cards: name, description, language, and last update fetched at build, a plain link as the fallback (13A); every word passes the content check (12) | No repository cards: project links render as plain buttons (`app/projects/[slug]/page.tsx:99-105`). | Fetch inside a cached function with the GitHub token, run the fetched text through the public rules and the blocklist, and fall back to the plain link on a hit or a failed fetch; the content check fails when a linked repository is private, missing, or renamed (Q-14). Project links stay plain links with the seed's label. |
+
+### 5.3 Security
+
+| id | handoff | v2 | v3 resolution |
+|---|---|---|---|
+| D-35 | A policy without `unsafe-eval`, `frame-ancestors 'none'`, HSTS, `nosniff`, a referrer policy, a restrictive Permissions-Policy | `next.config.mjs:2-7` sends some headers and no content security policy. | One static policy from `next.config.ts` (nonces would force dynamic rendering, which `ensureStatic` forbids): `default-src 'self'`; `script-src 'self' 'unsafe-inline'`, plus `'wasm-unsafe-eval'` only where decoders run; `style-src 'self' 'unsafe-inline'` (inline styles from `next/image`, React, and Motion); `img-src` and `media-src` `'self' data: blob:` and the owner's exact Blob store host; `connect-src 'self' blob:` and that host, plus the Blob upload API on `/admin`; `worker-src 'self' blob:`; `frame-src https://www.youtube-nocookie.com https://player.vimeo.com`; `frame-ancestors 'none'`; `object-src 'none'`; `base-uri 'self'`; `form-action 'self'`. Development adds `'unsafe-eval'`; previews add the Vercel Toolbar's host only if the owner keeps the toolbar (Q-32). Vercel already sends HSTS on custom domains; it is also set explicitly. Permissions-Policy allows `fullscreen` (self and the two embed hosts) and `clipboard-write` (self) and denies the rest. First shipped report-only on previews. |
+| D-36 | An HMAC-signed, httpOnly, Secure, SameSite=Strict session with an eight-hour expiry and a logout route | See the owner's Phase 0 report. | A token signed with `SESSION_SECRET`, carrying its issue time and expiring after eight hours, in a Strict cookie; logout clears it. |
+| D-37 | Constant-time password comparison | See the owner's Phase 0 report. | Compare HMAC digests of both values. |
+| D-38 | Five attempts per ten minutes per address, then a lockout | See the owner's Phase 0 report. | A Vercel firewall rate-limit rule on `POST /api/auth`: 5 requests per 600 seconds per IP (Hobby allows one rate-limit rule; Pro allows 40). In-memory counters are unreliable on Vercel. The command is recorded in `docs/`. |
+| D-39 | 503 without `ADMIN_PASSWORD` or `SESSION_SECRET` | See the owner's Phase 0 report. | Every admin route returns 503 when either is missing; `/admin` shows a setup notice. |
+| D-40 | Mutating routes check the Origin and validate with zod | See the owner's Phase 0 report. | Both checks on every mutating route. |
+| D-41 | JSON-LD only from fields shown on the page | `app/page.tsx:18-33` and `app/projects/[slug]/page.tsx:53-64` use plain `JSON.stringify` and include fields the page does not show; the project's `CreativeWork` names the owner as sole author (`app/projects/[slug]/page.tsx:58`), against team credit, and the `Person`'s `sameAs` takes every web link, the scheduling link included (`app/page.tsx:26`). | A JSON-LD helper that escapes `<` and takes only shown fields: `Person` with `sameAs` from the LinkedIn and GitHub profile links only, and no telephone; `CreativeWork` naming the owner as a contributor with the seed's role, never sole author; an image only for a non-empty cover. |
+| D-42 | No secret reaches the client bundle | The modules that read secrets have no import guard (`lib/auth.ts`, `lib/github.ts`). | `server-only` in those modules and a build-output scan in CI. |
+| D-43 | Remove `.mcp.json` and ignore it | Tracked and not ignored. | Removed and ignored in Phase 1, after the cleanup in Q-01. |
+| D-44 | The nav comes from the seed | An "Admin" link is hard-coded into the public nav, phone menu, and footer (`components/Nav.tsx:72-77`, `components/Nav.tsx:141-148`, `components/Footer.tsx:39-41`). | Not in the seed's nav, so it goes; `/admin` stays reachable by its address. |
+| D-45 | No tracking cookie, so no cookie banner (`ARCHITECTURE.md` 2); embeds only from YouTube and Vimeo (11) | Embeds load the YouTube or Vimeo player as soon as they render (`components/MediaView.tsx:68-82`), and players can store data on the visitor's device. Embed hosts are matched by substring and the video id is not checked (`lib/utils.ts:48-56`), and the player's title is empty when `alt` is (`components/MediaView.tsx:73-80`). | A click-to-load placeholder with a self-hosted poster; the player loads only after the click, with Vimeo's do-not-track option. An exact host allow-list builds the player address from a validated id on `www.youtube-nocookie.com` or `player.vimeo.com`, and the title falls back to the caption or a neutral label. |
+
+### 5.4 Pages, design, motion, accessibility, and SEO
+
+| id | handoff | v2 | v3 resolution |
+|---|---|---|---|
+| D-46 | The sky is never on `/admin`; the admin has no sheet frame and no animation library beyond its save bar; `app/layout.tsx` holds the frame, nav, and footer (3) | The root layout wraps every route, and the background component skips `/admin` by checking the path (`components/BackgroundFX.tsx:30-33`). | Public chrome lives in the route group `app/(site)/layout.tsx`; `/admin` sits outside it with a plain layout, and both stay static. |
+| D-47 | A shared-element card-to-page transition | `app/template.tsx` wraps every page in a fade (`components/PageTransition.tsx`), and a root template does not remount between project pages. | React `ViewTransition` in each page, with the cover named per slug, prefetch on cards, and a reduced-motion rule. |
+| D-48 | Panels rise 16 px once; paragraphs never animate | `components/Reveal.tsx` fades and lifts sections and single paragraphs by 24 px over 0.6 s, and its server HTML starts every revealed element at opacity 0, so content stays hidden until scripts run. | A panel is a glass container without running prose (cards, tables, the title block, readouts, viewers). It rises through one observer that toggles a CSS class; client code sets the hidden start state only on panels still below the fold, so the server HTML never hides content. Paragraphs stay still; the hero headline has its own reveal (D-68). |
+| D-49 | Reduced motion removes animation and loses nothing; one hook, `useMotionOk()`, is false under reduced motion and inside `/admin` (`ARCHITECTURE.md` 8) | `useReducedMotion` returns no value during the server render, so `Reveal`, `PageTransition`, and `ProjectsExplorer` render one tree on the server and another on the client for reduced-motion visitors; the only reduced-motion CSS stops the marquee and smooth scrolling (`app/globals.css:233`), so transitions on the body, buttons, links, and cards keep running. | `useMotionOk()` (false on the server and until mount, under reduced motion, and on `/admin`) with `MotionConfig reducedMotion="user"`, one element tree, and branching only after mount; a global reduced-motion rule also zeroes CSS transitions, animations, and view transitions; a Playwright run with reduced motion fails on hydration errors. |
+| D-50 | The catalog sky behind every public page | `components/BackgroundFX.tsx` draws random dots and arcs on a canvas on every page. | Replaced by `components/sky/` (`ARCHITECTURE.md` 6A); random-dot space art is refused (`DESIGN_DIRECTION.md` 9). |
+| D-51 | Headline in one color; hero modes `drawing`, `model`, `media`; every hero element of `ARCHITECTURE.md` 5; the lens on pointer devices (8) | `components/hero/Hero.tsx:8-26` colors the last words differently; `components/hero/HeroVisual.tsx:25` loads 3D from 768 px; the caption and a second button are hard-coded. | The drawing with the thermal lens by default, the model and media modes, the caption from the architecture, and buttons that say what they do. Every hero element appears at every width, although the phone sketch in `DESIGN_DIRECTION.md` 4 drops the second button. The lens mode follows input capability (`(hover: hover) and (pointer: fine)`), not width. |
+| D-52 | The hero never shows invented 3D geometry | `components/hero/DroneScene.tsx` is a procedural 3D aircraft. | Removed. |
+| D-53 | Tokens in `tokens.css`, no hex value outside it; the ramp only in its eight places; Archivo and B612 Mono | A different palette in `app/globals.css`, Space Grotesk and JetBrains Mono (`app/layout.tsx:7-19`), and literal colors in `app/layout.tsx:51-58`. | `tokens.css` (Blueprint, Whiteprint, the ramp, sky, and glass) mapped with `@theme inline`; a separate action token; the ramp tokens used only by the eight components, checked by a test. Open Graph images, the manifest, the viewport color, the sky shaders, and the viewer materials read a `lib/tokens.ts` generated from `tokens.css`, which is the only file the hex check exempts. Archivo with its width axis and B612 Mono through `next/font` (Q-16). |
+| D-54 | No pills except the availability badge; no chips, tag clouds, or pill rows; no drop shadows in Blueprint; card hover is tilt, highlight, and callouts (`DESIGN_DIRECTION.md` 4, 5.8, 6.3, 9) | Pills and chips in `ProjectCard.tsx`, `ProjectsExplorer.tsx`, `SkillsSection.tsx`, and `Footer.tsx`; a shadow and a cover zoom on card hover (`ProjectCard.tsx:23-29`). | Cards per 5.8. Tilt only for fine pointers, reset on press before navigating. |
+| D-55 | No scroll listener that sets state | The nav hides through a listener that sets state (`components/Nav.tsx:25-35`); so does the gallery (`components/blocks/Gallery.tsx:17-23`). | `useScroll` and `useTransform`, or CSS scroll-driven animation. |
+| D-56 | Every word comes from the seed, and the rules bind every word on the site and the repository's own documentation (`CONTENT_RULES.md` preamble) | Page metadata is hard-coded (`app/layout.tsx:21-49`, including a keyword list, plus `app/about/page.tsx:13-17`, `app/experience/page.tsx:11-31`, `app/projects/page.tsx:9-26`, `app/contact/page.tsx:12-15`), as are numbered labels and button text across `components/home/`. | Metadata from `seo.title`, `seo.description`, and each project's pitch; no keyword list. Interface labels state no fact and live in one strings file; the content check scans it, the other component string literals, and `README.md`, where the handoff's own fixed strings (the hero caption, the placeholder line, the 404 text, the sky credit) live outside the seed. The seed has no text for the `/projects` one-liner, the page descriptions, or the hero buttons (Q-10). |
+| D-57 | No label above a heading unless it adds information | `components/home/Thesis.tsx:8` prints a numbered label even though the seed's thesis label is empty. | Empty labels render nothing. |
+| D-58 | Filter by domain tag | Filters by the ten most common tags (`components/ProjectsExplorer.tsx:13-20`). | Filter on the comma-separated `domain` values, grouped without regard to case, unless the owner chooses otherwise (Q-11). |
+| D-59 | Readouts count up once; a readout links to its proof | No prefix or proof. The count-up starts every value at zero, so the server HTML shows 0 for every readout until scripts run, and it animates ordinals as numbers ("0st" to "1st") (`components/CountUp.tsx:9-16`). | The server HTML always carries the final value with its prefix and suffix as one text run; counting starts only after mount when motion is allowed and only for plain numbers; ordinals and text values print as they are; each readout links to its proof. |
+| D-60 | Video loads with `preload="metadata"` (9); no autoplay under reduced motion or data saver; covers play on hover or in view; a long video may scrub with scroll (13A) | Every video autoplays, card covers included (`components/MediaView.tsx:87-101`), and v2 has no scrub. | Muted autoplay only while in view, when motion is allowed and Save-Data is off, paused when the route is hidden; every looping hero or cover video has a visible pause button. Card covers stay at `preload="none"` until a card nears view, and every poster works on its own, since iOS Low Power Mode blocks autoplay. Scroll scrubbing runs on fine pointers only and only when motion is allowed, and the admin warns when a video's keyframes sit too far apart for smooth seeking. |
+| D-61 | "Photo to come" placeholder | Every placeholder repeats the same SVG pattern id (`components/MediaView.tsx:31`). | A CSS grid and crosshair, no ids. |
+| D-62 | Skills as a bill of materials | Chips (`components/home/SkillsSection.tsx:32-36`). | A table with item numbers and proof links; stacked rows on phones. |
+| D-63 | The lightbox, menu, and command palette trap focus and close on Escape; every viewer works by keyboard | The lightbox neither traps nor returns focus, and its close button relies on the overlay (`components/blocks/Gallery.tsx:114-151`); the phone menu has no trap or Escape (`components/Nav.tsx:110-172`). | Focus-trapped dialogs with Escape and focus return; full screen behaves like the lightbox; the model viewer has rotate and reset buttons and the compare slider takes arrow keys; a gallery shows a model's poster in the strip and opens the viewer in the lightbox. |
+| D-64 | Page contents per `ARCHITECTURE.md` 5 | The home page receives only the featured projects (`app/page.tsx:43`), so non-featured work never appears; `/experience` also shows the readouts; `/about` shows the thesis; `/contact` is centered, lists every contact link beside the email button (`app/contact/page.tsx:19`, `40-41`), so the email shows twice, and prints each link's address under its label (`app/contact/page.tsx:66-69`); there is no copy action, resume-request button, skip link, `/log`, command palette, print stylesheet, manifest, site icon, or generated Open Graph image. | Every page built to section 5, left aligned except the 404 page. The email comes only from `personal.email` (`mailto:` entries in the link lists are skipped); contact links show their labels only, LinkedIn as the word; one phone row appears only when `personal.phone` is set. |
+| D-65 | Sitemap of visible pages | `app/sitemap.ts` lists every project and omits `/log`. | Visible projects plus `/log`. |
+| D-66 | Nothing runs while hidden (`ARCHITECTURE.md` 6A; `DESIGN_DIRECTION.md` 6.4) | Cache Components keeps up to three earlier routes mounted but hidden, and hidden canvases and videos keep running. | Every canvas, video, and reader pauses when hidden; a test checks that no animation frames run on a hidden route. |
+| D-67 | WCAG 2.2 AA: one `h1` and ordered headings, targets of at least 44 px, nothing that depends on hover, visible focus (`ARCHITECTURE.md` 10; `DESIGN_DIRECTION.md` 7, 8) | Heading blocks are `h2`, bullet headings `h3`, and roadmap stages and log entries `h4` (`components/blocks/BlockRenderer.tsx:45`, `66`, `92`, `147`), and cards are `h3` under the page `h1` (`components/ProjectCard.tsx:45`), so several seed pages skip levels. The theme toggle is 40 px (`components/ThemeToggle.tsx:25`), gallery dots are 6 px and its arrows hide below 768 px and until hover (`components/blocks/Gallery.tsx:71-88`, `96-106`), and the fixed header can cover a focused element (`components/Nav.tsx:40-44`). v3 also adds motion that starts by itself and lasts more than five seconds (the sky, the ticker, video covers). | Heading levels computed from what precedes each block; roadmap stages and revision rows become list items and table rows; card titles on `/projects` and roles on `/experience` are `h2`. Every control, viewer controls included, gets a 44 px hit area; carousel buttons always show; links in text keep a resting underline; `scroll-padding-top` keeps a focused element clear of the sticky nav. A visible, keyboard-reachable pause-motion control, remembered per browser, settles the sky to its still image, stops the ticker, and pauses video covers (Q-38). |
+| D-68 | Largest Contentful Paint under 2.0 s (9); the headline sets line by line on load (`DESIGN_DIRECTION.md` 6.2); the still image paints first on every page (6A), with no byte budget in section 9 | No equivalent. | First-viewport text is in the server HTML: the headline's line spans are server-rendered, and the reveal runs in CSS from first paint, once per visit, and is dropped if LCP misses its budget in Phase 5. Panels rise only below the fold. Each still image gets a byte budget per width class and theme and never loads ahead of the fonts or the headline. |
+| D-69 | Color is never the only carrier of state | The progress strip shows each step's state only through a hidden glyph and a color (`components/ProgressStrip.tsx:4-21`). | An ordered list with visually hidden state words and `aria-current="step"`, and no ramp colors. |
+| D-70 | All functions by keyboard and touch; vertical scrolling always wins | No equivalent. The handoff's `touch-action: pan-y` on the sky and the drawing also disables pinch zoom. | Never on the page or on large areas: `touch-action: pan-y pinch-zoom` on the drawing, passive listeners on the sky with no touch-action change, and a pinch-zoom test in the Playwright phone project. |
+
+### 5.5 Repository, build, and platform
+
+| id | handoff | v2 | v3 resolution |
+|---|---|---|---|
+| D-71 | Tests, CI, a pre-commit hook, a secret scan; the section 9 budgets | None. | Vitest, Playwright with axe, Lighthouse CI, `simple-git-hooks`, gitleaks, and a size gate over the build manifests that fails CI on any section 9 budget, all set up in Phase 1 where they apply. A gitleaks finding the owner has already resolved is ignored by its fingerprint, never by its value. |
+| D-72 | Current stable TypeScript | 5.9.3. | 6.0.3. TypeScript 7.0.2 ships no stable JavaScript compiler API, and `typescript-eslint` (inside `eslint-config-next`) supports only versions below 6.1.0; builds would work on 7, linting would not. |
+| D-73 | Current stable ESLint | 8.57.1 with `next lint` (`package.json:9`), which Next 16 removed. | ESLint 10.15.0 with flat config and `eslint .`. Three bundled plugins still list ESLint 9 as their peer, so npm prints three peer warnings and installs normally (verified in the dry run). The dry run proves the install, not a lint run, so 10 stays only if the Phase 1 lint run passes; otherwise the newest ESLint 9 until those plugins support 10. |
+| D-74 | Every public route static | `export const dynamic = 'force-static'` on seven pages, `dynamicParams = false`, and `runtime` and `dynamic` exports on five routes; all are errors under Cache Components. | Remove them; `ensureStatic = 'navigation'` on the root layout; `notFound()` for unknown slugs; async `params`. |
+| D-75 | A build with a failing content check does not deploy | Vercel builds independently of GitHub CI. | `prebuild` runs the content check inside the Vercel build; CI and the hook give earlier signals. |
+| D-76 | `CONTENT_BLOCKLIST` is checked in CI and on save | CI logs of a public repository are public. | The check reports the rule and field only, never the matched term, in responses, logs, CI and build output, and test snapshots (tests use a synthetic list). A missing `CONTENT_BLOCKLIST` fails closed on Vercel and in CI (`/api/save` returns 503 and `check:content` fails) and only warns on the owner's machine, where the check loads `.env.local` itself. The variable is set in Vercel (Production and Preview) and as an Actions secret (Q-33). An optional page-scoped entry (a slug prefix before the term, beside the whole-word and `cs:` forms) bars a name on one page only, because the seed names faculty on two other pages. |
+| D-77 | Vercel only | `netlify.toml`, Netlify mentions in `README.md` and `app/api/status/route.ts:51`. | Removed (Q-05). |
+| D-78 | No dashes in any file, commit messages included (`ARCHITECTURE.md` 0) | Seven v2 files contain em or en dashes (`README.md`, `app/api/upload/route.ts`, `components/MediaView.tsx`, `components/admin/AdminApp.tsx`, `components/admin/ConnectionStatus.tsx`, `components/admin/SiteTabs.tsx`, `lib/github.ts`). | All are rewritten; the dash check runs on every tracked text file, and a commit-msg hook plus a CI check of the branch's commits cover commit messages. |
+| D-79 | Node 22 LTS or newer | No `engines` field and no `.nvmrc`, so the Vercel project setting decides. | `engines.node` and `.nvmrc` (Q-03). |
+| D-80 | Section 9 budgets hold on the preview deployment; the sky holds 60 frames per second on a mid-range phone and demotes itself | Vercel adds `X-Robots-Tag: noindex` to previews, so Lighthouse SEO cannot reach 100 there; Lighthouse CI cannot measure Interaction to Next Paint; previews sit behind Vercel Authentication. | SEO 100 checked on production after the merge (or on previews with the crawlable audit excluded); INP from Speed Insights field data; frame rate measured on one real mid-range phone; demotion proved in CI by injecting slow frames; contrast over the sky proved by screenshot sampling. Preview runs use the automation bypass; Lighthouse reports go to workflow artifacts and never to public storage, and Playwright traces are kept only on failure, without the bypass header or an admin session (Q-32). |
+| D-81 | Model textures in KTX2 or WebP and STEP conversion in the admin (13A), under a policy without `unsafe-eval` (11) | No v2 equivalent. Both the KTX2 transcoder and the STEP converter call the `Function` constructor, which a policy without `'unsafe-eval'` blocks, even inside their workers. | Model textures are WebP only, and the KTX2 tools stay out. STEP conversion runs in one dedicated worker file whose own response header allows `'unsafe-eval'`, so every page stays strict; or STEP is dropped in favor of GLB or STL exported from CAD (Q-22). |
+
+### 5.6 The handoff against today's tools and platform
+
+| item | the handoff says | what is true on 2026-11-16 | resolution |
+|---|---|---|---|
+| `ensureStatic` | Set it on the root layout and exempt `/admin` and `/api` | It exists (added in 16.4.0) and needs Cache Components. Route handlers sit outside layouts, so `/api` needs nothing; a child cannot weaken a parent's level. | `'navigation'` on the root layout; `/admin` stays a client-only static shell outside the public route group (D-46) and is never set to `false`. |
+| Cache Components | "Cache Components on" | `cacheComponents: true` with `partialPrefetching: true` (16.3 and later). | As stated, plus D-74. |
+| React 19.3 | Stable View Transitions | Confirmed: `ViewTransition` is stable in 19.3, needs no flag in Next 16.3 and later, and `AnimateView` is free in `motion`. | Used for the card-to-page transition. |
+| Tailwind 4 | Tokens mapped with `@theme` | The documented pattern for two themes is raw tokens per `[data-theme]` mapped with `@theme inline`; arbitrary hex values still compile. | `@theme inline`, the default palette removed, and a lint check for hex outside `tokens.css` and the generated `lib/tokens.ts` (D-53). |
+| Motion+ | `"motion-plus": "npm:@motionplus/core@<current>"`, token in `.npmrc` | Confirmed. The public `motion-plus` package is deprecated, `@motionplus/core` is private, and every npm command fails while `MOTION_TOKEN` is unset. `splitText` imports from `motion-plus`, the components from `motion-plus/react`. | Pin after an authenticated `npm view`; check the lockfile for any token before committing; keep Motion+ source out of git. |
+| Node | 22 LTS or newer | Effective floor 22.22.2 (24.15.0 on Node 24); Vercel defaults to 26. | Node 26 (Q-03). |
+| Login limit without a database | Five attempts per ten minutes | Serverless instances do not share memory. | A firewall rule (D-38). |
+| Upload limits | Repository up to 10 MB | 4.5 MB request bodies. | D-23. |
+| REV and last-updated dates | From git | Ten-commit clones. | D-09. |
+| Deploy state | `VERCEL_TOKEN` | GitHub's deployment records carry the same state. | D-31. |
+| Budgets on previews | Lighthouse on the preview | See D-80. | D-80. |
+| Blob tokens | Single-use, with type and size | Reusable until expiry; the type is the declared one. | D-26. |
+| Word documents in a worker | Parsed in a worker | `docx-preview` needs a DOM. | D-28. |
+| Milky Way texture | 2K and 4K, compressed | The KTX2 decoder costs more bytes than it saves for one texture, and its transcoder is blocked by the policy. | AVIF with a WebP fallback for the sky; no KTX2 anywhere (D-81). |
+| Still images | Rendered headlessly by a script | Playwright's headless Chromium renders WebGL on GitHub's runners; the Vercel build image is not a supported Playwright platform. | The catalog reduction and the still renders run in a manually triggered Actions job or locally; the owner reviews the outputs before they are committed to `public/sky/` with `CREDITS.md`, and the Vercel build only checks that they exist and meet a byte budget per still image, which section 9 lacks (D-68). |
+| drei helpers | drei in the 3D stack | `<Stars>` draws random dots, and drei's loaders fetch their decoders from public CDNs by default. | Never `<Stars>`; a prebuild step copies the decoders from `three` into `public/vendor/`, and every loader points there. |
+| Policy for the viewers | No `unsafe-eval` | The Draco and Meshopt decoders run under `'wasm-unsafe-eval'` with a worker, and pdf.js needs a worker. The KTX2 transcoder and the STEP converter call the `Function` constructor, which the policy blocks. | D-81. |
+| One WebGL context for the sky and the viewers | Shared "where possible", at most two viewers | A viewer drawn into the shared background canvas cannot sit under a glass panel's blur or go full screen, and the sky's frame loop and pixel ratio would govern it. The sky's context does not exist when `settings.background` is `grid` or `off`, on the Still tier, or before the sky loads. | The sky keeps its own canvas, and every model viewer, the hero model included, gets its own canvas only while active (at most two viewers, so a page never holds more than three contexts), sharing the `three` module rather than a context. Models are lit by an environment map that the sky script bakes at build, so the hero model stays lit without the live sky. |
+
+### 5.7 Inside the handoff
+
+| item | conflict | resolution |
+|---|---|---|
+| Phase 0 scope | Section 14 says Phase 0 writes `docs/V3_PLAN.md` and changes nothing else; the owner's request for this phase also asks for a root `CLAUDE.md`. | Both files are committed; the owner's request is the later and more specific instruction. |
+| Publishing during the build | Phase 6 must prove a publish on the preview, but rule 3 and acceptance 14 keep `main` untouched. Branch-specific Preview variables leave every other preview on the default Preview values, and v2's branch helper falls back to `main` (`lib/github.ts:16-18`). | Phase 6 runs against two sandbox branches cut from `v3`, set as the default Preview values of `GITHUB_BRANCH` and `GITHUB_DRAFT_BRANCH` (not only as a `v3` override) or through a Pro custom environment, so no preview can target `main`. The code has no default branch, refuses any write to `main` except the publish merge, and refuses that merge outside production (Q-30). |
+| Proof that does not resolve | Section 4 says it fails the content check; section 7 lists it among warnings that do not block. | The content check blocks it, judged on the state after the save (a proof to a hidden project counts as unresolved), and the editor also warns before saving. |
+| Contrast | Several specified pairs fall under AA: the specified ink on the Whiteprint action color (about 3.1:1), the mute ink on the raised surface (about 4.0:1 in Blueprint and 4.4:1 in Whiteprint), and the Whiteprint mute ink and line color on the Whiteprint media-well color, where placeholders sit. Dark text on the cold end of the primary button's hover sweep falls near 1:1, and one end of the ramp nearly vanishes on each theme's sheet. | White text on the Whiteprint action color (about 5.2:1); mute ink never on the raised surface; light-on-dark values inside Whiteprint media wells; the sweep runs along a 2 px edge or ends in solid amber before any text; ramp segments are outlined at 3:1 or more; a Vitest check of every text and line token against every surface in both themes (Q-17). |
+| Whiteprint glass and sky tokens | `DESIGN_DIRECTION.md` 2.1 defines glass, sky, and ground tokens for Blueprint only. | The design bundle's values if it has them; otherwise white glass at about 0.72 opacity, the same blur, and no dawn. |
+| `settings.background` | The values `grid` and `off` are named but not described. | `grid`: the flat drawing grid with no WebGL and no still image; `off`: the plain sheet color. The still image and the sky load only for `sky`. |
+| `seo.ogImage` | Section 4 offers an optional `seo.ogImage`, while sections 3 and 5 generate Open Graph images, and a file-based image overrides one set in metadata. | The generated image by default; when `seo.ogImage` is set, the home `opengraph-image` route serves that file instead. |
+| Seed against schema | `settings.heroModel` lacks `kind`. | D-03. |
+| GPA and phone copies | An empty value must hide every copy, but the seed holds copies in other fields. | D-14. |
+| REV date | `DESIGN_DIRECTION.md` 5.1 defines REV as the date of the project's last content commit, while its example matches Raven's newest log date; after the seed import, every project shows the import's date until it is next edited. | The last content commit, as defined (D-09), unless the owner prefers the newest log date (Q-39). |
+| Filter by domain tag | `domain` is a comma-separated string and `tags` is a list; "domain tag" could mean either. | Q-11. |
+| `/projects` heading and one line | The seed has no text for them. | Q-10. |
+| Tools strip | The home page has a tools strip (`ARCHITECTURE.md` 5), and the seed has no field of its own for it. | Q-41. |
+| Dimension callouts | Leaders drawn over a photo need anchor points the schema does not have. | Callouts along the cover's edge unless the design bundle adds anchors (Q-15). |
+| Maturity and status words | The STMicroelectronics internship sits at step 5, whose step name is "Fielded", beside the label "Completed internship". | Q-12. |
+| Zone letters | `DESIGN_DIRECTION.md` 3 allows capitals only in the title block and the revision table header, while 4 puts zone letters A to F on the sheet border. | Zone letters are `aria-hidden` drafting marks and the one exception, unless the design bundle says otherwise. |
+| Vendor and accelerator names | `CONTENT_RULES.md` 2 bars "the name of any customer, vendor, investor, sponsor in talks, or accelerator", while the seed names component vendors (including the Orion BMS 2 and the Flightory Stallion FPV airframe, which section 3 requires) and an accelerator fellowship. The competition's sponsor is not a sponsor in talks. | Q-13. |
+| Circuit-simulation tools | "No other PCB or circuit-simulation tool is named" (`CONTENT_RULES.md` 3), while the seed lists Simscape in skills and in a certification note. | Q-13. |
+| "Honors" in the degree line | "Honors" means program membership and no graduation honor is stated before graduation, while the seed's degree line ends in "Honors". | Q-13. |
+| MoonLamp firmware | The firmware is "described only as" two phrases, while the seed adds the language and tool, the features it renders, and how the first run went. | Q-13. |
+| MoonLamp link | The project is MoonLamp; its link points to a public repository named MoonLight. | Q-14. |
+| Rules that match themselves | Five rule messages and one rule id (the pack-voltage rule) match their own patterns, and `CONTENT_RULES.md` itself trips GPA-LABEL. | The content check scans `content/`, `docs/`, `README.md`, every other committed Markdown file, and component strings, but never `content-rules.public.json` or handoff text. Documents cite rules by id, never quoting a message, a pattern, or a banned phrase, and the pack-voltage rule is named in words because its id trips its own pattern. |
+| Rules that also refuse ordinary wording | Every pattern runs without regard to case. One acronym in TEST-METHODS is also an everyday English verb; DBVF-FLOWN also matches a common contraction and an ordinary verb near the aircraft's name; RF and RAVEN-SOFTWARE apply site-wide, so they would also refuse some future senior design updates. | Keep every rule as given (`CONTENT_RULES.md` 5): a refusal names the rule so the owner can reword, `docs/ADMIN_GUIDE.md` explains these four, and only a new handoff changes a rule (Q-40). |
+| Still and live sky | The still image is rendered at one sidereal time and the live sky shows the visitor's time, so the stars jump at the fade, and easing one fixed-time still to the real time would sweep up to 12 hours of sky. | Render the Blueprint still at 24 hourly sidereal steps for each width class (one small file per visit); the inline head script picks the step nearest the visitor's sky (`ARCHITECTURE.md` 6A) before first paint, and the live sky starts there, within about half an hour of the real sky, so the fade shows no jump (Q-29). |
+| Twelve admin tabs | New editors for `seo`, `now`, `background`, `heroModel`, `gpaLabel`, and `resumeRequest` have no tab. | `seo`, `background`, and `heroModel` under Settings; `now` and `gpaLabel` under Personal; `resumeRequest` under Contact; twelve tabs stay. |
+| Sample files for `/dev/blocks` | Phase 3 needs a sample of every attachment kind, but real media only. | Fixtures generated by script (abstract shapes, a test tone, a one-page PDF) under `tests/fixtures/`, served only by the dev route and deleted with it; no third-party sample without the owner's yes. |
+| Revision labels | The three documents carry revisions 3, 3, and 2; `content-rules.public.json` carries version 1; the seed files carry none. | This plan pins the file hashes in section 2. |
+
+## 6. Media the seed refers to
+
+All 15 distinct files exist in git with exact case (Vercel builds on a case-sensitive file system). None carries location metadata. Every image in the seed has an empty `alt`; the owner writes each one in the admin, and the release pull request lists them again.
+
+| file | used in the seed by | size | pixels | format from bytes | exists |
+|---|---|---|---|---|---|
+| `/media/site/img-7414.webp` | `settings.heroMedia` | 4,419,650 B | 1177 x 2560 | PNG, not WebP | yes |
+| `/media/site/profile-pic-sf.webp` | `personal.photo`, `about.headshot` | 222,688 B | 1920 x 2560 | WebP | yes |
+| `/media/raven/img-7657.jpeg` | Raven cover | 63,405 B | 1005 x 777 | JPEG | yes |
+| `/media/raven/build-01.webp` | Raven gallery | 196,356 B | 1177 x 2560 | WebP | yes |
+| `/media/raven/img-7666.webp` | Raven gallery | 425,470 B | 1920 x 2560 | WebP | yes |
+| `/media/raven/img-7414.webp` | Raven gallery | 4,419,650 B | 1177 x 2560 | PNG, not WebP (same bytes as the site copy) | yes |
+| `/media/fsae-bronco-racing/img-7658.jpeg` | Bronco Racing cover | 37,345 B | 1024 x 1024 | JPEG | yes |
+| `/media/fsae-bronco-racing/img-7655.jpeg` | Bronco Racing gallery | 33,437 B | 447 x 447 | JPEG | yes |
+| `/media/fsae-bronco-racing/img-7656.png` | Bronco Racing gallery | 8,850 B | 730 x 273 | PNG | yes |
+| `/media/fsae-bronco-racing/24e64973-722d-410e-8d06-175b12151d50.jpeg` | Bronco Racing gallery | 1,209,394 B | 1206 x 2144 | JPEG | yes |
+| `/media/stmicroelectronics/st-photo.jpg` | STMicroelectronics cover | 27,368 B | 900 x 900 | JPEG | yes |
+| `/media/crossfit-megatrons/crossfit-image.png` | Heritage Hopper cover | 13,394 B | 1200 x 630 | PNG | yes |
+| `/media/engr172-build-a-bronco/img-7653.jpeg` | Build-a-Bronco cover | 126,945 B | 1088 x 928 | JPEG | yes |
+| `/media/palmsync/asearis.png` | PalmSync cover | 9,245 B | 447 x 447 | PNG | yes |
+| `/media/smart-plant-care/heypossible-image.png` | Smart Plant Care cover | 13,339 B | 400 x 400 | JPEG, not PNG | yes |
+
+- **Empty covers, placeholder by design:** senior design, MoonLamp, CAN Bus Diagnostic Tool, STM32L476 Embedded Systems Suite, and Pipelined CPU in Verilog.
+- **Empty on purpose:** `settings.heroModel` (no model yet; the hero stays in `drawing` mode).
+- **Bytes that do not match the extension:** the two `img-7414.webp` files and `heypossible-image.png`. `next/image` reads the bytes, so they render, but the byte-level type check (D-24) and the media library will flag them. Nothing is renamed (`ARCHITECTURE.md` 13); R-16 and Q-26 cover them.
+- **Tracked but unused by the seed:** `/media/site/img-7657.jpeg` (the same size as the Raven cover). It stays, since nothing is renamed or deleted.
+- **Referenced by v2 content but missing from git:** `can-bus-diagnostic-tool/cover.jpg`, `pipelined-cpu-verilog/cover.jpg`, `stm32-embedded-projects/cover.jpg`, `fsae-bronco-racing/harness.jpg`, and `fsae-bronco-racing/charging-cart.jpg`. The seed refers to none of them.
+
+## 7. Risks
+
+| id | risk | effect | mitigation |
+|---|---|---|---|
+| R-01 | Local tool configuration is tracked in this repository. | Details in the owner's Phase 0 report. | Q-01; Phase 1 removes and ignores the file. |
+| R-02 | Production runs Next.js 14, which no longer receives security fixes. | Known issues stay open until a patch or v3 ships (details in the owner's Phase 0 report). | Q-02. |
+| R-03 | The handoff changed twice during this survey. | A plan built on an older revision. | Hashes pinned in section 2; any later change updates this plan before the next phase. |
+| R-04 | Revision 2 adds the sky, the model hero, nine viewers, in-browser conversion, and two storage backends. | Phases 3 and 5 are large; budgets and schedule are at risk. | The size gate measures budgets from Phase 1 on (D-71); viewers load behind posters and taps. |
+| R-05 | Budgets: `three` plus React Three Fiber's `Canvas` come to about 243 kB gzip before any sky code, against 220 kB; the first-load 160 kB must hold Next, React, and the Motion+ pieces; a headline at an expanded width swaps fonts against fallback metrics computed for the default width (CLS 0.02); the still image and the sky's startup compete with the first paint and with input. | Budgets missed. | Measure in brotli early; mount the sky with `createRoot` and a trimmed `extend` list, or plain `three`, if needed (Q-27); load Motion+ pieces as their sections near view; reserve the headline's space; small still images at low priority within their byte budgets (D-68); start the sky after the load event and idle time, in yielding steps. |
+| R-06 | Text panels use a glass fill at 0.62 opacity with an 8 px blur (`DESIGN_DIRECTION.md` 2.1) over a sky that redraws every frame and a dawn that strengthens toward the end of each page. Muted text on glass over the dawn falls to about 2.4:1, which axe cannot measure over a canvas. | Dropped frames on mid-range phones; contrast under AA. | Small text on glass stays at the main ink color; the dawn dims behind panels; the Light tier uses a denser glass fill without blur; in Phase 5, contrast is checked by screenshot at maximum scroll on every page, theme, and width, and the frame rate on a phone profile (D-80). |
+| R-07 | `main` has no ruleset, and the token the admin uses can write to it. A Phase 6 publish test could reach production. | An accidental production change. | Sandbox branches in Phase 6 (5.7); publish refuses `main` outside production; a pre-push hook refuses `main`; an optional ruleset (Q-34). |
+| R-08 | Motion+ makes every npm command depend on `MOTION_TOKEN`, and the lockfile has not yet been seen with the private package. | Builds or sessions fail; a token could reach the lockfile. | The token in Vercel, Actions, and the owner's environment (Q-04); a check that fails if the lockfile holds a token. |
+| R-09 | Coupled pins: TypeScript below 6.1, React below 19.4 (React Three Fiber), `three` below r188 if bloom stays, and the React build inside `next`, which npm cannot check. | Upgrades break the 3D code silently. | Exact pins; a 3D smoke test on every `next` upgrade. |
+| R-10 | Saves in the live v2 admin during the build rewrite `content/` on `main`. | Merge conflicts at release. | Freeze v2 admin edits until v3 merges (Q-08). |
+| R-11 | Untrusted file formats in the admin (Word, SVG, 3D, PDF), and a STEP converter that needs code evaluation, is LGPL, and has had no release since 2024. | Script or crashes in the site's origin; licence duties. | D-24, D-26, D-28, D-81; parsing in workers under size and time limits; LGPL code only in admin files, unmodified, with notices. |
+| R-12 | Once the repository is private, GitHub Free gives a personal private repository no secret scanning and no enforced rulesets or branch protection, Actions minutes are metered, and Vercel may refuse to deploy commits whose author, or possibly a co-author named in a commit trailer, is not on the project's team. | Weaker scanning and protection; CI cost; failed deployments. | gitleaks in CI; the publish code's refusal and the pre-push hook (R-07); a lean per-push CI; commits under the owner's identity; confirm the first preview after the switch (Q-06). |
+| R-13 | The policy needs `'unsafe-inline'` for scripts and styles on static pages, and `'wasm-unsafe-eval'` where decoders run. | Weaker than a nonce policy. | Accepted for a static site; report-only on previews first; no uploaded HTML, XML, JavaScript, or unsanitized SVG is ever served from the site's origin (D-24). |
+| R-14 | Data licences: the derived star file is CC BY-SA 4.0, the Milky Way photograph needs a visible credit, and the star catalogs descend from ESA data with a non-commercial condition. | A licence breach if the site turns commercial or the credits slip. | Credits in the footer and `public/sky/CREDITS.md`; the site stays non-commercial (Q-29). |
+| R-15 | Small covers for large cards (under 1280 px wide, the width a featured cover needs at 2x): Raven (1005 px), Bronco Racing (1024 px), STMicroelectronics (900 px), PalmSync (447 px), Smart Plant Care (400 px); and portrait photos, such as the Raven gallery, in landscape wells. | Soft or badly cropped images on large cards and dense screens. | Small or off-ratio images are contained at no more than their natural size inside the dark media well, crops use stored focal points, and files are replaced when larger originals exist; no generated images. |
+| R-16 | Three media files' bytes do not match their extensions (section 6), and the hero media is a 4.4 MB PNG that Phase 3 shows while the hero is in `media` mode. | A raw link serves the wrong type or the full 4.4 MB; the type check and the library flag the files. | Serve them only through `next/image` with explicit sizes, the lightbox included, so visitors get resized files; Q-26. |
+| R-17 | Pushing `v3` builds a preview of v2 code; if the Vercel project is set to Node 20, every new deployment fails. | A failed preview; production unaffected. | Check the project's Node setting (Q-03). |
+| R-18 | HEVC and MOV video play fully only in Safari. | Videos that do not play for most visitors. | Detect at upload; warn or ask for H.264 (Q-20). |
+| R-19 | GitHub limits content-creating API calls to 80 per minute. | Bulk uploads fail midway. | One commit per batch through the Git Data API. |
+| R-20 | On Pro, Blob storage and transfer and image optimization are metered beyond the included amounts, and a video cover that plays in view is fetched on every visit. | Unexpected cost. | A spend limit and alerts in Vercel (owner); posters first; short cover clips; long videos as embeds. |
+| R-21 | Previews run the admin with Preview variables. Section 14 puts the security work in Phase 6, so an admin route built earlier would run without the full session design; preview and production can share one Blob store; and CI traces could record the bypass header or an admin cookie. | A test delete removes a file production uses, or a preview admin or a trace exposes access. | The owner confirms Vercel Authentication on previews and sets a Preview-only `ADMIN_PASSWORD` and Blob store (Q-44); every admin route built before Phase 6 sits behind the session check; traces only on failure, never with the bypass header or an admin session (D-80); old previews are deleted after release. |
+| R-22 | Phase 2 puts the seed in `content/` while v2 pages still render it: they render skill items as text (the seed's items are objects, which crash the home page), print the GPA after a bare label, and mishandle empty covers, and the seed's nav links to `/log` before it exists. Phase 3 shows the hero in `media` mode while the seed says `drawing`. | A failed or rule-breaking Phase 2 preview, and previews that ignore the seed's hero setting. | Phase 2 adapts those pages (or routes them through an adapter) and stubs `/log`; each phase report says which hero mode the preview shows until Phase 5. |
+
+## 8. Questions for the owner
+
+Each question has my default in brackets; "defaults are fine" is a valid answer.
+
+### 8.1 Before Phase 1
+
+- **Q-01** Will you finish the cleanup in my Phase 0 report before Phase 1 starts? [Yes; Phase 1 then removes `.mcp.json` from the branch and ignores it.]
+- **Q-02** Should production get a patch before v3 ships? (a) A separate small branch that moves v2 to Next.js 15.5.29, the newest 15.x release and the smallest step that carries the fixes; it needs React 19 and React Three Fiber 9, a build and a smoke test, and your yes for the branch and the merge. (b) Wait for v3 on 16.4.6. [(a) if v3 is more than a few weeks away.]
+- **Q-03** Node 26.x or 24.x? And what Node version does the Vercel project show today? [26.x; upgrade your local Node from 24.19.0.]
+- **Q-04** Do you have an active Motion+ membership and token? [Set `MOTION_TOKEN` as a Vercel secret (Production and Preview), as a GitHub Actions secret, and as a Windows user environment variable; I then pin the version with an authenticated `npm view`.]
+- **Q-05** Is a Netlify site still connected to this repository? May I delete `netlify.toml`? [Disconnect it and delete the file; I can check the connection read-only with the Netlify connector if you allow it.]
+- **Q-06** When will the repository become private, and do you have GitHub Pro, which a private personal repository needs for the ruleset in Q-34? [Until then every committed byte is treated as public; without Pro, the publish code's refusal to write to `main` and the pre-push hook protect it (R-07).]
+- **Q-07** Can this session reach Vercel? [Authorize the Vercel MCP or install the Vercel CLI; otherwise I give you commands to run.]
+- **Q-08** Will you freeze edits in the live v2 admin until v3 merges? [Yes.]
+
+### 8.2 Before Phases 2 to 4
+
+- **Q-09** May the schema gain what the seed and section 13A need but section 4 lacks: a default `kind` for an empty `heroModel`, poster width and height, audio waveform data, a video scrub flag, and a per-file download choice, all optional; and may unknown keys be rejected rather than dropped? [Yes to all.]
+- **Q-10** The seed has no text for the `/projects` one-liner, the page descriptions, or the hero buttons, and the desktop sketch in `DESIGN_DIRECTION.md` 4 sends the second hero button to Raven. [Plain interface labels that state no fact, with the seed's nav labels as page headings; page descriptions from `seo.description` and each project's pitch; the second hero button opens Raven's page, labelled from its seed title, and hides if Raven is hidden.]
+- **Q-11** "Filter by domain tag": the seed's `domain` field splits into 21 values (19 without regard to case), and `tags` into 58. Filter on domains, on tags, or on a short list you choose? [Domains, grouped without regard to case, with the first spelling as the label.]
+- **Q-12** Should the maturity scale print its step names, given that the STMicroelectronics internship sits at step 5 ("Fielded") beside the label "Completed internship"? And where `statusLabel` is empty (three seed projects), should the `status` value print? [Print only the seed's label beside the scale; where `statusLabel` is empty, print the `status` value in sentence case.]
+- **Q-13** May four seed wordings stay as given: the vendor and accelerator names, the mention of Simscape, the "Honors" at the end of the degree line, and the MoonLamp firmware sentences that go beyond the two phrases the rules allow? Until you answer, the seed's wording stays and no new such name is added. [Yes to all four.]
+- **Q-14** Is the MoonLamp link to the repository named MoonLight correct, and is that repository public? Should repository cards show the fetched description and last update? [Keep the link and confirm it is public before release; show them, checked at build, with the plain link as the fallback.]
+- **Q-15** Dimension callouts along the cover's edge, or anchors in the schema? [Along the edge, unless the design bundle defines anchors.]
+- **Q-16** Archivo and B612 Mono, or the fallback pair Space Grotesk and JetBrains Mono? [Archivo and B612 Mono.]
+- **Q-17** May the contrast fixes in 5.7 apply (white text on the Whiteprint action color, no mute ink on raised surfaces, light-on-dark inside Whiteprint media wells, the button sweep kept away from text, outlined ramp segments)? [Yes, unless the design bundle changes the colors.]
+- **Q-18** Uploads: Option A (server up to 4 MB, Blob above) or Option B (keep 10 MB by staging in Blob)? Blob through OIDC presigned uploads or `BLOB_READ_WRITE_TOKEN`? Which Blob region (fixed at creation)? [Option A; OIDC; the region nearest the functions.]
+- **Q-19** Word files: a PDF export as the readable file and the Word file as a download, or a live render in a sandboxed frame? [PDF export plus download.]
+- **Q-20** Which device and browser will you use for the admin? Should HEVC video be refused with a request for H.264? Should WAV become AAC (.m4a)? [Ask for H.264; AAC.]
+- **Q-21** May LGPL code (the HEIC decoder and an AAC encoder) load inside the admin only, listed in a notices file? [Yes.]
+- **Q-22** STEP files: convert them in the admin through one dedicated worker file allowed code evaluation (capped at 50 MB and 120 seconds, with the LGPL notices and a source link), or drop STEP and upload GLB or STL exported from CAD? And compress models with Meshopt or Draco? [The dedicated worker; Meshopt.]
+- **Q-23** The GPA and the phone also appear in other seed fields. Keep the copies and refuse a save that empties `personal.gpa` or `personal.phone` while a copy remains, or derive the copies from the personal fields? [Keep the copies, with the refusal.]
+- **Q-24** Section 13A puts a download link beside every viewer. Should 3D models be downloadable too, given that they carry your design geometry? [Follow the handoff for documents and media; ask per file for models, off by default.]
+- **Q-25** The first featured card is the senior design project, which has no photo yet. Keep the seed's order? [Keep it.]
+- **Q-26** Three media files' bytes do not match their extensions. Re-encode them to their named formats under the same names, or keep them and allow-list them in the check? [Re-encode under the same names, after your yes.]
+
+### 8.3 Before Phases 5 to 7
+
+- **Q-27** If the sky misses its 220 kB budget: trim React Three Fiber with `createRoot` and a short `extend` list (or use plain `three`), or raise the budget? [Trim first.]
+- **Q-28** Full-tier bloom through a post-processing pass, or glow drawn in the star shader? [Shader glow.]
+- **Q-29** Sky data: HYG with CC BY-SA on the star file, the ESO photograph, a 2K Milky Way everywhere, no labels on unnamed stars, and the live sky starting from the hourly still nearest the visitor's sky (5.7); and is the site non-commercial? [Yes to each; non-commercial.]
+- **Q-30** Publish by fast-forward only, refusing when `draft` and `main` have diverged, with Phase 6 tested on sandbox branches? [Yes.]
+- **Q-31** Deploy state and the save bar's preview link through the GitHub token with Deployments read, or a Vercel token, which on Pro also needs a team id? [GitHub token; if a deployment record lacks the address, a non-secret variable holds the draft branch's preview address.]
+- **Q-32** SEO 100 checked on production after the merge, INP from Speed Insights, a small Lighthouse set per push and the full matrix in Phase 7; and do you use the Vercel Toolbar on previews? [Yes; allow the toolbar on previews only if you use it.]
+- **Q-33** Will you create these secrets: `MOTION_TOKEN`, `VERCEL_AUTOMATION_BYPASS_SECRET`, and `CONTENT_BLOCKLIST` in GitHub Actions, and `CONTENT_BLOCKLIST` in Vercel for Production and Preview, with your senior design teammates' and faculty names among its terms, scoped to the senior design page for any name the site shows elsewhere (D-76)? [Yes.]
+- **Q-34** A ruleset on `main` that blocks force pushes and deletions, with you on the bypass list, knowing that GitHub Free stops enforcing rulesets once the repository is private (GitHub Pro keeps them)? [Yes while the repository is public; after that, the publish code's refusal and the pre-push hook stay the guard (R-07).]
+- **Q-35** HSTS with `includeSubDomains`? Preload? [`includeSubDomains` only if no subdomain serves plain HTTP; no preload.]
+- **Q-36** Leave `/admin` out of Web Analytics, and turn on Speed Insights in the dashboard? [Yes.]
+- **Q-37** When will the Claude Design handoff bundle arrive? Phase 4 needs it.
+- **Q-38** Where should the pause-motion control live (D-67)? [A small toggle in the footer, also in the command palette.]
+
+### 8.4 From the final cross-check (the phase is given with each)
+
+- **Q-39** (Phase 4) REV: the date of the project's last content commit, as `DESIGN_DIRECTION.md` 5.1 defines it, or its newest log date, as the example shows? After the seed import, every project shows the import's date until it is next edited. [The last content commit.]
+- **Q-40** (Phase 2) Four public rules also refuse ordinary wording (5.7). Keep them as given until a new handoff scopes them, with `docs/ADMIN_GUIDE.md` explaining each? [Yes.]
+- **Q-41** (Phase 3) The tools strip has no field of its own. Should it show every skill label in seed order? [Yes, labels only.]
+- **Q-42** (Phase 4) The site has no icon, so every page's request for `/favicon.ico` returns 404. A typographic monogram drawn from the tokens, unless the design bundle supplies a mark? [Yes; you approve the mark.]
+- **Q-43** (Phase 1) May `LICENSE` stay MIT for the code only, with a notice that `content/` and `public/media/` are all rights reserved and that `public/sky/` follows its `CREDITS.md`? [Yes; revisit when the repository goes private.]
+- **Q-44** (before Phase 2) Will you confirm that Vercel Authentication protects previews, and set a Preview-only `ADMIN_PASSWORD` and a separate Blob store for previews (R-21)? [Yes.]
+
+## 9. Tools for this build
+
+`ARCHITECTURE.md` section 17 asks for this list. It is curated to the build: what this session has, and what each will be used for.
+
+| need | tool | status today | use |
+|---|---|---|---|
+| Next.js, React, Tailwind, three.js, React Three Fiber, pdf.js references | Context7 documentation MCP | present, needs your sign-in | Until then, the official documentation on the web, as in this survey. |
+| Motion and Motion+ | Motion MCP and Motion+ MCP (documentation search, source search, easing generator, transition editor, performance report) | connected | Before every animation, from Phase 5. |
+| Previews, environment variables, build logs, Blob, firewall | Vercel MCP; Vercel CLI | MCP needs your sign-in; CLI not installed | Q-07. |
+| Branches, the pull request, CI results | GitHub MCP; `gh` 2.96.0 | MCP failed to connect; `gh` is signed in as AmjadRx | `gh` for all GitHub work. |
+| Netlify | Netlify connector | available | A read-only check for Q-05 and D-77, with your yes. |
+| Four widths, both themes, reduced motion, keyboard, axe | Playwright MCP and `@playwright/test`; Chromium is cached locally | available | Every phase from 1 on. |
+| Applying the designs | DesignSync; the Claude Design bundle | DesignSync available; bundle not yet delivered | Phase 4. |
+| 3D scene checks | three.js viewer MCP | available | Phases 3 and 5. |
+| Component references | A component-library MCP | not configured in this session | Only if you configure it outside the repository. |
+| Security scans | Aikido MCP | needs sign-in | Optional, alongside gitleaks. |
+| Framework guidance | Skills: Next.js, Cache Components, Next upgrade, Vercel storage, Vercel firewall, environment variables, Motion, frontend design, security review, code review | available | As each phase needs them. |
+| Image, video, and 3D generation | Several generation servers are connected | available | Never used for the owner's hardware, people, or results; abstract atmosphere only where real data cannot supply it, and only with the owner's yes for that item (section 17). |
+
+## 10. Phase 1, after your go
+
+1. Compare the handoff with the pins in section 2, and update this plan first if anything changed.
+2. Confirm the cleanup in Q-01; remove `.mcp.json` and extend `.gitignore`.
+3. Re-read every pin in section 4 from the registry and release notes; install with `MOTION_TOKEN` set; check the lockfile for any token.
+4. Write `tokens.css`, the generated `lib/tokens.ts`, the fonts, the theme script, the sheet frame and grid, the route groups, the nav, and the footer; set `ensureStatic`.
+5. Write `next.config.ts`: Cache Components, partial prefetching, headers, image settings, and the policy in report-only mode on previews.
+6. Add the flat ESLint config (kept on ESLint 10 only if the lint run passes), TypeScript 6, Vitest, a Playwright smoke test at four widths in both themes, the pre-commit, commit-msg, and pre-push hooks, and the `prebuild` content check.
+7. Add CI: lint, type check, tests, the content check, gitleaks, the dash scan, and the size gate, with actions pinned by SHA.
+8. Rewrite `README.md` in short, public-safe form, and add the `LICENSE` notice if Q-43 is yes.
+9. Report with the preview URL, then stop for your go.
+
+Phase 1 is done when both themes render the shell at 390, 768, 1024, and 1440 px.
+
+Pushing this commit lets Vercel build a preview of the unchanged v2 code plus these two documents, if the project builds every branch (its default). Nothing reaches production.
