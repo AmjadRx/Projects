@@ -18,6 +18,7 @@ Phase 0 of the v3 build (`ARCHITECTURE.md` section 14). Written on 2026-11-16 on
 8. Questions for the owner
 9. Tools for this build
 10. Phase 1, after your go
+11. Phases 2 and 3, as built
 
 ## 1. Summary
 
@@ -611,3 +612,36 @@ No Phase 1 work exists yet, so nothing has to be redone for revision 3.
 Phase 1 is done when both themes render the shell at 390, 768, 1024, and 1440 px.
 
 Pushing this commit lets Vercel build a preview of the unchanged v2 code plus these two documents, if the project builds every branch (its default). Nothing reaches production.
+
+## 11. Phases 2 and 3, as built
+
+The owner ran Phase 2 and then Phase 3 before Phase 1, so both stand on the v2 stack: Next.js 14.2.15, React 18.3, Tailwind CSS 3, and the v2 palette and fonts. Phase 1 still upgrades everything in section 4 and replaces the palette with `tokens.css`. The code is written to carry over: page `params` are already awaited, as Next 16 requires, and no component depends on a Next 14 behavior except where this section says so.
+
+### 11.1 Phase 2 (commit `62cfe9f`)
+
+Schema version 3 in zod 4.6.7, the typed loaders, `lib/lint.ts`, the seed in `content/`, `scripts/check-content.mjs`, `scripts/migrate-v2-to-v3.mjs`, and the pre-commit hook. The v2 data layer moved to `lib/legacy/` behind a bridge so the v2 pages could render the seed. Phase 3 removed the bridge; `lib/legacy/` now serves only the v2 admin and API until Phase 6 rebuilds them.
+
+### 11.2 Phase 3
+
+- **Routes.** Every route of `ARCHITECTURE.md` section 5, static, in the route group `app/(site)/`, which carries the skip link, the nav, and the footer; `/admin` stays outside it (D-46). Project pages use `dynamicParams = false` until Phase 1 moves them to `ensureStatic` with `notFound()` (D-74).
+- **The hero** shows `media` mode, as asked for this phase, whatever `settings.heroMode` says (R-22). The drawing and the model arrive in Phase 5. Media mode is "an image or a muted looping video with a poster" (`ARCHITECTURE.md` 6); with no motion in this phase, a video hero paints its poster and starts its muted loop only when the visitor presses Play, so it carries no viewer code. Another kind shows its poster still. Phase 5 adds the start in view (D-60).
+- **Hiding rules.** One link resolver (`lib/links.ts`) serves every content link, the nav included: a link to a hidden or unknown page prints as plain text (a nav item is dropped), an absolute address on the site's own host is treated as its path, a `tel:` link hides while `personal.phone` is empty, and a link into `GITHUB_REPO` never prints (D-22). The content check refuses an empty `personal.gpa` or `personal.phone` while a copy remains anywhere, and so does every build, because a copy in free text cannot hide itself (D-14, Q-23); an about fact whose label names the GPA always prints the GPA label and value from `personal`. Media addresses must be a site path or https, and embeds YouTube or Vimeo (D-29, D-45); the check refuses anything else and the site renders nothing for it. A block with nothing to show renders nothing, not even its wrapper.
+- **Interface words** live in `lib/strings.ts` (D-56). The content check now also reads every string literal and piece of JSX text in `app/`, `components/`, and `lib/`, and scans every source file for em and en dashes. The v2 admin and API join that scan in Phase 6, and `README.md` joins when Phase 1 rewrites it.
+- **Defaults applied,** pending the owner's answers: Q-10 (the hero buttons "See the work" and one that opens Raven, and a neutral line on `/projects`), Q-11 (filter on domains), Q-12 (the content's maturity label only, and the status value in sentence case where `statusLabel` is empty), Q-15 (callouts as a row under the cover), Q-24 (no download link for 3D models), Q-41 (the tools strip lists the skill labels).
+- **Word files.** The owner asked for a Word reader, which settles Q-19 in favor of the sandboxed frame: `public/viewers/docx-frame.html` runs docx-preview inside an iframe with `sandbox="allow-scripts"` and its own policy, and the site sends `Content-Security-Policy: sandbox allow-scripts` for `/viewers/`, so nothing in a document can reach the site.
+- **Packages added,** each pinned exactly: `react-pdf` 10.5.0 with `pdfjs-dist` 5.4.296 (react-pdf 11 needs React 19, so Phase 1 moves to the versions in 4.2), `docx-preview` 0.4.1, `jszip` 3.10.2, `shiki` 4.6.0, `@vercel/blob` 2.9.0, `image-size` 2.1.0, `server-only` 0.0.1, and `@playwright/test` 1.65.1 for development. A browser-only webpack alias in `next.config.mjs` points `pdfjs-dist` at its minified build, which Next 14's module wrapper needs; Phase 1 removes it.
+- **Schema.** The video block gains an optional `scrub` flag for scroll scrubbing, and every MediaRef an optional `waveform` (peak levels from 0 to 1) that the audio player draws (Q-09 defaults). Visitors never download a file to draw its waveform (`ARCHITECTURE.md` 13A): without stored peaks the player shows a plain progress bar, and Phase 6 computes the peaks in the admin at upload.
+- **Build steps.** `prebuild` runs `scripts/copy-vendor.mjs` (the Draco decoder, docx-preview, JSZip, and the pdf.js worker, WebAssembly decoders, color profiles, and character maps into `public/vendor/`, which git ignores) and `scripts/content-dates.mjs` (REV and last-updated dates from local git, or from the GitHub API at the deployed commit on Vercel; a date that cannot be known is left out). The content check joins `prebuild` once Q-33 is settled.
+- **Samples.** `/dev/blocks` shows one of every block on files that `scripts/make-samples.mjs` writes to `public/dev/samples/`, instead of `tests/fixtures/` (5.7), because video seeking needs static files. The embed sample is a public-domain NASA video. The page and the samples are removed before release.
+- **Storage adapter.** `lib/storage.ts` with the repository and Blob backends, used by nothing yet: Phase 6 moves the upload and save routes onto it. It writes only to `GITHUB_DRAFT_BRANCH` and refuses `main`.
+- **Tests.** `npm test` runs the unit tests. `npm run test:build` runs two full builds: one on a fixture with a hidden project, links to it from every kind of link field, emptied fields, and empty blocks, which searches every output file for traces and empty elements; and one that checks every content string on its page, the order of each page's parts, the composed lines (the degree line, each readout, each fact), and the JSON-LD.
+- **Review.** Before the commit, an independent review in five areas (content, accessibility, performance, security, viewers), each followed by a skeptic who tried to refute every finding, confirmed 41 of 46 findings; all 41 are fixed in this phase.
+
+**For Phase 1, learned while building Phase 3:**
+
+- The site policy (D-35) needs `'wasm-unsafe-eval'` and `worker-src blob:` where the model viewer runs (Meshopt and Draco), `'wasm-unsafe-eval'` for the pdf.js worker, `frame-src 'self'` for the Word frame plus the YouTube and Vimeo player hosts, and `frame-ancestors 'self'` rather than `'none'` for `/viewers/docx-frame.html`.
+- The repository card reads GitHub while pages prerender; under Cache Components that read moves into a `'use cache'` function.
+- A Blob store must send CORS headers for video captions and audio waveforms served from it.
+- React Three Fiber moves from 8 to 9 and drei from 9 to 10 with React 19.
+
+**Open after Phase 3** (also in the phase report): the three files whose bytes do not match their extensions (R-16, Q-26) show correctly, resized, but get no download link until Q-26 re-encodes them; pan and zoom does not yet render a PDF page as its source; nothing has been tested in Safari, in Firefox, or on a real phone. Links into this repository are refused by the check, and dropped by the build, only where `GITHUB_REPO` is set. The Word reader pages a file at its explicit page and section breaks (docx-preview's `ignoreLastRenderedPageBreak` stays on, so no paragraph is split), so a file without breaks reads as one page. A `model3d` block with `explode: false` and several named parts still adds its parts row when the model loads, a small shift that Phase 6 can remove by reading the part names at upload.

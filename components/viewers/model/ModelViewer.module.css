@@ -1,0 +1,30 @@
+/* The canvas region of the 3D model viewer. No transitions or keyframes: nothing here animates. */
+
+.surface {
+  cursor: grab;
+}
+
+.surface:active {
+  cursor: grabbing;
+}
+
+/* The well clips anything outside it, so the focus ring sits just inside the edge. */
+.surface:focus-visible {
+  outline-offset: -2px;
+}
+
+/* Callout labels in the Blueprint view: the data type, on the sheet color, above the leaders. */
+.callout {
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding: 3px 6px;
+  white-space: nowrap;
+  line-height: 1.2;
+  visibility: hidden;
+}
+
+.leader {
+  fill: none;
+  stroke-width: 1;
+}

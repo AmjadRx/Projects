@@ -25,6 +25,12 @@ const mediaShape = {
   captions: z.string().optional(),
   /** Which storage backend holds the file. */
   store: z.enum(['repo', 'blob']).optional(),
+  /**
+   * For audio: peak levels from 0 to 1, computed once at upload and drawn as the waveform
+   * (ARCHITECTURE.md 13A, docs/V3_PLAN.md D-13 and Q-09). Without it the player shows a plain
+   * progress bar; visitors never download the file to draw one.
+   */
+  waveform: z.array(z.number().min(0).max(1)).max(4096).optional(),
 };
 
 /** A reference to one media file. An empty `src` means "no file yet": render the placeholder. */
@@ -59,7 +65,13 @@ const GalleryBlock = z.strictObject({
   /** Images, videos, and models, mixed. */
   items: z.array(MediaRefSchema),
 });
-const VideoBlock = z.strictObject({ id: blockId, type: z.literal('video'), media: MediaRefSchema });
+const VideoBlock = z.strictObject({
+  id: blockId,
+  type: z.literal('video'),
+  media: MediaRefSchema,
+  /** Ties playback to scroll position (ARCHITECTURE.md 13A, the `scrub` option). */
+  scrub: z.boolean().optional(),
+});
 const SpecTableBlock = z.strictObject({
   id: blockId,
   type: z.literal('specTable'),

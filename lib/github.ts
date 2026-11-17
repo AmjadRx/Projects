@@ -19,8 +19,8 @@ export function ghBranch(): string {
 
 /**
  * GitHub-CMS mode requires BOTH env vars set explicitly:
- *   GITHUB_TOKEN — fine-grained PAT, single repo, Contents read/write
- *   GITHUB_REPO  — e.g. "AmjadRx/Projects"
+ *   GITHUB_TOKEN: fine-grained PAT, single repo, Contents read/write
+ *   GITHUB_REPO: e.g. "AmjadRx/Projects"
  * Without them, save/upload fall back to the local filesystem (dev mode).
  */
 export function ghConfigured(): boolean {

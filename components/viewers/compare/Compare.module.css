@@ -1,0 +1,147 @@
+/*
+ * Before and after. The divider position is the custom property --compare-position (50% in the
+ * server HTML). Nothing here animates.
+ */
+.surface {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  /* Up and down drags scroll the page and two fingers zoom it; sideways drags move the divider. */
+  touch-action: pan-y pinch-zoom;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: ew-resize;
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* The before photo shows left of the divider, the after photo right of it. */
+.before {
+  z-index: 2;
+  clip-path: inset(0 calc(100% - var(--compare-position, 50%)) 0 0);
+}
+
+.after {
+  z-index: 1;
+  clip-path: inset(0 0 0 var(--compare-position, 50%));
+}
+
+/* Never larger than the photo's natural size; the component sets max-width and max-height. */
+.fit {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.img {
+  object-fit: contain;
+  -webkit-user-drag: none;
+}
+
+.tag {
+  position: absolute;
+  top: 8px;
+  z-index: 1;
+  padding: 2px 8px;
+  border-radius: 2px;
+  border: 1px solid var(--well-line);
+  background: rgb(var(--well) / 0.82);
+  color: rgb(var(--well-ink));
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.tagBefore {
+  left: 8px;
+}
+
+.tagAfter {
+  right: 8px;
+}
+
+/* The real control, laid over the photos and invisible; the handle below shows its state. */
+.range {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--compare-position, 50%);
+  z-index: 4;
+  width: 0;
+  pointer-events: none;
+}
+
+.divider::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -1px;
+  width: 2px;
+  background: rgb(var(--well-ink));
+  box-shadow: 0 0 0 1px rgb(var(--well) / 0.55);
+}
+
+.handle {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
+  border-radius: 2px;
+  border: 1px solid rgb(var(--well-ink) / 0.7);
+  background: rgb(var(--well) / 0.9);
+  color: rgb(var(--well-ink));
+}
+
+/*
+ * The two download links sit in the toolbar row: side by side when they fit, each whole on its
+ * own line when not, with the type and size under the name on narrow screens. The row's control
+ * area shrinks so the full-screen button keeps its place at the end.
+ */
+.frame :global(.viewer-toolbar__controls) {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.downloads {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 16px;
+  padding-left: 4px;
+}
+
+.downloads :global(.download-link) {
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  column-gap: 6px;
+}
+
+/* Keyboard focus on the hidden range input shows as a ring on the handle. */
+.range:focus-visible ~ .divider .handle {
+  outline: 2px solid rgb(var(--well-ink));
+  outline-offset: 2px;
+  box-shadow: 0 0 0 6px rgb(var(--well) / 0.9);
+}

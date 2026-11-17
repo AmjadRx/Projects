@@ -3,11 +3,9 @@
 @tailwind utilities;
 
 /*
- * Palette notes (researched, accessibility-first):
- * - Dark theme follows GitHub Primer dark: near-black blue-gray surfaces,
- *   #58A6FF accent (7:1 on the background), warm amber as the secondary.
- * - Light theme follows Tailwind gray + blue-700 (#1D4ED8, 6.9:1 on white).
- * - No neon, no glows on text. Elevation via soft shadows only.
+ * Phase 3 styles. The palette is still v2's; Phase 1 replaces it with tokens.css from
+ * DESIGN_DIRECTION.md, and Phase 4 applies the design bundle. Nothing here animates: no
+ * transitions, keyframes, or smooth scrolling (motion arrives in Phase 5).
  */
 
 :root,
@@ -17,13 +15,37 @@
   --surface-2: 26 32 41;
   --ink: 231 235 240;
   --ink-dim: 179 188 200;
-  --ink-mute: 125 135 148;
+  --ink-mute: 135 145 158;
   --accent: 88 166 255;
   --accent-2: 227 179 65;
   --accent-contrast: 11 14 20;
-  --line: rgba(231, 235, 240, 0.09);
+  --line: rgba(231, 235, 240, 0.12);
   --glow: 0 8px 28px rgba(0, 0, 0, 0.45);
   --shadow-card: none;
+  /* Media wells behind photos, video, documents, and models (the night color). */
+  --well: 7 13 28;
+  --well-ink: 214 224 238;
+  --well-line: rgba(190, 220, 255, 0.16);
+  /* The thermal ramp (DESIGN_DIRECTION.md 2.3), used only where 2.4 allows it. */
+  --t0: #12205c;
+  --t1: #4a2bb0;
+  --t2: #7c5cff;
+  --t3: #c2379c;
+  --t4: #f0523a;
+  --t5: #ff9a2e;
+  --t6: #ffe66b;
+  /* Code highlighting colors (shiki css-variables theme). */
+  --shiki-foreground: #e6edf3;
+  --shiki-background: transparent;
+  --shiki-token-constant: #79c0ff;
+  --shiki-token-string: #a5d6ff;
+  --shiki-token-comment: #8b949e;
+  --shiki-token-keyword: #ff7b72;
+  --shiki-token-parameter: #ffa657;
+  --shiki-token-function: #d2a8ff;
+  --shiki-token-string-expression: #a5d6ff;
+  --shiki-token-punctuation: #c9d1d9;
+  --shiki-token-link: #79c0ff;
   color-scheme: dark;
 }
 
@@ -33,24 +55,36 @@
   --surface-2: 239 241 245;
   --ink: 17 24 39;
   --ink-dim: 75 85 99;
-  --ink-mute: 107 114 128;
+  --ink-mute: 95 105 120;
   --accent: 29 78 216;
   --accent-2: 180 83 9;
   --accent-contrast: 255 255 255;
-  --line: rgba(17, 24, 39, 0.1);
+  --line: rgba(17, 24, 39, 0.14);
   --glow: none;
   --shadow-card: 0 1px 3px rgba(17, 24, 39, 0.08), 0 8px 24px rgba(17, 24, 39, 0.06);
+  --well: 11 31 69;
+  --well-ink: 224 232 244;
+  --well-line: rgba(190, 220, 255, 0.2);
+  --shiki-foreground: #1f2328;
+  --shiki-token-constant: #0550ae;
+  --shiki-token-string: #0a3069;
+  --shiki-token-comment: #59636e;
+  --shiki-token-keyword: #cf222e;
+  --shiki-token-parameter: #953800;
+  --shiki-token-function: #6639ba;
+  --shiki-token-string-expression: #0a3069;
+  --shiki-token-punctuation: #1f2328;
+  --shiki-token-link: #0550ae;
   color-scheme: light;
 }
 
 @layer base {
   html {
-    scroll-behavior: smooth;
+    scroll-padding-top: 5rem;
   }
 
   body {
     @apply bg-bg font-display text-ink antialiased;
-    transition: background-color 0.25s ease, color 0.25s ease;
   }
 
   ::selection {
@@ -66,6 +100,17 @@
     outline: 2px solid rgb(var(--accent));
     outline-offset: 2px;
     border-radius: 2px;
+  }
+
+  /* Links in running text keep a resting underline (docs/V3_PLAN.md D-67). */
+  .text-link {
+    color: rgb(var(--accent));
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1px;
+  }
+  .text-link:hover {
+    text-decoration-thickness: 2px;
   }
 }
 
@@ -110,7 +155,7 @@
   }
 
   .btn {
-    @apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-md px-5 py-2.5 text-sm font-medium transition-all duration-200 ease-out;
+    @apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-sm px-5 py-2.5 text-sm font-medium;
   }
 
   .btn-primary {
@@ -132,19 +177,15 @@
     background: rgb(var(--surface) / 0.6);
   }
 
-  .pill-accent {
-    @apply text-accent;
-    border-color: rgb(var(--accent) / 0.35);
-    background: rgb(var(--accent) / 0.07);
-  }
-
-  .chip {
-    @apply inline-flex items-center rounded-sm px-2 py-0.5 font-mono text-[11px] text-ink-dim;
+  /* The availability badge: the one pill on the site (DESIGN_DIRECTION.md 4), in sentence case. */
+  .badge {
+    @apply inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm text-ink;
     border: 1px solid var(--line);
+    background: rgb(var(--surface) / 0.6);
   }
 
   .card {
-    @apply rounded-md bg-surface shadow-card;
+    @apply rounded-sm bg-surface shadow-card;
     border: 1px solid var(--line);
   }
 
@@ -166,31 +207,35 @@
     @apply mb-1.5 block font-mono text-[10px] uppercase tracking-[0.16em] text-ink-mute;
   }
 
-  .link-underline {
-    position: relative;
-  }
-  .link-underline::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    bottom: -2px;
-    height: 1px;
-    width: 100%;
-    background: rgb(var(--accent));
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
-  }
-  .link-underline:hover::after {
-    transform: scaleX(1);
+  /* Values a visitor reads as data: tabular numerals in the data type. */
+  .data {
+    @apply font-mono;
+    font-variant-numeric: tabular-nums;
   }
 
-  /* markdown body */
+  .section {
+    @apply border-t py-16 md:py-24;
+    border-color: var(--line);
+  }
+  .section:first-child {
+    border-top: 0;
+  }
+
+  .section-title {
+    @apply text-2xl font-semibold md:text-3xl;
+  }
+
+  /* Markdown from content. */
   .prose-md {
     @apply text-ink-dim;
     line-height: 1.7;
+    max-width: 72ch;
   }
-  .prose-md p + p {
+  .prose-md p + p,
+  .prose-md p + ul,
+  .prose-md p + ol,
+  .prose-md ul + p,
+  .prose-md ol + p {
     margin-top: 1em;
   }
   .prose-md a {
@@ -205,7 +250,10 @@
   .prose-md ul {
     list-style: disc;
     padding-left: 1.25em;
-    margin-top: 0.75em;
+  }
+  .prose-md ol {
+    list-style: decimal;
+    padding-left: 1.25em;
   }
   .prose-md li + li {
     margin-top: 0.35em;
@@ -215,31 +263,204 @@
     font-size: 0.9em;
     background: rgb(var(--surface-2));
     padding: 0.1em 0.35em;
-    border-radius: 4px;
+    border-radius: 2px;
+  }
+
+  /* Tables: spec tables, the bill of materials, the revision table, the title block. */
+  .table-plain {
+    @apply w-full border-collapse text-left text-sm md:text-base;
+  }
+  .table-plain caption {
+    @apply pb-2 text-left text-sm text-ink-mute;
+  }
+  .table-plain th,
+  .table-plain td {
+    @apply px-3 py-2.5 align-top;
+    border-bottom: 1px solid var(--line);
+  }
+  .table-plain thead th {
+    @apply font-mono text-xs font-medium uppercase tracking-wider text-ink-mute;
+  }
+  .table-plain tbody th {
+    @apply font-medium text-ink;
+  }
+  .table-plain td {
+    @apply text-ink-dim;
+  }
+
+  /* "Photo to come": the grid with a centered crosshair (DESIGN_DIRECTION.md 5.7; D-61). */
+  .placeholder-photo {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgb(var(--well-ink) / 0.82);
+    background-color: rgb(var(--well));
+    background-image:
+      linear-gradient(var(--well-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--well-line) 1px, transparent 1px);
+    background-size: 32px 32px;
+    background-position: center center;
+  }
+  .placeholder-photo::before,
+  .placeholder-photo::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    background: rgb(var(--well-ink) / 0.5);
+  }
+  .placeholder-photo::before {
+    width: 56px;
+    height: 1px;
+    transform: translate(-50%, -50%);
+  }
+  .placeholder-photo::after {
+    width: 1px;
+    height: 56px;
+    transform: translate(-50%, -50%);
+  }
+  .placeholder-photo__label {
+    @apply font-mono text-xs;
+    margin-top: 5.5rem;
+  }
+
+  /* The maturity scale: five steps, filled up to the project step (DESIGN_DIRECTION.md 5.3). */
+  /* Wraps at narrow widths so the title block never makes a 320 px page scroll sideways (WCAG 1.4.10). */
+  .maturity {
+    @apply flex flex-wrap items-center gap-x-3 gap-y-1;
+  }
+  .maturity__steps {
+    @apply flex shrink-0 gap-1;
+  }
+  .maturity__step {
+    @apply h-2 w-5 rounded-[1px];
+    border: 1px solid var(--line);
+    background: transparent;
+  }
+  .maturity__step[data-filled='true'] {
+    border-color: rgb(var(--ink) / 0.35);
+  }
+  .maturity__step[data-filled='true'][data-n='1'] { background: var(--t1); }
+  .maturity__step[data-filled='true'][data-n='2'] { background: var(--t2); }
+  .maturity__step[data-filled='true'][data-n='3'] { background: var(--t3); }
+  .maturity__step[data-filled='true'][data-n='4'] { background: var(--t4); }
+  .maturity__step[data-filled='true'][data-n='5'] { background: var(--t5); }
+
+  /* Viewers: the shared frame (DESIGN_DIRECTION.md 11). */
+  .viewer-frame {
+    @apply relative flex w-full flex-col overflow-hidden rounded-sm;
+    border: 1px solid var(--line);
+    background: rgb(var(--surface));
+  }
+  .viewer-well {
+    @apply relative w-full overflow-hidden;
+    background: rgb(var(--well));
+    color: rgb(var(--well-ink));
+  }
+  .viewer-toolbar {
+    @apply flex flex-wrap items-center justify-between gap-2 px-2 py-1.5;
+    border-top: 1px solid var(--line);
+  }
+  .viewer-toolbar__controls {
+    @apply flex min-w-0 flex-auto flex-wrap items-center gap-1;
+  }
+  .viewer-button {
+    @apply inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-2 rounded-sm px-2 text-sm text-ink;
+  }
+  .viewer-button:hover {
+    background: rgb(var(--surface-2));
+  }
+  /* Pressed: the accent and a bar along the bottom edge, so the state never rests on color alone. */
+  .viewer-button[aria-pressed='true'] {
+    background: rgb(var(--surface-2));
+    color: rgb(var(--accent));
+    box-shadow: inset 0 -2px 0 currentColor;
+  }
+  .viewer-button:disabled {
+    @apply cursor-not-allowed opacity-50;
+  }
+  /* A control at its limit stays focusable (aria-disabled) and looks inactive. */
+  .viewer-button[aria-disabled='true'] {
+    @apply cursor-not-allowed opacity-50;
+  }
+  .viewer-button[aria-disabled='true']:not([aria-pressed='true']):hover {
+    background: transparent;
+  }
+  .viewer-caption {
+    @apply flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-3 py-2 font-mono text-xs text-ink-mute;
+    border-top: 1px solid var(--line);
+  }
+  .viewer-caption__text {
+    @apply text-ink-dim;
+  }
+  .download-link {
+    @apply inline-flex min-h-[44px] flex-wrap items-center gap-x-1.5 text-sm;
+    color: rgb(var(--accent));
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .download-link__meta {
+    @apply text-ink-mute;
+    text-decoration: none;
+  }
+  .viewer-placeholder {
+    @apply absolute inset-0 flex flex-col items-center justify-center gap-3;
+    color: rgb(var(--well-ink) / 0.82);
+    background-image:
+      linear-gradient(var(--well-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--well-line) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+  .viewer-placeholder__label {
+    @apply font-mono text-xs;
+  }
+  .viewer-tap {
+    @apply absolute inset-0 flex items-center justify-center;
+  }
+  .viewer-tap__button {
+    @apply inline-flex min-h-[48px] items-center gap-2 rounded-sm px-5 text-sm font-medium;
+    background: rgb(var(--well) / 0.88);
+    color: rgb(var(--well-ink));
+    border: 1px solid var(--well-line);
+  }
+  .viewer-tap__button:hover {
+    background: rgb(var(--well));
+  }
+
+  /* Full screen: the Fullscreen API, or the fixed overlay where it is missing. */
+  .viewer-frame[data-fullscreen='true'] {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    border: 0;
+    border-radius: 0;
+    background: rgb(var(--well));
+  }
+  .viewer-frame[data-fullscreen='true'] .viewer-well {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+  .viewer-frame[data-fullscreen='true'] .viewer-toolbar,
+  .viewer-frame[data-fullscreen='true'] .viewer-caption {
+    background: rgb(var(--surface));
   }
 }
 
-/* marquee */
-@keyframes marquee-x {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
-}
-.marquee-track {
-  animation: marquee-x 40s linear infinite;
-}
-.marquee:hover .marquee-track {
-  animation-play-state: paused;
-}
+/* Reduced motion: nothing animates in this phase, and nothing may start later either. */
 @media (prefers-reduced-motion: reduce) {
-  .marquee-track {
-    animation: none;
-  }
-  html {
-    scroll-behavior: auto;
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
-/* thin scrollbars for carousels */
+/* Thin scrollbars for horizontal strips. */
 .scrollbar-none::-webkit-scrollbar {
   display: none;
 }

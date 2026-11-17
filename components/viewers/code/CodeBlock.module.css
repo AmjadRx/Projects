@@ -1,0 +1,39 @@
+/*
+ * The code block's well. It sits on the theme's raised surface rather than the night color,
+ * because the css-variables highlighting theme sets its token colors per theme in
+ * app/globals.css (the light theme's colors are made for a light ground).
+ */
+.well {
+  /* Long lines scroll inside the well; they never widen the page or a grid column. */
+  contain: inline-size;
+  background: rgb(var(--surface-2));
+  color: var(--shiki-foreground);
+}
+
+.pre {
+  margin: 0;
+  overflow-x: auto;
+  padding: 0.875rem 1rem;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  white-space: pre;
+  tab-size: 2;
+  font-variant-ligatures: none;
+}
+
+/* The well clips anything outside it, so the focus ring is drawn inside the edge. */
+.pre:focus-visible {
+  outline-offset: -2px;
+}
+
+.pre code {
+  font: inherit;
+}
+
+@media (min-width: 768px) {
+  .pre {
+    padding: 1rem 1.25rem;
+    font-size: 0.9375rem;
+  }
+}

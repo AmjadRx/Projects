@@ -1,0 +1,104 @@
+/*
+ * The pan and zoom viewer. Nothing here animates. `touch-action` on the stage is set by the
+ * engine: the page keeps one-finger scrolling until the visitor zooms in.
+ */
+.stage {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.stage[data-zoomed='true'] {
+  cursor: grab;
+}
+
+.stage[data-zoomed='true']:active {
+  cursor: grabbing;
+}
+
+/* The focus ring is drawn inside the well, above the drawing: dark, light, and dark bands show on any drawing. */
+.stage:focus-visible {
+  outline: none;
+}
+
+.stage:focus-visible::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  box-shadow:
+    inset 0 0 0 2px rgb(var(--well)),
+    inset 0 0 0 4px rgb(var(--well-ink)),
+    inset 0 0 0 6px rgb(var(--well));
+}
+
+.box {
+  position: absolute;
+  inset: 0;
+  transform-origin: 0 0;
+}
+
+.drawing {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  -webkit-user-drag: none;
+}
+
+/* The overview: the whole drawing with the visible rectangle, shown while zoomed in. */
+.overview {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  z-index: 4;
+  width: clamp(96px, 22%, 180px);
+  max-height: 45%;
+  overflow: hidden;
+  border: 1px solid rgb(var(--well-ink) / 0.6);
+  border-radius: 2px;
+  background: rgb(var(--well));
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.overviewImage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+.overviewView {
+  position: absolute;
+  border: 2px solid rgb(var(--well-ink));
+  outline: 1px solid rgb(var(--well));
+  background: rgb(var(--well-ink) / 0.14);
+  pointer-events: none;
+}
+
+.failed {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  z-index: 4;
+  padding: 6px 8px;
+  border-radius: 2px;
+  background: rgb(var(--well) / 0.9);
+  color: rgb(var(--well-ink));
+  font-size: 0.875rem;
+}
+
+/* The shared download link wraps its type and size under its name on narrow screens. */
+.frame :global(.download-link) {
+  flex-wrap: wrap;
+  column-gap: 6px;
+}

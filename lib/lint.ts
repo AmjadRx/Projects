@@ -54,6 +54,62 @@ export interface Finding {
 export interface CheckOptions {
   rules: CompiledRule[];
   blocklist: BlocklistEntry[];
+  /** Host names that mean this site, so an absolute link to it is checked like a site path. */
+  siteHosts?: readonly string[];
+  /** This site's own repository ("Owner/Name", from GITHUB_REPO), which content never links (D-22). */
+  siteRepository?: string;
+}
+
+/** The production address (ARCHITECTURE.md 1). NEXT_PUBLIC_SITE_URL overrides it. */
+export const DEFAULT_SITE_URL = 'https://amjadrehawi.com';
+
+/** The host names that mean this site: the configured host, with and without "www.". */
+export function siteHostsOf(siteUrl: string): string[] {
+  try {
+    const host = new URL(siteUrl).hostname.toLowerCase().replace(/^www\./, '');
+    return host ? [host, `www.${host}`] : [];
+  } catch {
+    return [];
+  }
+}
+
+/** An absolute address on this site's own host as a site path ("/projects/raven#log"), or null. */
+export function sitePathOf(href: string, siteHosts: readonly string[]): string | null {
+  const value = href.trim();
+  if (!/^https?:\/\//i.test(value)) return null;
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return null;
+  }
+  if (!siteHosts.includes(url.hostname.toLowerCase())) return null;
+  return `${url.pathname || '/'}${url.search}${url.hash}`;
+}
+
+/**
+ * True when an address points anywhere into the given GitHub repository ("Owner/Name"): its page,
+ * any file or commit in it, or its raw files. Content never links this site's own repository
+ * (docs/V3_PLAN.md D-22).
+ */
+export function pointsIntoRepository(href: string, repository: string | undefined): boolean {
+  const own = (repository ?? '')
+    .trim()
+    .replace(/^["']+|["']+$/g, '')
+    .trim()
+    .replace(/\.git$/i, '')
+    .toLowerCase();
+  if (!/^[a-z0-9-]+\/[a-z0-9._-]+$/.test(own)) return false;
+  let url: URL;
+  try {
+    url = new URL(href.trim());
+  } catch {
+    return false;
+  }
+  const host = url.hostname.toLowerCase();
+  if (!['github.com', 'www.github.com', 'raw.githubusercontent.com'].includes(host)) return false;
+  const [owner = '', name = ''] = url.pathname.split('/').filter(Boolean);
+  return `${owner}/${name.replace(/\.git$/i, '')}`.toLowerCase() === own;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -223,26 +279,210 @@ function proofFindings(site: Site, visibleSlugs: ReadonlySet<string>, siteFile: 
   return out;
 }
 
-/** Internal links that lead nowhere are warnings (ARCHITECTURE.md section 7, guard rails). */
-function internalLinkWarnings(
-  site: Site,
-  projects: { file: string; project: Project }[],
-  visibleSlugs: ReadonlySet<string>,
-  siteFile: string,
-): Finding[] {
+/** A Markdown link's address: the part in parentheses after "]". */
+const MARKDOWN_LINK = /\]\(\s*<?([^)\s>]+)/g;
+
+/** Every link address in a file: link fields (`href`, `url`) and the links inside Markdown. */
+function linkAddresses(value: unknown): { path: string; href: string }[] {
+  const out: { path: string; href: string }[] = [];
+  for (const { path, text } of stringValues(value)) {
+    if (/(?:^|\.)(?:href|url)$/.test(path)) out.push({ path, href: text.trim() });
+    for (const match of text.matchAll(MARKDOWN_LINK)) out.push({ path, href: match[1] });
+  }
+  return out;
+}
+
+/**
+ * Internal links that lead nowhere are warnings (ARCHITECTURE.md section 7, guard rails): nav
+ * items, now items, project links, link rows, and links inside Markdown, including absolute links
+ * to this site's own host. The site prints such a link as plain text (lib/links.ts), so a hidden
+ * project leaves no trace; the warning tells the owner before they save.
+ */
+function internalLinkWarnings(content: ValidContent, visibleSlugs: ReadonlySet<string>, siteHosts: readonly string[]): Finding[] {
   const out: Finding[] = [];
-  const warn = (file: string, path: string) =>
-    out.push({ file, path, rule: 'INTERNAL-LINK', message: 'This internal link leads to no page.', severity: 'warning' });
-  site.nav.forEach((item, i) => {
-    if (item.href.startsWith('/') && !resolvesToPage(item.href, visibleSlugs)) warn(siteFile, `nav[${i}].href`);
-  });
-  site.now.forEach((item, i) => {
-    if (item.href?.startsWith('/') && !resolvesToPage(item.href, visibleSlugs)) warn(siteFile, `now[${i}].href`);
-  });
-  for (const { file, project } of projects) {
-    project.links.forEach((link, i) => {
-      if (link.url.startsWith('/') && !resolvesToPage(link.url, visibleSlugs)) warn(file, `links[${i}].url`);
-    });
+  const files = [
+    { file: content.siteFile, value: content.site as unknown },
+    ...content.projectFiles.map(({ file, project }) => ({ file, value: project as unknown })),
+  ];
+  for (const { file, value } of files) {
+    for (const { path, href } of linkAddresses(value)) {
+      const internal = href.startsWith('/') ? href : sitePathOf(href, siteHosts);
+      if (internal === null || internal.startsWith('/media/')) continue;
+      if (path.endsWith('.proof')) continue;
+      if (!resolvesToPage(internal, visibleSlugs)) {
+        out.push({ file, path, rule: 'INTERNAL-LINK', message: 'This internal link leads to no page.', severity: 'warning' });
+      }
+    }
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Copies of the GPA and the phone (docs/V3_PLAN.md D-14 and Q-23)
+// ---------------------------------------------------------------------------------------------
+
+/** "GPA" followed closely by a number ("Major GPA 3.65", "GPA: 3.7"), or a number before it. */
+const GPA_MENTION = /\bGPA\b[^\d\n]{0,12}\d|\d\.\d{1,3}\b[^\d\n]{0,12}\bGPA\b/i;
+/** A North American phone number written with separators: "(530) 407-6321", "+1 530.407.6321". */
+const PHONE_NUMBER = /(?:\+?1[\s.-]?)?\(?\b\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}\b/;
+const TEL_LINK = /\btel:/i;
+
+/** True when a label names the GPA: the configured GPA label, or any label with the word "GPA". */
+export function isGpaName(label: string, gpaLabel: string): boolean {
+  const name = label.trim().toLowerCase();
+  if (name === '') return false;
+  return name === gpaLabel.trim().toLowerCase() || /\bgpa\b/.test(name);
+}
+
+function mentionsGpa(text: string, gpaLabel: string): boolean {
+  if (GPA_MENTION.test(text)) return true;
+  const label = gpaLabel.trim().toLowerCase();
+  if (label === '') return false;
+  const lower = text.toLowerCase();
+  for (let at = lower.indexOf(label); at !== -1; at = lower.indexOf(label, at + 1)) {
+    if (/^[^\d\n]{0,12}\d/.test(text.slice(at + label.length))) return true;
+  }
+  return false;
+}
+
+/** Every object with a string `label` and a string `value` (facts, stats, callouts, spec rows). */
+function labelledValues(value: unknown, path: PropertyKey[] = []): { path: string; label: string; value: string }[] {
+  if (Array.isArray(value)) return value.flatMap((item, i) => labelledValues(item, [...path, i]));
+  if (value === null || typeof value !== 'object') return [];
+  const record = value as Record<string, unknown>;
+  const own =
+    typeof record.label === 'string' && typeof record.value === 'string'
+      ? [{ path: formatPath([...path, 'value']), label: record.label, value: record.value }]
+      : [];
+  return [...own, ...Object.entries(record).flatMap(([key, item]) => labelledValues(item, [...path, key]))];
+}
+
+/**
+ * D-14 and Q-23: a save that empties `personal.gpa` or `personal.phone` is refused while a copy
+ * of the value remains anywhere in the content (an about fact, an education line, a contact
+ * link, a Markdown link), because a copy in free text cannot hide itself. The build runs this
+ * too (lib/content.ts), so an emptied value never reaches a deployed page.
+ */
+export function copyFindings(content: ValidContent): Finding[] {
+  const out: Finding[] = [];
+  const { personal } = content.site;
+  const gpaEmpty = personal.gpa.trim() === '';
+  const phoneEmpty = personal.phone.trim() === '';
+  if (!gpaEmpty && !phoneEmpty) return out;
+  const files = [
+    { file: content.siteFile, value: content.site as unknown },
+    ...content.projectFiles.map(({ file, project }) => ({ file, value: project as unknown })),
+  ];
+  for (const { file, value } of files) {
+    for (const { path, text } of stringValues(value)) {
+      if (gpaEmpty && mentionsGpa(text, personal.gpaLabel)) {
+        out.push({ file, path, rule: 'GPA-COPY', message: 'personal.gpa is empty, but this field still states a GPA (D-14).', severity: 'error' });
+      }
+      if (phoneEmpty && (TEL_LINK.test(text) || PHONE_NUMBER.test(text))) {
+        out.push({
+          file,
+          path,
+          rule: 'PHONE-COPY',
+          message: 'personal.phone is empty, but this field still holds a phone number or a tel: link (D-14).',
+          severity: 'error',
+        });
+      }
+    }
+    if (!gpaEmpty) continue;
+    for (const pair of labelledValues(value)) {
+      if (isGpaName(pair.label, personal.gpaLabel) && pair.value.trim() !== '' && !mentionsGpa(pair.value, personal.gpaLabel)) {
+        out.push({ file, path: pair.path, rule: 'GPA-COPY', message: 'personal.gpa is empty, but this GPA row still holds a value (D-14).', severity: 'error' });
+      }
+    }
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Media addresses and links to this repository
+// ---------------------------------------------------------------------------------------------
+
+const MEDIA_KIND_NAMES = new Set(['image', 'video', 'embed', 'model', 'document', 'audio']);
+const EMBED_HOSTS = new Set([
+  'youtube.com',
+  'www.youtube.com',
+  'm.youtube.com',
+  'youtu.be',
+  'youtube-nocookie.com',
+  'www.youtube-nocookie.com',
+  'vimeo.com',
+  'www.vimeo.com',
+  'player.vimeo.com',
+]);
+
+/** The same rule as isSafeMediaSrc in lib/media.ts: a site path or an https address. */
+function isSafeAddress(src: string): boolean {
+  const value = src.trim();
+  if (value.startsWith('/')) return !value.startsWith('//') && !value.startsWith('/\\');
+  try {
+    return new URL(value).protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+function embedHostOk(src: string): boolean {
+  try {
+    const url = new URL(src.trim());
+    return url.protocol === 'https:' && EMBED_HOSTS.has(url.hostname.toLowerCase());
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Media addresses must be a site path or an https address (docs/V3_PLAN.md D-29), and an embed
+ * must be a YouTube or Vimeo address (D-45). The site renders nothing for any other address.
+ */
+function mediaAddressFindings(file: string, value: unknown, path: PropertyKey[] = []): Finding[] {
+  if (Array.isArray(value)) return value.flatMap((item, i) => mediaAddressFindings(file, item, [...path, i]));
+  if (value === null || typeof value !== 'object') return [];
+  const record = value as Record<string, unknown>;
+  const out: Finding[] = [];
+  const check = (key: string, embed = false) => {
+    const raw = record[key];
+    if (typeof raw !== 'string' || raw.trim() === '') return;
+    const ok = embed ? embedHostOk(raw) : isSafeAddress(raw);
+    if (!ok) {
+      out.push({
+        file,
+        path: formatPath([...path, key]),
+        rule: 'MEDIA',
+        message: embed
+          ? 'An embed must be an https YouTube or Vimeo address (D-45).'
+          : 'A media address must be a site path (/media/...) or an https address (D-29).',
+        severity: 'error',
+      });
+    }
+  };
+  const isMediaRef = typeof record.kind === 'string' && MEDIA_KIND_NAMES.has(record.kind) && typeof record.src === 'string';
+  if (isMediaRef) {
+    check('src', record.kind === 'embed');
+    check('poster');
+    check('captions');
+  } else if (record.type === 'file') {
+    check('src');
+  }
+  for (const [key, item] of Object.entries(record)) out.push(...mediaAddressFindings(file, item, [...path, key]));
+  return out;
+}
+
+/** Links into this site's own repository fail the check (docs/V3_PLAN.md D-22). */
+function repositoryLinkFindings(file: string, value: unknown, repository: string | undefined): Finding[] {
+  if (!repository) return [];
+  const out: Finding[] = [];
+  for (const { path, text } of stringValues(value)) {
+    for (const match of text.matchAll(/https?:\/\/[^\s)<>"']+/gi)) {
+      if (pointsIntoRepository(match[0], repository)) {
+        out.push({ file, path, rule: 'OWN-REPOSITORY', message: "This links the site's own repository, which is never linked (D-22).", severity: 'error' });
+        break;
+      }
+    }
   }
   return out;
 }
@@ -349,7 +589,16 @@ export function lintContent(content: ValidContent, options: CheckOptions): Findi
   }
 
   findings.push(...proofFindings(content.site, visibleSlugs, content.siteFile));
-  findings.push(...internalLinkWarnings(content.site, content.projectFiles, visibleSlugs, content.siteFile));
+  findings.push(...copyFindings(content));
+  const files = [
+    { file: content.siteFile, value: content.site as unknown },
+    ...content.projectFiles.map(({ file, project }) => ({ file, value: project as unknown })),
+  ];
+  for (const { file, value } of files) {
+    findings.push(...mediaAddressFindings(file, value));
+    findings.push(...repositoryLinkFindings(file, value, options.siteRepository));
+  }
+  findings.push(...internalLinkWarnings(content, visibleSlugs, options.siteHosts ?? siteHostsOf(DEFAULT_SITE_URL)));
   return findings;
 }
 

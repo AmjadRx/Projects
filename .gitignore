@@ -39,3 +39,13 @@ next-env.d.ts
 # IDE
 .vscode/
 .idea/
+
+# Generated at build and dev time (scripts/copy-vendor.mjs, scripts/content-dates.mjs)
+/public/vendor/
+/lib/generated/
+
+# Extra Next.js output folders (NEXT_DIST_DIR) and test output
+/.next-*/
+/test-results/
+/playwright-report/
+/screenshots/

@@ -94,10 +94,20 @@ This repository builds amjadrehawi.com for its owner, Amjad Rehawi. Version 3 is
 ## Content checks
 
 - `content-rules.public.json` holds the publishable patterns, each with an id and a message. The server-only `CONTENT_BLOCKLIST` adds private terms: entries separated by a vertical bar, matched as whole words without regard to case, and with exact case when an entry starts with `cs:`.
-- The check runs over string values (never keys or raw JSON text) on every admin save, in `npm run check:content` (also the pre-commit hook), in CI, and before every Vercel build (`prebuild`). A failing check rejects the save or stops the deploy.
-- Besides `content/`, the check scans `docs/`, `README.md`, other committed Markdown, and component strings. It never scans `content-rules.public.json` itself, whose messages match their own patterns.
+- The check runs over string values (never keys or raw JSON text) on every admin save, in `npm run check:content` (also the pre-commit hook), in CI, and before every Vercel build (`prebuild`, once Q-33 is settled). A failing check rejects the save or stops the deploy.
+- Besides `content/`, the check scans `docs/`, every string literal and piece of JSX text in `app/`, `components/`, and `lib/`, and every source file for em and en dashes. The v2 admin and API join the string scan in Phase 6, and `README.md` joins when Phase 1 rewrites it. It never scans `content-rules.public.json` itself, whose messages match their own patterns.
 - A public-rule hit reports the rule id, the field path, and the rule's message. A blocklist hit reports its field and rule, never the matched term.
 - Never weaken a rule to make a save or a build pass. A rule changes only when the owner sends a new handoff.
+
+## Code conventions
+
+- Words a visitor sees come from `content/` or, for interface labels that state no fact, from `lib/strings.ts`. Never put a label in a component.
+- Client components never receive whole content records: pass small objects built on the server, so a hidden project or an empty field cannot leak through props.
+- Content links go through `lib/links.ts`: a link to a hidden or unknown page prints as plain text. Media goes through `resolveMedia` in `lib/media-server.ts`, which returns nothing for an empty `src`.
+- Every viewer sits in `components/viewers/`, paints its poster first, and loads its engine through `useViewerActivation` and a dynamic import. After adding one, check that no three.js, pdf.js, docx-preview, or shiki code is in any first load (the route table that `next build` prints, and `.next/app-build-manifest.json`).
+- Run `npm test` before every commit, and `npm run test:build` after changes to pages, metadata, JSON-LD, or the sitemap.
+- `/dev/blocks` and `public/dev/samples/` are for testing the viewers and are removed before release.
+- `next dev` or `next build` with `NEXT_DIST_DIR` adds an entry to `tsconfig.json`; restore that file before committing.
 
 ## Scope
 

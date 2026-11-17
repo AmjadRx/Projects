@@ -33,7 +33,7 @@ function sanitizeName(name: string): string {
   return `${base || 'file'}${ext}`;
 }
 
-/** GET ?scope=slug — list media files for a scope. */
+/** GET ?scope=slug: list media files for a scope. */
 export async function GET(req: NextRequest) {
   if (!sessionValid(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const scope = req.nextUrl.searchParams.get('scope') ?? '';
@@ -66,7 +66,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-/** POST multipart — upload a file into public/media/{scope}/. */
+/** POST multipart: upload a file into public/media/{scope}/. */
 export async function POST(req: NextRequest) {
   if (!sessionValid(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const guard = ghRequiredResponse();
@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-/** DELETE {src} — remove a media file. */
+/** DELETE {src}: remove a media file. */
 export async function DELETE(req: NextRequest) {
   if (!sessionValid(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const guard = ghRequiredResponse();

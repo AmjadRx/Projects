@@ -1,79 +1,69 @@
 import type { Metadata, Viewport } from 'next';
-import { Space_Grotesk, JetBrains_Mono } from 'next/font/google';
+import { JetBrains_Mono, Space_Grotesk } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
-import { loadSite } from '@/lib/legacy/content';
+import { loadSite } from '@/lib/content';
+import { hasText } from '@/lib/format';
+import { siteUrl } from '@/lib/site';
 import './globals.css';
 
+// Phase 1 replaces these with Archivo and B612 Mono (docs/V3_PLAN.md Q-16).
 const display = Space_Grotesk({
   subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700'],
+  weight: ['400', '500', '600', '700'],
   display: 'swap',
   variable: '--font-display',
 });
 
 const mono = JetBrains_Mono({
   subsets: ['latin'],
-  weight: ['400', '500', '600'],
+  weight: ['400', '500'],
   display: 'swap',
   variable: '--font-mono',
 });
 
-export const metadata: Metadata = {
-  metadataBase: new URL('https://amjadrehawi.com'),
-  title: {
-    default: 'Amjad Rehawi · Hardware engineer for things that move themselves',
-    template: '%s · Amjad Rehawi',
-  },
-  description:
-    'Senior honors EE + ME at Santa Clara University. High-voltage battery systems, motor control, embedded firmware, and autonomous aircraft.',
-  keywords: [
-    'Amjad Rehawi', 'hardware engineer', 'eVTOL', 'drone', 'FSAE', 'power electronics',
-    'BMS', 'embedded firmware', 'Santa Clara University', 'Raven',
-  ],
-  authors: [{ name: 'Amjad Rehawi' }],
-  openGraph: {
-    type: 'website',
-    siteName: 'Amjad Rehawi',
-    title: 'Amjad Rehawi · Hardware engineer for things that move themselves',
-    description:
-      'High-voltage battery systems, motor control, embedded firmware, and autonomous aircraft.',
-    url: 'https://amjadrehawi.com',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Amjad Rehawi · Hardware engineer for things that move themselves',
-    description:
-      'High-voltage battery systems, motor control, embedded firmware, and autonomous aircraft.',
-  },
-  robots: { index: true, follow: true },
-};
+/** Site-wide defaults from content: `seo.title`, `seo.description`, and the owner's name. */
+export function generateMetadata(): Metadata {
+  const site = loadSite();
+  const name = site.personal.name;
+  const title = hasText(site.seo.title) ? site.seo.title : name;
+  const description = hasText(site.seo.description) ? site.seo.description : undefined;
+  return {
+    metadataBase: new URL(siteUrl()),
+    title: { default: title, template: `%s · ${name}` },
+    ...(description ? { description } : {}),
+    applicationName: name,
+    openGraph: { type: 'website', siteName: name, title, ...(description ? { description } : {}) },
+    twitter: { card: 'summary', title, ...(description ? { description } : {}) },
+    robots: { index: true, follow: true },
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: '(prefers-color-scheme: dark)', color: '#0b0f17' },
-    { media: '(prefers-color-scheme: light)', color: '#F7F9FC' },
+    { media: '(prefers-color-scheme: dark)', color: '#0b0e14' },
+    { media: '(prefers-color-scheme: light)', color: '#f8f9fb' },
   ],
   width: 'device-width',
   initialScale: 1,
 };
 
-import BackgroundFX from '@/components/BackgroundFX';
-
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const site = loadSite();
-  const themeDefault = site.settings.themeDefault;
-  // Runs before paint. Priority: the visitor's explicit toggle choice (cookie),
-  // else the admin-configured default. No OS override: the admin default must win
-  // for first-time visitors regardless of their system scheme.
-  const themeScript = `(function(){try{var m=document.cookie.match(/(?:^|; )theme=(dark|light)/);document.documentElement.dataset.theme=m?m[1]:'${themeDefault}';}catch(e){document.documentElement.dataset.theme='${themeDefault}';}})();`;
+  // `themeDefault` is validated by the schema ("dark" or "light"), so it is safe in the script.
+  const themeDefault = loadSite().settings.themeDefault;
+  // Runs before paint: the visitor's own choice (a cookie) wins, else the content's default.
+  const themeScript = `(function () { var d = '${themeDefault}'; try { var m = document.cookie.match(/(?:^|; )theme=(dark|light)/); document.documentElement.dataset.theme = m ? m[1] : d; } catch (e) { document.documentElement.dataset.theme = d; } })();`;
 
   return (
-    <html lang="en" data-theme={themeDefault} className={`${display.variable} ${mono.variable}`} suppressHydrationWarning>
+    <html
+      lang="en"
+      data-theme={themeDefault}
+      className={`${display.variable} ${mono.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body>
-        <BackgroundFX />
         {children}
         <Analytics />
       </body>

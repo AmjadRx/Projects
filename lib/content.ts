@@ -5,11 +5,17 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { formatPath, validateContent, type Finding, type RawContent, type ValidContent } from './lint';
+import { copyFindings, formatPath, validateContent, type Finding, type RawContent, type ValidContent } from './lint';
 import { ProjectSchema, SiteSchema } from './schema';
 import type { Project, Site } from './types';
 
-export const CONTENT_DIR = path.join(process.cwd(), 'content');
+/**
+ * The content folder. SITE_CONTENT_DIR points a build at a fixture folder instead; only the
+ * hiding test (tests/build/hiding.test.ts) sets it.
+ */
+export const CONTENT_DIR = process.env.SITE_CONTENT_DIR
+  ? path.resolve(process.env.SITE_CONTENT_DIR)
+  : path.join(process.cwd(), 'content');
 
 export class ContentError extends Error {
   readonly findings: Finding[];
@@ -52,6 +58,10 @@ export function loadValidContent(dir: string = CONTENT_DIR): ValidContent {
   const { content, findings } = validateContent(readContentDir(dir), { SiteSchema, ProjectSchema });
   const errors = findings.filter((f) => f.severity === 'error');
   if (!content || errors.length > 0) throw new ContentError(errors);
+  // An emptied GPA or phone with a copy left in free text would still publish the value, so the
+  // build refuses it as the content check does (docs/V3_PLAN.md D-14, Q-23).
+  const copies = copyFindings(content);
+  if (copies.length > 0) throw new ContentError(copies);
   return content;
 }
 

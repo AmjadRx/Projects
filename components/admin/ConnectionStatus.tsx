@@ -126,7 +126,7 @@ export default function ConnectionStatus() {
               The server cannot see these variables. On Vercel: Project → Settings →
               Environment Variables → make sure each variable is enabled for the
               <strong> {onPreview ? 'Preview' : 'Production'}</strong> environment
-              {onPreview && ' (you are on a preview deployment right now — Production-only variables do not apply here)'}
+              {onPreview && ' (you are on a preview deployment right now; Production-only variables do not apply here)'}
               , then trigger a new deploy. Variables never apply to deployments made before they were added.
             </p>
           )}

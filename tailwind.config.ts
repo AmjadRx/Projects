@@ -14,6 +14,8 @@ const config: Config = {
         accent: 'rgb(var(--accent) / <alpha-value>)',
         'accent-2': 'rgb(var(--accent-2) / <alpha-value>)',
         'accent-contrast': 'rgb(var(--accent-contrast) / <alpha-value>)',
+        well: 'rgb(var(--well) / <alpha-value>)',
+        'well-ink': 'rgb(var(--well-ink) / <alpha-value>)',
       },
       borderColor: {
         line: 'var(--line)',

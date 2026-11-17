@@ -25,8 +25,16 @@ if (major < 22 || (major === 22 && minor < 18)) {
 }
 
 const { ProjectSchema, SiteSchema } = await import('../lib/schema.ts');
-const { compileRules, lintContent, lintMarkdown, missingBlocklistIsError, parseBlocklist, validateContent } =
-  await import('../lib/lint.ts');
+const {
+  DEFAULT_SITE_URL,
+  compileRules,
+  lintContent,
+  lintMarkdown,
+  missingBlocklistIsError,
+  parseBlocklist,
+  siteHostsOf,
+  validateContent,
+} = await import('../lib/lint.ts');
 
 const rootArg = process.argv.indexOf('--root');
 const ROOT =
@@ -43,6 +51,23 @@ function readBlocklist() {
     if (match) return match[1].replace(/^(['"])(.*)\1$/, '$2');
   }
   return undefined;
+}
+
+/**
+ * A plain setting (not a secret) from the environment, else from .env.local, trimmed and with
+ * pasted quotes removed. Used for GITHUB_REPO and NEXT_PUBLIC_SITE_URL; values are never printed.
+ */
+function readSetting(name) {
+  const clean = (value) => value.trim().replace(/^["']+|["']+$/g, '').trim();
+  if (process.env[name] !== undefined) return clean(process.env[name]);
+  const envFile = path.join(ROOT, '.env.local');
+  if (!fs.existsSync(envFile)) return '';
+  for (const rawLine of fs.readFileSync(envFile, 'utf8').split('\n')) {
+    const line = rawLine.trim().replace(/^export\s+/, '');
+    const eq = line.indexOf('=');
+    if (eq > 0 && line.slice(0, eq).trim() === name) return clean(line.slice(eq + 1));
+  }
+  return '';
 }
 
 /** True when the path exists with exactly this case, even on a case-insensitive disk. */
@@ -150,12 +175,84 @@ if (content) {
       }
     }
   }
-  findings.push(...lintContent(content, { rules, blocklist }));
+  const configuredUrl = readSetting('NEXT_PUBLIC_SITE_URL');
+  const siteHosts = siteHostsOf(/^https?:\/\//.test(configuredUrl) ? configuredUrl : DEFAULT_SITE_URL);
+  const siteRepository = readSetting('GITHUB_REPO') || undefined;
+  if (!siteRepository) notes.push('links to the site repository: not checked (GITHUB_REPO is not set)');
+  findings.push(...lintContent(content, { rules, blocklist, siteHosts, siteRepository }));
 }
 
 // 4. Documentation.
 const docs = markdownFiles(path.join(ROOT, 'docs'));
 for (const file of docs) findings.push(...lintMarkdown(rel(file), fs.readFileSync(file, 'utf8'), { rules, blocklist }));
+
+// 5. Interface words (docs/V3_PLAN.md D-56): every string literal and every piece of JSX text in
+// the public pages and components, lib/strings.ts among them. The v2 admin and API are rebuilt
+// in Phase 6 and join the scan then.
+const { checkText } = await import('../lib/lint.ts');
+const ts = (await import('typescript')).default;
+const INTERFACE_SKIP = [/^app\/admin\//, /^app\/api\//, /^components\/admin\//, /^components\/MediaView\.tsx$/, /^lib\/legacy\//, /^lib\/lint\.ts$/];
+
+function sourceFiles(dir, pattern) {
+  if (!fs.existsSync(dir)) return [];
+  return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const p = path.join(dir, entry.name);
+    if (entry.isDirectory()) return entry.name === 'node_modules' || entry.name.startsWith('.') ? [] : sourceFiles(p, pattern);
+    return pattern.test(entry.name) ? [p] : [];
+  });
+}
+
+function interfaceText(file, text) {
+  const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, file.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
+  const out = [];
+  const add = (node, value) => {
+    const trimmed = value.trim();
+    if (trimmed) out.push({ line: source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1, text: trimmed });
+  };
+  const visit = (node) => {
+    if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) return;
+    if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node) || ts.isTemplateHead(node) || ts.isTemplateMiddle(node) || ts.isTemplateTail(node)) {
+      add(node, node.text);
+    } else if (ts.isJsxText(node)) {
+      add(node, node.text.replace(/\s+/g, ' '));
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(source);
+  return out;
+}
+
+const interfaceFiles = ['app', 'components', 'lib']
+  .flatMap((dir) => sourceFiles(path.join(ROOT, dir), /\.(ts|tsx)$/))
+  .filter((file) => !INTERFACE_SKIP.some((re) => re.test(rel(file))));
+for (const file of interfaceFiles) {
+  for (const { line, text } of interfaceText(file, fs.readFileSync(file, 'utf8'))) {
+    for (const hit of checkText(text, rules, blocklist)) {
+      findings.push({ file: rel(file), path: `line ${line}`, rule: hit.rule, message: hit.message, severity: 'error' });
+    }
+  }
+}
+
+// 6. No em dash or en dash in any source file, comments included (ARCHITECTURE.md 0, rule 5). README.md is
+// rewritten in Phase 1 and joins the scan then.
+const DASHES = new RegExp(`[${String.fromCharCode(0x2013, 0x2014)}]`);
+const dashFiles = [
+  ...['app', 'components', 'lib', 'scripts', 'tests', 'docs', 'public/viewers'].flatMap((dir) =>
+    sourceFiles(path.join(ROOT, dir), /\.(ts|tsx|mjs|mts|js|cjs|css|md|json|html)$/),
+  ),
+  ...['CLAUDE.md', 'package.json', 'next.config.mjs', 'tailwind.config.ts', 'vitest.config.mts', 'vitest.build.config.mts', 'content-rules.public.json']
+    .map((name) => path.join(ROOT, name))
+    .filter((p) => fs.existsSync(p)),
+].filter((file) => rel(file) !== 'content-rules.public.json');
+for (const file of dashFiles) {
+  fs.readFileSync(file, 'utf8')
+    .split(/\r?\n/)
+    .forEach((text, index) => {
+      if (DASHES.test(text)) {
+        findings.push({ file: rel(file), path: `line ${index + 1}`, rule: 'DASH', message: 'An em dash or an en dash. Use a comma, a colon, parentheses, or "to".', severity: 'error' });
+      }
+    });
+}
 
 // Report.
 const errors = findings.filter((f) => f.severity === 'error');
@@ -165,7 +262,7 @@ for (const f of [...errors, ...warnings]) {
 }
 const fileCount = raw.projects.length + 1 + docs.length;
 console.log(
-  `check:content: ${fileCount} files (content and docs), ${rules.length} public rules` +
+  `check:content: ${fileCount} files (content and docs), ${interfaceFiles.length} interface files, ${dashFiles.length} files scanned for dashes, ${rules.length} public rules` +
     `${notes.length ? `, ${notes.join(', ')}` : ''}: ${errors.length} errors, ${warnings.length} warnings`,
 );
 process.exit(errors.length > 0 ? 1 : 0);
