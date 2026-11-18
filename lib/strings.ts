@@ -27,6 +27,23 @@ export const UI = {
     zoneColumns: ['1', '2', '3', '4', '5', '6', '7', '8'],
     zoneRows: ['A', 'B', 'C', 'D', 'E', 'F'],
   },
+  /** The sky behind every page (Phase 5): the footer's pause control and its credit line. */
+  sky: {
+    /**
+     * The pause-motion control in the footer's meta row (D-67): a plain button whose words say
+     * what pressing it will do, "Pause motion" while the sky moves and "Play motion" while it is
+     * paused. (A toggle with aria-pressed must keep one label, so the words carry the state.)
+     */
+    pauseMotion: 'Pause motion',
+    playMotion: 'Play motion',
+    /**
+     * The credit line for the sky's sources (the bundle's Footer README, word for word), shown
+     * when settings.background is "sky". As the bundle has it, only "CC BY" is a link, to the
+     * licence deed (rel="license"); the full source notes stay in public/sky/CREDITS.md.
+     */
+    credits: 'Stars: Yale Bright Star Catalogue (Hoffleit and Warren). Milky Way: ESO/S. Brunier, CC BY.',
+    creditLinks: [{ text: 'CC BY', href: 'https://creativecommons.org/licenses/by/4.0/', licence: true }],
+  },
   hero: {
     seeTheWork: 'See the work',
     openProject: (title: string) => `Open ${title}`,

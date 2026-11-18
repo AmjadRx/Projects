@@ -15,7 +15,7 @@
 @container frame (min-width: 1024px) {
   .hm-hero { align-items: center; min-height: 836px; padding: var(--space-8) 0; }
 }
-/* The scrim under the hero copy: the vignette the live sky will carry, on Blueprint only. */
+/* The scrim under the hero copy: the vignette over the sky (the bundle's Sky vignette), on Blueprint only. */
 [data-theme="blueprint"] .hm-hero--scrim::before {
   content: ""; position: absolute; inset: 0; pointer-events: none;
   background-image: radial-gradient(70% 90% at 18% 42%, color-mix(in srgb, var(--sky-zenith) 72%, transparent), transparent 70%);

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import Sky from '@/components/sky/Sky';
 import { lastContentUpdate } from '@/lib/history';
 import { navItemsFor, siteData, socialLinksFor } from '@/lib/site';
 import { UI } from '@/lib/strings';
@@ -12,11 +13,12 @@ import SheetFrame from './SheetFrame';
  *
  *   .ar-frame.ar-page.hm         the `frame` container the design's container queries read
  *     a.ar-skip                  the skip link
- *     .ar-backdrop               Blueprint's static sky: the token gradient and the ground grid
+ *     .ar-sky                    the page background (components/sky/Sky): the sky, the flat grid,
+ *                                or the plain sheet, from settings.background
  *     .hm-body                   inside the sheet frame's inset from 1024 px
  *       header.ar-nav            the sticky nav
  *       main#main.hm-main        the page
- *       .hm-foot > footer        the footer
+ *       .hm-foot > footer        the footer, with the sky's credit line when the background is the sky
  *     .ar-sheetframe             the drawing border with its zone marks, 1024 px and up
  *
  * Pages put their content in `main` (see app/styles/frame.css for .hm-wrap and .hm-sec).
@@ -31,7 +33,7 @@ export default function SiteChrome({ children }: { children: ReactNode }) {
       <a href="#main" className="ar-skip">
         {UI.site.skipToContent}
       </a>
-      <div className="ar-backdrop" aria-hidden="true" />
+      <Sky background={settings.background} />
       <div className="hm-body">
         <Nav
           name={personal.name}
@@ -51,6 +53,7 @@ export default function SiteChrome({ children }: { children: ReactNode }) {
             socials={socialLinksFor(site, 'footer')}
             updated={lastContentUpdate(projects.map((p) => p.slug))}
             year={new Date().getFullYear()}
+            credits={settings.background === 'sky'}
           />
         </div>
       </div>

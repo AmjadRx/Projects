@@ -49,3 +49,6 @@ next-env.d.ts
 /test-results/
 /playwright-report/
 /screenshots/
+
+# Sky source downloads (scripts/build-sky.mjs --cache)
+/.cache/sky-sources/

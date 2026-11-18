@@ -1,7 +1,7 @@
 /*
  * The page frame shared by every public page, from the canvas's home.css ("The page" and the
  * section headings), adapted to the site: components/site/SiteChrome renders
- *   .ar-frame.ar-page.hm > .ar-backdrop + .hm-body > (header.ar-nav, main.hm-main, .hm-foot)
+ *   .ar-frame.ar-page.hm > .ar-sky + .hm-body > (header.ar-nav, main.hm-main, .hm-foot)
  * and pages put their content in main, in .hm-wrap containers and .hm-sec sections.
  * Breakpoints are container queries on .ar-frame. Page-specific rules live in home.css,
  * project.css and site.css beside this file.

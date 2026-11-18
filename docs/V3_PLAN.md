@@ -18,7 +18,7 @@ Phase 0 of the v3 build (`ARCHITECTURE.md` section 14). Written on 2026-11-16 on
 8. Questions for the owner
 9. Tools for this build
 10. Phase 1, after your go
-11. Phases 2 to 4, as built
+11. Phases 2 to 5, as built
 
 ## 1. Summary
 
@@ -613,9 +613,9 @@ Phase 1 is done when both themes render the shell at 390, 768, 1024, and 1440 px
 
 Pushing this commit lets Vercel build a preview of the unchanged v2 code plus these two documents, if the project builds every branch (its default). Nothing reaches production.
 
-## 11. Phases 2 to 4, as built
+## 11. Phases 2 to 5, as built
 
-The owner ran Phases 2, 3, and 4 before Phase 1, so all three stand on the v2 stack: Next.js 14.2.15, React 18.3, and Tailwind CSS 3. Phase 4 already brought the design bundle's tokens, fonts, and themes (11.3); Phase 1 still upgrades everything in section 4 and moves the Tailwind mapping of `app/tokens.css` into Tailwind 4's `@theme`. The code is written to carry over: page `params` are already awaited, as Next 16 requires, and no component depends on a Next 14 behavior except where this section says so.
+The owner ran Phases 2, 3, 4, and 5 before Phase 1, so all four stand on the v2 stack: Next.js 14.2.15, React 18.3, and Tailwind CSS 3. Phase 4 already brought the design bundle's tokens, fonts, and themes (11.3); Phase 1 still upgrades everything in section 4 and moves the Tailwind mapping of `app/tokens.css` into Tailwind 4's `@theme`. The code is written to carry over: page `params` are already awaited, as Next 16 requires, and no component depends on a Next 14 behavior except where this section says so.
 
 ### 11.1 Phase 2 (commit `62cfe9f`)
 
@@ -659,3 +659,17 @@ Schema version 3 in zod 4.6.7, the typed loaders, `lib/lint.ts`, the seed in `co
 - **Tests.** No test changed what it proves. The home fidelity test no longer lists the thesis pillars' one-letter keys, which the design does not draw and which any page would have matched anyway.
 
 **Open after Phase 4** (also in the phase report): the owner's answer to Q-12 (the bundle prints the five step names under the maturity scale; the site prints only the content's label); the home page's selected work index, which also prints each pitch because the Phase 3 fidelity test requires every pitch on the home page (the board's index has none); "See the work", which opens `/projects` where the board scrolls to the selected work; and four new interface words: "Every entry from every project, newest first.", "No entries yet.", "See the projects", and "No sheet at this address".
+
+### 11.4 Phase 5, stage 1: the sky
+
+The owner asked to see the sky alone on the preview before the rest of Phase 5, so it ships first.
+
+- **The sky.** `ARCHITECTURE.md` 6A and `DESIGN_DIRECTION.md` 6.0, with the numbers of the bundle's Sky README and motion sheet 3: the sky over Santa Clara (37.354 N, 121.955 W) facing northeast, turning at 20 times the real rate (the bundle's number; `ARCHITECTURE.md` says 60), with the perspective ground grid, pointer and touch parallax, drafting lines and star names near a resting pointer, the click ripple, the meteor, and the dawn in the thermal ramp (ramp place 7), which strengthens with scroll from 0.06 to 0.32 and holds at 0.06 under reduced motion.
+- **Data.** `scripts/build-sky.mjs` (`npm run build:sky`) downloads its sources into `.cache/sky-sources/`, checks each against a pinned SHA-256 hash, and writes `public/sky/`: `stars.bin` (all 9,096 stars of the Yale Bright Star Catalogue, 5th revised edition, brightest first, 109 kB), `names.json` (the 150 brightest stars with an IAU proper name), the ESO Milky Way panorama by S. Brunier as `milkyway-4k.webp` (Full) and `milkyway-2k.webp` (Light), and `CREDITS.md`, with each licence as read on 2026-11-18. The catalogue was chosen over HYG, as the bundle has it (Q-29). The panorama is turned 3.8 degrees onto the catalogue's frame, a rotation fitted on 77 stars, so the photograph's own stars sit under the catalogue's. The footer prints the bundle's credit line with "CC BY" linked to the licence deed.
+- **Two halves.** The host (`components/sky/Sky.tsx` and `host.ts`, in every first load, with no three.js) chooses the tier, paints the still, imports the scene after the load event and an idle moment, takes input through passive window listeners (nothing calls `preventDefault`, so vertical scrolling always wins), stops the frame loop while the tab is hidden and after 30 s without input, and steps the tier down. The scene (`components/sky/live/`, plain three.js with named imports, Q-27; the glow is drawn in the shader with no post-processing, Q-28) is the only background code that imports three.js. Both halves compile against `components/sky/contract.ts`.
+- **Tiers.** Full (to magnitude 8, as the bundle's reference draws, pixel ratio 2, names and meteor); Light (2,447 stars to magnitude 5.35, pixel ratio 1.5, no names or meteor; phones, tablets, and low-power machines, whose glass becomes the opaque panel color with no blur, R-06); Still (reduced motion, Save-Data, no usable WebGL2, the pause control, or a frame rate under 45 fps for 2 s after Full has stepped down to Light). A step down lasts for the visit. Without usable WebGL the sky downloads none of its data.
+- **Stills.** `scripts/render-stills.mjs` (`npm run render:stills`, against a running dev server) draws 75 WebP stills through the scene's own `renderStill`: Blueprint at 24 hourly sidereal steps for phone, tablet, and desktop, and one Whiteprint still per class, each within its byte budget in `skyFiles` (`lib/motion.ts`). The head script picks the step before the first paint, and the live sky starts from it. The page shows the still in two parts scaled with container units, so the live sky fades in over it with no jump in any window shape. Re-render after changing the tokens, the scene, the catalogue, or `skyFiles`.
+- **Checks and budgets.** `npm run check:sky` (in `prebuild`) checks the data files and stills. `postbuild` runs `check:sky --build`, which fails the build when three.js or the scene enters any first load, the home page's first load passes 160 kB, or the sky's deferred JavaScript passes 220 kB, brotli. As built: home 112.9 kB, the deferred sky 149.1 kB (three.js 137.3 kB of it, a shared chunk the model viewer also uses).
+- **Motion.** `motion` 14.14.0 replaces the unused `framer-motion`. `lib/motion.ts` holds every number of the bundle's eight motion sheets; `lib/useMotionOk.ts` answers whether motion may play. The pause control is last in the footer's meta row (D-67, Q-38): its words say what it will do ("Pause motion" or "Play motion"), with no `aria-pressed`, so a screen reader never hears a label that contradicts its state, and the choice is kept in `localStorage`. Nothing runs at rest: Motion's scroll progress is measured on scroll and resize only, so a resting, paused, or reduced-motion page runs no animation frames.
+
+**Open after stage 1** (also in the checkpoint report): Q-29, whether the site stays non-commercial, which the catalogue's terms depend on (VizieR's archived rules allow use "in a scientific context"); text straight on the sky passes AA by the bundle's measure, the dawn's brightest stop at its peak, but a star core drifting behind a glyph lowers it for a moment, which the scrim of `DESIGN_DIRECTION.md` 4 would cover; the nav's ink-dim links fall to 3.63 when a white image scrolls under the nav (not caused by the sky); the photograph's Venus of 2009 can show near the right edge of wide windows in the early afternoon; and nothing has been tried in Safari, in Firefox, or on a real phone's GPU, where the browser toolbar may resize the sky.
