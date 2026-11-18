@@ -2,6 +2,7 @@
 
 import { Check, Copy, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import Icon from '@/components/sheet/Icon';
 import { UI } from '@/lib/strings';
 import { cn } from '@/lib/utils';
 
@@ -88,12 +89,12 @@ export default function CopyButton() {
     }, RESET_MS[result]);
   };
 
-  const Icon = state === 'copied' ? Check : state === 'failed' ? X : Copy;
+  const Glyph = state === 'copied' ? Check : state === 'failed' ? X : Copy;
 
   return (
     <>
-      <button ref={buttonRef} type="button" className="viewer-button" onClick={copy}>
-        <Icon size={16} aria-hidden />
+      <button ref={buttonRef} type="button" className="ar-mv__btn ar-mv__btn--text" onClick={copy}>
+        <Icon icon={Glyph} size={18} />
         {/* Every label sits in the same cell, so the button keeps its width as the text changes. */}
         <span className="grid">
           <span className={cn('col-start-1 row-start-1', state !== 'idle' && 'invisible')}>{UI.viewers.code.copy}</span>
@@ -101,7 +102,7 @@ export default function CopyButton() {
           <span className={cn('col-start-1 row-start-1', state !== 'failed' && 'invisible')}>{UI.viewers.code.copyFailed}</span>
         </span>
       </button>
-      <span role="status" className="sr-only">
+      <span role="status" className="ar-sr">
         {announcement}
       </span>
     </>

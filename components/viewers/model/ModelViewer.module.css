@@ -1,6 +1,13 @@
-/* The canvas region of the 3D model viewer. No transitions or keyframes: nothing here animates. */
+/*
+ * The 3D model viewer inside the media frame (bundle ModelViewer, app/sheet.css 25: the views
+ * group, the exploded-view range, the hint, the notes). No transitions or keyframes: nothing here
+ * animates. The thermal view's ramp is drawn by the engine's shader, inside the canvas.
+ */
 
+/* The canvas region. */
 .surface {
+  position: absolute;
+  inset: 0;
   cursor: grab;
 }
 
@@ -10,21 +17,124 @@
 
 /* The well clips anything outside it, so the focus ring sits just inside the edge. */
 .surface:focus-visible {
+  outline-color: var(--on-night);
   outline-offset: -2px;
 }
 
-/* Callout labels in the Blueprint view: the data type, on the sheet color, above the leaders. */
+.well {
+  position: absolute;
+  inset: 0;
+}
+
+/* The Blueprint view's callouts: leaders in an SVG layer, labels in the data type on night plates. */
+.callouts {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.callouts ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.leaders {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
 .callout {
   position: absolute;
   left: 0;
   top: 0;
-  padding: 3px 6px;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius);
   white-space: nowrap;
-  line-height: 1.2;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--on-night);
   visibility: hidden;
+}
+
+.calloutLabel {
+  color: var(--on-night-dim);
 }
 
 .leader {
   fill: none;
   stroke-width: 1;
+}
+
+/* The bar: the views and the camera buttons on one row, the exploded view and the parts on the next. */
+.row {
+  display: flex;
+  flex: 1 1 100%;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  min-width: 0;
+}
+
+.partsRow {
+  display: flex;
+  flex: 1 1 100%;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--space-4);
+  min-height: var(--touch-target);
+  min-width: 0;
+}
+
+.invisible {
+  visibility: hidden;
+}
+
+/* The parts list takes the room the slider leaves and scrolls sideways; it never widens the bar. */
+.parts {
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  gap: var(--space-2);
+  width: 0;
+  min-width: 0;
+}
+
+.partsLabel {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-mute);
+}
+
+/* The padding, offset by the margin, keeps the 2 px focus ring inside the scrolling list. */
+.partsList {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  margin: calc(-1 * var(--space-1));
+  padding: var(--space-1);
+  overflow-x: auto;
+  list-style: none;
+  scrollbar-width: thin;
+}
+
+.partsList li {
+  flex: none;
+}
+
+.part {
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.hintHidden {
+  visibility: hidden;
 }

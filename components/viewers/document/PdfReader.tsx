@@ -3,7 +3,8 @@
 import dynamic from 'next/dynamic';
 import { FileText, MoveHorizontal, RotateCcw, ZoomIn, ZoomOut } from 'lucide-react';
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
-import { aspectOf, type ResolvedMedia } from '@/lib/media';
+import Icon from '@/components/sheet/Icon';
+import type { ResolvedMedia } from '@/lib/media';
 import { UI } from '@/lib/strings';
 import TapToLoad from '../shared/TapToLoad';
 import ViewerErrorBoundary from '../shared/ViewerErrorBoundary';
@@ -13,7 +14,6 @@ import { useDocumentVisible } from '../shared/hooks';
 import { useViewerActivation } from '../shared/useViewerActivation';
 import {
   FailSignal,
-  FullscreenButton,
   PageControl,
   ReaderPoster,
   SearchRow,
@@ -28,8 +28,8 @@ import { useReaderSearch } from './useReaderSearch';
 /** pdf.js and react-pdf load only when the reader is in view, or on a tap (ARCHITECTURE.md 13A). */
 const PdfEngine = dynamic(() => import('./PdfEngine'), { ssr: false, loading: () => null });
 
-/** Letter-sized portrait, for a PDF that has no poster yet. */
-const FALLBACK_ASPECT = 1 / 1.294;
+/** The reader's well (bundle DocumentReader): 4:3, the first page contained in it as the poster. */
+const DOCUMENT_ASPECT = 4 / 3;
 
 export default function PdfReader({ media, label, caption }: { media: ResolvedMedia; label: string; caption?: string }) {
   const hostRef = useRef<HTMLDivElement>(null);
@@ -101,17 +101,17 @@ export default function PdfReader({ media, label, caption }: { media: ResolvedMe
 
   // ---------------------------------------------------------------------------------------------
   const toolbar = (
-    <div className="flex w-full flex-wrap items-center gap-x-3 gap-y-1">
+    <>
       <PageControl page={page} total={numPages} ready={ready} onGo={goTo} />
       <SearchToggle search={search} ready={ready} />
 
       {/* Zoom: out, in, fit width, and back to the whole page. */}
-      <div className="flex items-center gap-1">
+      <div className="ar-mv__group">
         <ToolButton label={UI.viewers.zoomOut} onClick={() => zoomBy(1 / ZOOM_STEP)} disabled={!canZoomOut}>
-          <ZoomOut size={18} aria-hidden />
+          <Icon icon={ZoomOut} size={18} />
         </ToolButton>
         <ToolButton label={UI.viewers.zoomIn} onClick={() => zoomBy(ZOOM_STEP)} disabled={!canZoomIn}>
-          <ZoomIn size={18} aria-hidden />
+          <Icon icon={ZoomIn} size={18} />
         </ToolButton>
         <ToolButton
           label={UI.viewers.document.fitWidth}
@@ -119,31 +119,30 @@ export default function PdfReader({ media, label, caption }: { media: ResolvedMe
           disabled={!ready}
           pressed={ready && zoom.mode === 'width'}
         >
-          <MoveHorizontal size={18} aria-hidden />
+          <Icon icon={MoveHorizontal} size={18} />
         </ToolButton>
         <ToolButton label={UI.viewers.resetView} onClick={() => setZoom({ mode: 'page' })} disabled={!ready || zoom.mode === 'page'}>
-          <RotateCcw size={18} aria-hidden />
+          <Icon icon={RotateCcw} size={18} />
         </ToolButton>
       </div>
 
       <SearchRow search={search} ready={ready} />
-      <FullscreenButton className="ml-auto" />
-    </div>
+    </>
   );
 
   return (
     <ViewerFrame
       label={label}
-      aspect={aspectOf(media, FALLBACK_ASPECT)}
-      maxWellHeight="80vh"
+      kind={UI.viewers.kind.document}
+      aspect={DOCUMENT_ASPECT}
       caption={caption}
+      fileName={media.file.name}
       description={media.alt || undefined}
-      download={media.file}
+      downloads={[{ file: media.file }]}
       toolbar={toolbar}
-      allowFullscreen={false}
     >
       <div ref={hostRef} className="absolute inset-0">
-        {(!drawn || failed) && <ReaderPoster media={media} waitingForTap={requiresTap && !active} />}
+        {(!drawn || failed) && <ReaderPoster media={media} waitingForTap={requiresTap && !active} wellAspect={DOCUMENT_ASPECT} />}
         {active && !failed && (
           <ViewerErrorBoundary fallback={<FailSignal onFail={onFail} />}>
             <PdfEngine
@@ -166,7 +165,7 @@ export default function PdfReader({ media, label, caption }: { media: ResolvedMe
         {requiresTap && !active && (
           <TapToLoad
             label={UI.viewers.document.open}
-            icon={<FileText size={18} aria-hidden />}
+            icon={<Icon icon={FileText} size={18} />}
             onActivate={() => {
               setTapped(true);
               activate();

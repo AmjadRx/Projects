@@ -183,7 +183,7 @@ export default function PanZoomEngine({
           src={overview.src}
           alt=""
           fill
-          sizes="180px"
+          sizes="128px"
           unoptimized={overview.unoptimized}
           draggable={false}
           className={styles.overviewImage}

@@ -1,13 +1,16 @@
+import type { CSSProperties } from 'react';
 import type { Metadata } from 'next';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import BlockRenderer from '@/components/blocks/BlockRenderer';
-import ProgressStrip from '@/components/projects/ProgressStrip';
-import TitleBlock from '@/components/projects/TitleBlock';
-import { fitFor, PhotoPlaceholder } from '@/components/ui/MediaImage';
-import ImageZoom from '@/components/viewers/image/ImageZoom';
+import { CalloutRow, shownCallouts } from '@/components/sheet/callouts';
+import DimensionCallouts from '@/components/sheet/DimensionCallouts';
+import Glass from '@/components/sheet/Glass';
+import Icon from '@/components/sheet/Icon';
+import ProgressStrip from '@/components/sheet/ProgressStrip';
+import TitleBlock from '@/components/sheet/TitleBlock';
 import { hasText } from '@/lib/format';
 import { projectRevDate } from '@/lib/history';
 import type { ResolvedMedia } from '@/lib/media';
@@ -16,6 +19,7 @@ import { absoluteUrl, JsonLd, pageMetadata } from '@/lib/meta';
 import { siteData } from '@/lib/site';
 import { UI } from '@/lib/strings';
 import type { Project } from '@/lib/types';
+import { cn } from '@/lib/utils';
 
 type Params = { slug: string };
 
@@ -25,6 +29,20 @@ const ModelViewer = dynamic(() => import('@/components/viewers/model/ModelViewer
 
 /** Only visible projects get a page; any other slug is a 404 (ARCHITECTURE.md 4). */
 export const dynamicParams = false;
+
+/** Over this many characters a title steps down on phones (the canvas's pj-title--long), so it never runs past four lines. */
+const LONG_TITLE = 56;
+
+/** From this many characters a word cannot sit whole at 40 px in a 320 px phone's column: the title steps down on phones. */
+const LONG_WORD = 12;
+
+/** The longest run of a title that cannot wrap (titles wrap at spaces and after hyphens), in characters. */
+function longestWord(title: string): number {
+  return Math.max(0, ...title.split(/\s+|(?<=-)/).map((word) => word.length));
+}
+
+/** The cover's width: the main column of eight from 1024 px (800 px at most), else the full width. */
+const COVER_SIZES = '(min-width: 1280px) 800px, (min-width: 1024px) 62vw, 100vw';
 
 export function generateStaticParams(): Params[] {
   return siteData().projects.map((project) => ({ slug: project.slug }));
@@ -50,29 +68,50 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   });
 }
 
+/**
+ * The cover with its dimension callouts (ARCHITECTURE.md 5): a photo, or the placeholder, in the
+ * 16:10 well with the callouts drawn over it (a row under it on phones, and at every width when
+ * there is no photo), opening in the lightbox; a video or model cover in its viewer, with the
+ * callouts as the row under it.
+ */
 function Cover({ project, cover }: { project: Project; cover: ResolvedMedia | null }) {
-  const sizes = '(min-width: 1280px) 760px, (min-width: 1024px) 60vw, 100vw';
-  if (!cover) {
+  const callouts = shownCallouts(project.callouts);
+  if (cover && (cover.kind === 'video' || cover.kind === 'embed' || cover.kind === 'model')) {
     return (
-      <div className="relative w-full overflow-hidden rounded-sm" style={{ aspectRatio: '16 / 10' }}>
-        <PhotoPlaceholder />
-      </div>
+      <>
+        {cover.kind === 'model' ? (
+          <ModelViewer media={cover} views={['realistic', 'blueprint', 'thermal']} explode callouts={callouts} />
+        ) : (
+          <VideoPlayer media={cover} />
+        )}
+        <CalloutRow callouts={callouts} label={UI.projects.callouts} />
+      </>
     );
   }
-  if (cover.kind === 'video' || cover.kind === 'embed') return <VideoPlayer media={cover} />;
-  if (cover.kind === 'model') {
-    return (
-      <ModelViewer
-        media={cover}
-        views={['realistic', 'blueprint', 'thermal']}
-        explode
-        callouts={(project.callouts ?? []).filter((c) => hasText(c.label) && hasText(c.value))}
-      />
-    );
-  }
-  return <ImageZoom media={cover} fit={fitFor(cover, 16 / 10)} aspect={16 / 10} sizes={sizes} priority />;
+  return <DimensionCallouts media={cover} callouts={callouts} layout="auto" drawn zoom sizes={COVER_SIZES} priority />;
 }
 
+/** One side of the pager: the direction, the sheet number, and the project's title. */
+function PagerLink({ project, sheet, sheets, dir }: { project: Project; sheet: number; sheets: number; dir: 'prev' | 'next' }) {
+  return (
+    <Link href={`/projects/${project.slug}`} className={cn('pj-pager__link ar-glass', `pj-pager__link--${dir}`)}>
+      <span className="pj-pager__dir">
+        {dir === 'prev' ? <Icon icon={ArrowLeft} size={18} /> : null}
+        {dir === 'prev' ? UI.projects.previous : UI.projects.next}
+        {dir === 'next' ? <Icon icon={ArrowRight} size={18} /> : null}
+      </span>
+      <span className="pj-pager__sheet">{UI.projects.sheetOf(sheet, sheets)}</span>
+      <span className="pj-pager__title">{project.title}</span>
+    </Link>
+  );
+}
+
+/**
+ * A project page (ARCHITECTURE.md 5; the canvas's Project board): the back link, the title and
+ * subtitle; the cover with its dimension callouts; the title block (under the cover on phones and
+ * tablets, the sticky rail from 1024 px); the pitch and highlights; the progress strip when there
+ * is one; the blocks in order; and the previous and next project.
+ */
 export default async function ProjectPage({ params }: { params: Promise<Params> }) {
   const { slug } = await params;
   const { site, projects, resolveLink } = siteData();
@@ -82,10 +121,10 @@ export default async function ProjectPage({ params }: { params: Promise<Params> 
   const previous = index > 0 ? projects[index - 1] : undefined;
   const next = index < projects.length - 1 ? projects[index + 1] : undefined;
   const cover = resolveMedia(project.cover);
-  const callouts = (project.callouts ?? []).filter((c) => hasText(c.label) && hasText(c.value));
   const highlights = project.highlights.filter(hasText);
   const steps = project.progress?.steps.filter((s) => hasText(s.label)) ?? [];
   const still = coverStill(cover);
+  const word = longestWord(project.title);
 
   const creativeWork = {
     '@context': 'https://schema.org',
@@ -101,101 +140,75 @@ export default async function ProjectPage({ params }: { params: Promise<Params> 
   };
 
   return (
-    <article className="wrap py-10 md:py-14">
-      <JsonLd data={creativeWork} />
-      <Link href="/projects" className="text-link inline-flex min-h-[44px] items-center gap-2 text-sm">
-        <ArrowLeft size={16} aria-hidden />
-        {UI.projects.backToProjects}
-      </Link>
-
-      <header className="mt-4">
-        <h1 className="display-2">{project.title}</h1>
-        {hasText(project.subtitle) && <p className="body-lg mt-2">{project.subtitle}</p>}
-      </header>
-
-      <div className="mt-8 grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] lg:items-start">
-        <div className="flex flex-col gap-4">
-          <Cover project={project} cover={cover} />
-          {callouts.length > 0 && (
-            <dl aria-label={UI.projects.callouts} className="grid grid-cols-1 gap-px overflow-hidden rounded-sm border border-line bg-[var(--line)] sm:grid-cols-3">
-              {callouts.map((callout, i) => (
-                <div key={`${callout.label}-${i}`} className="flex flex-col gap-1 bg-surface p-4">
-                  <dt className="text-sm text-ink-mute">{callout.label}</dt>{' '}
-                  <dd className="data text-xl text-ink">{callout.value}</dd>
-                </div>
-              ))}
-            </dl>
-          )}
-        </div>
-        <div className="lg:sticky lg:top-24">
-          <TitleBlock
-            project={project}
-            sheet={index + 1}
-            sheets={projects.length}
-            rev={projectRevDate(project.slug)}
-            resolveLink={resolveLink}
-          />
-        </div>
-      </div>
-
-      {(hasText(project.pitch) || highlights.length > 0) && (
-        <section className="mt-12 max-w-3xl" aria-labelledby={highlights.length > 0 ? 'highlights-title' : undefined}>
-          {hasText(project.pitch) && <p className="text-lg text-ink md:text-xl">{project.pitch}</p>}
-          {highlights.length > 0 && (
-            <>
-              <h2 id="highlights-title" className="mt-8 text-xl font-semibold">
-                {UI.projects.highlights}
-              </h2>
-              <ul className="prose-md mt-3 list-disc space-y-2 pl-5 text-base md:text-lg">
-                {highlights.map((item, i) => (
-                  <li key={i}>{item}</li>
-                ))}
-              </ul>
-            </>
-          )}
-        </section>
-      )}
-
-      {steps.length > 0 && (
-        <section className="mt-12" aria-labelledby="progress-title">
-          <h2 id="progress-title" className="text-xl font-semibold">
-            {UI.projects.progress}
-          </h2>
-          <div className="mt-4">
-            <ProgressStrip steps={steps} labelledBy="progress-title" />
-          </div>
-        </section>
-      )}
-
-      <div className="mt-12">
-        <BlockRenderer blocks={project.blocks} ctx={{ resolveLink, level: 2, idPrefix: '' }} />
-      </div>
-
-      {(previous || next) && (
-        <nav aria-label={UI.projects.moreProjects} className="mt-16 grid gap-4 border-t border-line pt-8 sm:grid-cols-2">
-          {previous ? (
-            <Link href={`/projects/${previous.slug}`} className="group flex min-h-[44px] flex-col gap-1 rounded-sm border border-line p-4 hover:border-accent">
-              <span className="inline-flex items-center gap-2 text-sm text-ink-mute">
-                <ArrowLeft size={15} aria-hidden />
-                {UI.projects.previous}
-              </span>
-              <span className="font-semibold text-ink">{previous.title}</span>
-            </Link>
-          ) : null}
-          {next && (
-            <Link
-              href={`/projects/${next.slug}`}
-              className={`group flex min-h-[44px] flex-col items-end gap-1 rounded-sm border border-line p-4 text-right hover:border-accent${previous ? '' : ' sm:col-start-2'}`}
+    <>
+      <article>
+        <JsonLd data={creativeWork} />
+        <div className="hm-wrap pj-top">
+          <Link href="/projects" className="pj-back">
+            <Icon icon={ArrowLeft} size={18} />
+            <span className="pj-back__text">{UI.projects.backToProjects}</span>
+          </Link>
+          <header className="pj-head">
+            <h1
+              className={cn('pj-title', project.title.length > LONG_TITLE && 'pj-title--long', word >= LONG_WORD && 'pj-title--word')}
+              style={word >= LONG_WORD ? ({ '--pj-word': word } as CSSProperties) : undefined}
             >
-              <span className="inline-flex items-center gap-2 text-sm text-ink-mute">
-                {UI.projects.next}
-                <ArrowRight size={15} aria-hidden />
-              </span>
-              <span className="font-semibold text-ink">{next.title}</span>
-            </Link>
-          )}
+              {project.title}
+            </h1>
+            {hasText(project.subtitle) ? <p className="pj-sub">{project.subtitle}</p> : null}
+          </header>
+        </div>
+
+        <div className="hm-wrap pj-grid">
+          <div className="pj-cover">
+            <Cover project={project} cover={cover} />
+          </div>
+
+          <aside className="pj-rail" aria-label={UI.titleBlock.caption}>
+            <TitleBlock
+              project={project}
+              sheet={index + 1}
+              sheets={projects.length}
+              rev={projectRevDate(project.slug)}
+              resolveLink={resolveLink}
+              rail
+            />
+          </aside>
+
+          {hasText(project.pitch) || highlights.length > 0 ? (
+            <section className="pj-intro" aria-label={UI.projects.summary}>
+              {hasText(project.pitch) ? <p className="pj-pitch">{project.pitch}</p> : null}
+              {highlights.length > 0 ? (
+                <ul className="pj-hl ar-glass">
+                  {highlights.map((item, i) => (
+                    <li key={i}>{item}</li>
+                  ))}
+                </ul>
+              ) : null}
+            </section>
+          ) : null}
+
+          {steps.length > 0 ? (
+            <section className="pj-progress" aria-labelledby="progress-title">
+              <h2 id="progress-title" className="hm-label">
+                {UI.projects.progress}
+              </h2>
+              <Glass>
+                <ProgressStrip steps={steps} label={UI.projects.progressOf(project.title)} />
+              </Glass>
+            </section>
+          ) : null}
+
+          <BlockRenderer blocks={project.blocks} ctx={{ resolveLink, level: 2, idPrefix: '', label: project.title }} />
+        </div>
+      </article>
+
+      {previous || next ? (
+        <nav className="hm-wrap pj-pager" aria-label={UI.projects.pager}>
+          {previous ? <PagerLink project={previous} sheet={index} sheets={projects.length} dir="prev" /> : null}
+          {next ? <PagerLink project={next} sheet={index + 2} sheets={projects.length} dir="next" /> : null}
         </nav>
-      )}
-    </article>
+      ) : null}
+    </>
   );
 }

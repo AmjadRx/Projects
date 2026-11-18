@@ -1,7 +1,8 @@
 'use client';
 
-import { Play } from 'lucide-react';
+import { ArrowUpRight, Play } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
+import Icon from '@/components/sheet/Icon';
 import { aspectOf, type EmbedInfo, type ResolvedMedia } from '@/lib/media';
 import { UI } from '@/lib/strings';
 import Poster from '../shared/Poster';
@@ -91,16 +92,20 @@ export default function EmbedPlayer({ media, takeFocus = false }: { media: Resol
   const description = media.alt || undefined;
 
   const title = media.caption?.trim() || media.alt.trim() || UI.viewers.video.embedTitle(embed.provider);
+  // The provider is named in the caption line when the content gives no caption (bundle VideoPlayer).
   return (
     <ViewerFrame
       label={UI.viewers.video.videoFallback}
+      kind={UI.viewers.kind.video}
       aspect={aspect}
       caption={media.caption}
+      fileName={UI.viewers.video.embedTitle(embed.provider)}
       description={description}
       allowFullscreen={loaded}
       toolbar={
-        <a href={embed.watchUrl} rel="noopener noreferrer" className="download-link">
+        <a href={embed.watchUrl} rel="noopener noreferrer" className="ar-mv__link">
           {UI.viewers.video.watchOn(embed.provider)}
+          <Icon icon={ArrowUpRight} size={16} />
         </a>
       }
     >
@@ -117,15 +122,15 @@ export default function EmbedPlayer({ media, takeFocus = false }: { media: Resol
       ) : (
         <>
           {/* Without a poster, the bare grid: the placeholder's icon would sit under the button. */}
-          {media.poster ? <Poster media={media} /> : <div className="viewer-placeholder" aria-hidden="true" />}
+          {media.poster ? <Poster media={media} /> : null}
           <div className={styles.gate}>
             <button
               ref={loadRef}
               type="button"
-              className="viewer-tap__button"
+              className={`ar-mv__btn ar-mv__btn--text ${styles.gateButton}`}
               onClick={() => setAddress(playerAddress(embed))}
             >
-              <Play size={18} aria-hidden />
+              <Icon icon={Play} size={18} />
               <span>{UI.viewers.video.loadEmbed(embed.provider)}</span>
             </button>
             <p className={styles.notice}>{UI.viewers.video.embedNotice(embed.provider)}</p>

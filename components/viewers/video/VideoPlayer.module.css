@@ -1,7 +1,8 @@
 /*
- * The video player inside the shared viewer frame. Nothing here animates: no transitions and no
- * keyframes. Layers in the well, bottom to top: the video, the poster, the click layer, the
- * play badge and status, then the load button and the failure message.
+ * The video player inside the media frame (bundle VideoPlayer; the frame, its buttons, the play
+ * plate and the notes are app/sheet.css 25). Nothing here animates. Layers in the well, bottom to
+ * top: the video, the poster, the click layer, the play plate and the status, then the load button
+ * and the failure note.
  */
 
 .stage {
@@ -32,85 +33,31 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-.badge {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  z-index: 3;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 3.5rem;
-  height: 3.5rem;
-  margin: -1.75rem 0 0 -1.75rem;
-  border-radius: 9999px;
-  border: 1px solid var(--well-line);
-  background: rgb(var(--well) / 0.84);
-  color: rgb(var(--well-ink));
-  pointer-events: none;
-}
-
-.status {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  z-index: 3;
-  transform: translate(-50%, -50%);
-  padding: 0.375rem 0.75rem;
-  border-radius: 6px;
-  border: 1px solid var(--well-line);
-  background: rgb(var(--well) / 0.9);
-  color: rgb(var(--well-ink));
-  font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 0.75rem;
-  pointer-events: none;
-}
-
 .layer {
   position: absolute;
   inset: 0;
   z-index: 4;
 }
 
-.failure {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 4;
-  margin: 0;
-  padding: 0.625rem 0.875rem;
-  border-top: 1px solid var(--well-line);
-  background: rgb(var(--well) / 0.92);
-  color: rgb(var(--well-ink));
-  font-size: 0.875rem;
-  line-height: 1.5;
-}
-
-/* The toolbar: the shared frame's control group takes the full row when it holds this player. */
-:global(.viewer-toolbar__controls):has(> .controls) {
-  flex: 1 1 100%;
-  min-width: 0;
-}
-
+/* The bar: the player's controls take its whole row, and it is a container for a narrow player. */
 .controls {
   display: flex;
+  flex: 1 1 100%;
   flex-wrap: wrap;
   align-items: center;
-  column-gap: 0.25rem;
+  column-gap: var(--space-2);
   width: 100%;
   min-width: 0;
   container-type: inline-size;
 }
 
-/* The seek bar: a 44 px tall target around a 4 px track, with the fill and the thumb placed by
-   `--progress`, which the engine sets. */
+/* The scrub bar (bundle .ar-mv__scrub): a 44 px target around a 2 px ink-mute track, the played
+   part in the line color and a 12 px ink handle, placed by `--progress`, which the engine sets. */
 .seek {
   position: relative;
-  flex: 1 1 8rem;
-  min-width: 6rem;
-  height: 44px;
-  margin: 0 0.25rem;
+  flex: 1 1 160px;
+  min-width: 120px;
+  height: var(--touch-target);
   cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
@@ -127,18 +74,17 @@
 
 .seek[aria-disabled='true'] {
   cursor: default;
-  opacity: 0.5;
 }
 
+/* The track the engine maps a pointer to; 6 px in from each end, so the handle stays inside. */
 .seekTrack {
   position: absolute;
-  left: 8px;
-  right: 8px;
+  left: 6px;
+  right: 6px;
   top: 50%;
-  height: 4px;
-  margin-top: -2px;
-  border-radius: 2px;
-  background: rgb(var(--ink-mute) / 0.6);
+  height: 2px;
+  margin-top: -1px;
+  background-color: var(--ink-mute);
   pointer-events: none;
 }
 
@@ -148,38 +94,39 @@
   top: 0;
   bottom: 0;
   width: var(--progress);
-  border-radius: 2px;
-  background: rgb(var(--accent));
+  background-color: var(--line);
 }
 
 .seekThumb {
   position: absolute;
   left: var(--progress);
   top: 50%;
-  width: 16px;
-  height: 16px;
-  margin: -8px 0 0 -8px;
-  border-radius: 50%;
-  border: 2px solid rgb(var(--surface));
-  background: rgb(var(--accent));
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border-radius: 1px;
+  background-color: var(--ink);
+}
+
+/* Before the engine loads, the track is drawn in phantom line and the handle waits. */
+.seek[aria-disabled='true'] .seekTrack {
+  background: none;
+  border-top: 1px dashed var(--ink-mute);
+  height: 0;
+}
+
+.seek[aria-disabled='true'] .seekThumb {
+  display: none;
 }
 
 .hint {
   flex: 1 1 10rem;
   min-width: 0;
   margin: 0;
-  padding: 0 0.5rem;
-  font-size: 0.8125rem;
-  line-height: 1.4;
-  color: rgb(var(--ink-dim));
 }
 
 .time {
-  flex: none;
-  padding: 0 0.375rem;
-  font-size: 0.8125rem;
-  white-space: nowrap;
-  color: rgb(var(--ink-dim));
+  padding: 0 var(--space-1);
 }
 
 .pending {
@@ -190,18 +137,18 @@
   flex: 0 0 0;
 }
 
-/* Captions on: the accent color and a bar under the icon, so color is not the only sign. */
+/* Captions on: the pressed look (sheet-3 and a line bar under the icon), so color is not the only sign. */
 .on {
-  color: rgb(var(--accent));
-  box-shadow: inset 0 -2px 0 rgb(var(--accent));
+  color: var(--ink);
+  background-color: var(--sheet-3);
+  box-shadow: inset 0 -2px 0 var(--line);
 }
 
-/* A narrow player: the seek bar takes its own row above the buttons. */
+/* A narrow player: the scrub bar takes its own row above the buttons. */
 @container (max-width: 30rem) {
   .seek {
     order: -1;
     flex: 1 1 100%;
-    margin: 0;
   }
 
   .grow {
@@ -209,7 +156,7 @@
   }
 }
 
-/* Embedded players: the notice and the load button over the poster, then the player itself. */
+/* Embedded players: the load button and the notice over the poster, then the player itself. */
 .gate {
   position: absolute;
   inset: 0;
@@ -218,21 +165,27 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.625rem;
-  padding: 1rem;
+  gap: var(--space-3);
+  padding: var(--space-4);
   text-align: center;
+}
+
+/* The load button at the bundle's play plate height. */
+.gate .gateButton {
+  min-height: 56px;
 }
 
 .notice {
   max-width: 34ch;
   margin: 0;
-  padding: 0.375rem 0.75rem;
-  border-radius: 6px;
-  border: 1px solid var(--well-line);
-  background: rgb(var(--well) / 0.9);
-  color: rgb(var(--well-ink));
-  font-size: 0.8125rem;
-  line-height: 1.45;
+  padding: 2px var(--space-2);
+  border: 1px solid var(--night-rule);
+  border-radius: var(--radius);
+  background-color: color-mix(in srgb, var(--night) 82%, transparent);
+  color: var(--on-night);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .iframe {

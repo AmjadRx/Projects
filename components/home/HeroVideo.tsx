@@ -2,6 +2,7 @@
 
 import { Pause, Play } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import Icon from '@/components/sheet/Icon';
 
 /**
  * The hero in `media` mode with a video: "a muted looping video with a poster" (ARCHITECTURE.md
@@ -9,6 +10,9 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
  * itself in this phase: the Play button mounts a muted, looping video over the same poster, so
  * the hero never changes size, the poster is never downloaded twice, and the video file loads
  * only when the visitor asks for it. No viewer code is involved; Phase 5 adds the in-view start.
+ *
+ * Drawn in the media frame of the design system (bundle MediaFrame: a night well and a glass bar),
+ * at the video's own ratio and at most 78 percent of the window's height.
  */
 export default function HeroVideo({
   src,
@@ -48,8 +52,8 @@ export default function HeroVideo({
   };
 
   return (
-    <div className="viewer-frame">
-      <div className="viewer-well" style={{ aspectRatio: String(aspect), maxHeight: '78vh' }}>
+    <div className="ar-mv hm-hero__media" style={{ width: `min(100%, calc(78vh * ${aspect.toFixed(4)}))` }}>
+      <div className="ar-mv__well" style={{ aspectRatio: String(aspect) }}>
         {children}
         {started && (
           <video
@@ -66,13 +70,11 @@ export default function HeroVideo({
           />
         )}
       </div>
-      <div className="viewer-toolbar">
-        <div className="viewer-toolbar__controls">
-          <button type="button" className="viewer-button" onClick={toggle}>
-            {playing ? <Pause size={18} aria-hidden /> : <Play size={18} aria-hidden />}
-            <span className="text-sm">{playing ? labels.pause : labels.play}</span>
-          </button>
-        </div>
+      <div className="ar-mv__bar">
+        <button type="button" className="ar-mv__btn ar-mv__btn--text" onClick={toggle}>
+          <Icon icon={playing ? Pause : Play} size={18} />
+          <span>{playing ? labels.pause : labels.play}</span>
+        </button>
       </div>
     </div>
   );

@@ -83,6 +83,18 @@ const RAW: { id: string; title: string; note: string; blocks: unknown[] }[] = [
     ],
   },
   {
+    id: 'gallery-one',
+    title: 'gallery (one photo)',
+    note: 'A gallery of one photo: a single figure at the height of the strip, with no Previous, Next, or count. It still opens the lightbox.',
+    blocks: [
+      {
+        id: 'd-gallery-one',
+        type: 'gallery',
+        items: [{ kind: 'image', src: `${S}/photo-tall.webp`, alt: 'Soft color gradients in a tall frame', caption: 'A tall photo.' }],
+      },
+    ],
+  },
+  {
     id: 'video',
     title: 'video',
     note: 'Play, pause, seek, mute, captions, and full screen. Captions come from a WebVTT file.',

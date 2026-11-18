@@ -133,8 +133,8 @@ export function MediaLibrary({
         }}
         className="flex flex-col items-center justify-center gap-2 rounded-md py-8 text-center transition-colors"
         style={{
-          border: `1px dashed ${dragging ? 'rgb(var(--accent))' : 'var(--line)'}`,
-          background: dragging ? 'rgb(var(--accent) / 0.05)' : 'transparent',
+          border: `1px dashed ${dragging ? 'var(--line)' : 'var(--rule)'}`,
+          background: dragging ? 'color-mix(in srgb, var(--line) 5%, transparent)' : 'transparent',
         }}
       >
         <Upload size={18} className="text-ink-mute" />
@@ -165,7 +165,7 @@ export function MediaLibrary({
       ) : files.length > 0 ? (
         <div className="mt-4 grid grid-cols-3 gap-2 md:grid-cols-4">
           {files.map((file) => (
-            <div key={file.src} className="group relative aspect-square overflow-hidden rounded-sm" style={{ border: '1px solid var(--line)' }}>
+            <div key={file.src} className="group relative aspect-square overflow-hidden rounded-sm" style={{ border: '1px solid var(--rule)' }}>
               {onSelect ? (
                 <button type="button" onClick={() => onSelect(file)} className="h-full w-full" title={`Select ${file.name}`}>
                   <Thumb file={file} />
@@ -178,7 +178,7 @@ export function MediaLibrary({
                   <X size={12} />
                 </IconBtn>
               </div>
-              <span className="absolute inset-x-0 bottom-0 truncate bg-bg/80 px-1.5 py-0.5 font-mono text-[9px] text-ink-dim backdrop-blur">
+              <span className="absolute inset-x-0 bottom-0 truncate bg-sheet/80 px-1.5 py-0.5 font-mono text-[9px] text-ink-dim backdrop-blur">
                 {file.name}
               </span>
             </div>
@@ -219,7 +219,7 @@ export function MediaPicker({
 
   return (
     <div
-      className="fixed inset-0 z-[90] flex items-center justify-center bg-bg/80 p-4 backdrop-blur"
+      className="fixed inset-0 z-[90] flex items-center justify-center bg-sheet/80 p-4 backdrop-blur"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -270,7 +270,7 @@ export function MediaField({
     <div>
       <span className="label">{label}</span>
       <div className="flex items-center gap-3">
-        <div className="relative h-16 w-24 shrink-0 overflow-hidden rounded-sm" style={{ border: '1px solid var(--line)' }}>
+        <div className="relative h-16 w-24 shrink-0 overflow-hidden rounded-sm" style={{ border: '1px solid var(--rule)' }}>
           {value?.src ? (
             value.kind === 'video' ? (
               <video src={value.src} muted className="h-full w-full object-cover" />

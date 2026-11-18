@@ -39,7 +39,7 @@ function ProjectEditor({
 
   return (
     <div>
-      <button onClick={onBack} className="mb-6 inline-flex items-center gap-2 text-sm text-ink-mute hover:text-accent">
+      <button onClick={onBack} className="mb-6 inline-flex items-center gap-2 text-sm text-ink-mute hover:text-line">
         <ArrowLeft size={14} /> All projects
       </button>
       <TabHeader title={project.title || 'Untitled project'} subtitle={`/projects/${project.slug}`} />
@@ -196,7 +196,7 @@ export default function ProjectsTab({ projects, onChange, onDelete }: ProjectsTa
               }
               aria-label={project.featured ? 'Unfeature' : 'Feature'}
               title="Featured"
-              className={project.featured ? 'text-accent' : 'text-ink-mute hover:text-ink'}
+              className={project.featured ? 'text-line' : 'text-ink-mute hover:text-ink'}
             >
               <Star size={16} fill={project.featured ? 'currentColor' : 'none'} />
             </button>

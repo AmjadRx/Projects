@@ -1,11 +1,15 @@
 import type { Metadata } from 'next';
 import BlockRenderer from '@/components/blocks/BlockRenderer';
 import { siteData } from '@/lib/site';
+import { cn } from '@/lib/utils';
+import styles from './blocks.module.css';
 import { SAMPLES } from './samples';
 
 /**
  * One of every block on sample files, for testing each viewer on a phone and a computer
- * (ARCHITECTURE.md 14, Phase 3). Not in the sitemap, not indexed, removed before release.
+ * (ARCHITECTURE.md 14, Phase 3), laid out like a project body (app/styles/project.css): the title
+ * over the wrap, the samples in the main column of eight, the index in the right rail. Not in the
+ * sitemap, not indexed, removed before release.
  */
 export const metadata: Metadata = {
   title: 'Block samples',
@@ -15,32 +19,42 @@ export const metadata: Metadata = {
 export default function BlockSamplesPage() {
   const { resolveLink } = siteData();
   return (
-    <div className="wrap py-12 md:py-16">
-      <h1 className="display-2">Block samples</h1>
-      <p className="body-lg mt-4 max-w-2xl">
-        One of every block, on small sample files made for testing. This page is not in the sitemap, is not indexed,
-        and is removed before release.
-      </p>
-      <nav aria-label="Samples" className="mt-8">
-        <ul className="flex flex-wrap gap-x-4 gap-y-1 font-mono text-sm">
+    <>
+      <div className="hm-wrap pj-top">
+        <header className="pj-head">
+          <h1 className="pj-title">Block samples</h1>
+          <p className="pj-sub">
+            One of every block, on small sample files made for testing. This page is not in the sitemap, is not
+            indexed, and is removed before release.
+          </p>
+        </header>
+      </div>
+      <div className="hm-wrap pj-grid">
+        <div className={styles.samples}>
           {SAMPLES.map((sample) => (
-            <li key={sample.id}>
-              <a href={`#${sample.id}`} className="text-link inline-flex min-h-[44px] items-center">
+            <section key={sample.id} id={sample.id} aria-labelledby={`${sample.id}-title`} className={styles.sample}>
+              <h2 id={`${sample.id}-title`} className="hm-label">
                 {sample.title}
-              </a>
-            </li>
+              </h2>
+              <p className={cn('pj-text', styles.note)}>{sample.note}</p>
+              <BlockRenderer blocks={sample.blocks} ctx={{ resolveLink, level: 3, idPrefix: `sample-${sample.id}-` }} />
+            </section>
           ))}
-        </ul>
-      </nav>
-      {SAMPLES.map((sample) => (
-        <section key={sample.id} id={sample.id} aria-labelledby={`${sample.id}-title`} className="section">
-          <h2 id={`${sample.id}-title`} className="font-mono text-lg text-ink">
-            {sample.title}
-          </h2>
-          <p className="mb-8 mt-2 max-w-2xl text-sm text-ink-dim">{sample.note}</p>
-          <BlockRenderer blocks={sample.blocks} ctx={{ resolveLink, level: 3, idPrefix: `sample-${sample.id}-` }} />
-        </section>
-      ))}
-    </div>
+        </div>
+        <div className={cn('pj-rail', styles.rail)}>
+          <nav aria-label="Samples" className={cn('ar-glass ar-glass--pad', styles.index)}>
+            <ul className={styles.indexList}>
+              {SAMPLES.map((sample) => (
+                <li key={sample.id}>
+                  <a href={`#${sample.id}`} className="ar-link ar-link--standalone">
+                    <span className="ar-link__text">{sample.title}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </div>
+      </div>
+    </>
   );
 }

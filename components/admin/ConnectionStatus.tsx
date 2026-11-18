@@ -23,11 +23,11 @@ interface Status {
 
 function Row({ label, ok, value }: { label: string; ok: boolean | null; value: string }) {
   return (
-    <div className="flex items-start justify-between gap-4 py-2.5" style={{ borderBottom: '1px solid var(--line)' }}>
+    <div className="flex items-start justify-between gap-4 py-2.5" style={{ borderBottom: '1px solid var(--rule)' }}>
       <span className="kicker pt-0.5">{label}</span>
       <span
         className={`text-right font-mono text-xs ${
-          ok === null ? 'text-ink-mute' : ok ? 'text-accent' : 'text-red-400'
+          ok === null ? 'text-ink-mute' : ok ? 'text-line' : 'text-red-400'
         }`}
       >
         {ok === true && '✓ '}
@@ -76,7 +76,7 @@ export default function ConnectionStatus() {
           type="button"
           onClick={refresh}
           disabled={loading}
-          className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wider text-ink-mute hover:text-accent disabled:opacity-40"
+          className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wider text-ink-mute hover:text-line disabled:opacity-40"
         >
           <RefreshCw size={12} className={loading ? 'animate-spin' : ''} /> Test
         </button>

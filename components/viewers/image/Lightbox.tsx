@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
-import { ChevronLeft, ChevronRight, RotateCcw, X, ZoomIn, ZoomOut } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ImageOff, X, ZoomIn, ZoomOut } from 'lucide-react';
 import {
   useCallback,
   useEffect,
@@ -12,8 +12,10 @@ import {
   useState,
   type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
+  type ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
+import Icon from '@/components/sheet/Icon';
 import { aspectOf, type ResolvedImage, type ResolvedMedia } from '@/lib/media';
 import { UI } from '@/lib/strings';
 import { cn } from '@/lib/utils';
@@ -35,16 +37,19 @@ import {
 } from './zoomPan';
 
 /**
- * The lightbox (ARCHITECTURE.md 13A, DESIGN_DIRECTION.md 11): a focus-trapped dialog over a list
- * of items. Escape and the close button close it, focus returns to the opener, and the page
- * behind does not scroll (docs/V3_PLAN.md D-63).
+ * The lightbox (bundle Lightbox, app/sheet.css 18; ARCHITECTURE.md 13A): a focus-trapped dialog
+ * on night in both themes over a list of items. Close sits in the top right corner; Previous, the
+ * count, and Next sit centered at the foot, with the caption and the download link under them.
+ * One item: no Previous, Next, or count. Escape and Close close it, focus returns to the opener,
+ * and the page behind does not scroll (docs/V3_PLAN.md D-63).
  *
- * Photos zoom with the buttons, the wheel, a pinch, a double click or double tap, and the keys
- * plus, minus, and 0, and pan by dragging or with the arrow keys while zoomed. The previous and
- * next buttons are always shown (D-67), and the left and right keys move between items when
- * the photo is not zoomed. Every photo goes through next/image, here too, so a large original is
- * never sent whole (docs/V3_PLAN.md R-16). A video or a 3D model opens its own viewer, whose code
- * loads only when such an item is shown.
+ * Photos zoom with the buttons in the top left corner, the wheel, a pinch, a double click or
+ * double tap, and the keys plus, minus, and 0, and pan by dragging or with the arrow keys while
+ * zoomed. The left and right keys move between items when the photo is not zoomed, and the list
+ * wraps around (Phase 3). Every photo goes through next/image, here too, so a large original is
+ * never sent whole (docs/V3_PLAN.md R-16). A full-size file that does not load shows the words,
+ * the alt text, and Try again. A video or a 3D model opens its own viewer, whose code loads only
+ * when such an item is shown.
  */
 export interface LightboxProps {
   items: ResolvedMedia[];
@@ -73,7 +78,7 @@ const MAX_PHOTO_SCALE = 4;
 
 function LoadingNote() {
   return (
-    <p className="data p-4 text-sm" role="status">
+    <p className={styles.loading} role="status">
       {UI.viewers.loading}
     </p>
   );
@@ -92,6 +97,7 @@ export default function Lightbox({ items, start, onClose, label, onShown }: Ligh
   /** The visitor moved off the item the lightbox opened on. */
   const [moved, setMoved] = useState(false);
   const [scale, setScale] = useState(1);
+  const [photoFailed, setPhotoFailed] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const zoomRef = useRef<ZoomPan | null>(null);
@@ -111,6 +117,7 @@ export default function Lightbox({ items, start, onClose, label, onShown }: Ligh
       setIndex((current) => wrapIndex(current + delta, count));
       setMoved(true);
       setScale(1);
+      setPhotoFailed(false);
     },
     [count],
   );
@@ -153,8 +160,9 @@ export default function Lightbox({ items, start, onClose, label, onShown }: Ligh
   if (!item) return null;
   const zoomed = scale > 1.001;
   const atMax = scale >= MAX_PHOTO_SCALE - 0.001;
-  const hasControls = count > 1 || isPhoto;
-  // No empty caption row: a file that is not offered for download has no link (R-16).
+  const zoomable = isPhoto && !photoFailed;
+  // No empty caption row: a file that is not offered for download has no link (R-16). A video or
+  // a model shows its caption and download link in its own frame.
   const hasCaption = !isPlayer && (!!item.caption || !!item.file.downloadHref);
 
   return createPortal(
@@ -165,43 +173,70 @@ export default function Lightbox({ items, start, onClose, label, onShown }: Ligh
       aria-label={label ?? UI.viewers.image.lightbox}
       aria-describedby={hintId}
       tabIndex={-1}
-      className={styles.dialog}
+      className={cn('ar-lightbox', count < 2 && 'ar-lightbox--one', styles.dialog)}
       onKeyDown={onKeyDown}
     >
-      <p id={hintId} className="sr-only">
+      <p id={hintId} className="ar-sr">
         {count > 1 ? UI.viewers.image.keysMany : UI.viewers.image.keysOne}
       </p>
 
-      <div className={styles.bar}>
-        {count > 1 ? (
-          <p className={cn('data', styles.count)} aria-live="polite">
-            {UI.viewers.itemOf(index + 1, count)}
-          </p>
+      <div className={cn('ar-lightbox__top', styles.top)}>
+        {zoomable ? (
+          <div className={styles.group}>
+            <LightboxButton
+              label={UI.viewers.zoomOut}
+              disabled={!zoomed}
+              onPress={() => zoomRef.current?.zoomBy(1 / 1.5)}
+            >
+              <Icon icon={ZoomOut} size={20} />
+            </LightboxButton>
+            <LightboxButton
+              label={UI.viewers.fitToFrame}
+              text={UI.viewers.fit}
+              disabled={!zoomed}
+              onPress={() => zoomRef.current?.reset()}
+            />
+            <LightboxButton
+              label={UI.viewers.zoomIn}
+              disabled={atMax}
+              onPress={() => zoomRef.current?.zoomBy(1.5)}
+            >
+              <Icon icon={ZoomIn} size={20} />
+            </LightboxButton>
+          </div>
         ) : (
           <span />
         )}
         <button
           ref={closeRef}
           type="button"
-          className={styles.button}
+          className="ar-iconbtn"
           onClick={onClose}
           aria-label={UI.viewers.close}
           title={UI.viewers.close}
         >
-          <X size={20} aria-hidden />
+          <Icon icon={X} size={20} />
         </button>
       </div>
 
-      <div className={styles.stage}>
+      <div className={cn('ar-lightbox__stage', styles.stage)}>
         {isPhoto && still ? (
-          <PhotoStage
-            key={`${index}-${item.file.src}`}
-            media={item}
-            still={still}
-            onController={onController}
-            onScale={setScale}
-            onSwipe={count > 1 ? go : undefined}
-          />
+          photoFailed ? (
+            <PhotoFailed alt={item.alt} onRetry={() => setPhotoFailed(false)} />
+          ) : (
+            <PhotoStage
+              key={`${index}-${item.file.src}`}
+              media={item}
+              still={still}
+              onController={onController}
+              onScale={setScale}
+              onSwipe={count > 1 ? go : undefined}
+              onFail={() => {
+                setPhotoFailed(true);
+                setScale(1);
+              }}
+            />
+          )
         ) : isPlayer ? (
           // Only the item the lightbox opened on takes focus; paging leaves focus where it was.
           <PlayerItem key={`${index}-${item.file.src}`} item={item} takeFocus={!moved} />
@@ -210,103 +245,79 @@ export default function Lightbox({ items, start, onClose, label, onShown }: Ligh
         )}
       </div>
 
-      {(hasControls || hasCaption) && (
-        <div className={styles.footer}>
-          {hasControls && (
-            <div className={styles.controls}>
-              {count > 1 ? (
-                <div className={styles.group}>
-                  <button
-                    type="button"
-                    className={styles.button}
-                    onClick={() => go(-1)}
-                    aria-label={UI.viewers.previous}
-                    title={UI.viewers.previous}
-                  >
-                    <ChevronLeft size={20} aria-hidden />
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.button}
-                    onClick={() => go(1)}
-                    aria-label={UI.viewers.next}
-                    title={UI.viewers.next}
-                  >
-                    <ChevronRight size={20} aria-hidden />
-                  </button>
-                </div>
-              ) : (
-                <span />
-              )}
-              {isPhoto && (
-                <div className={styles.group}>
-                  <ZoomButton
-                    label={UI.viewers.zoomOut}
-                    disabled={!zoomed}
-                    onPress={() => zoomRef.current?.zoomBy(1 / 1.5)}
-                  >
-                    <ZoomOut size={20} aria-hidden />
-                  </ZoomButton>
-                  <ZoomButton
-                    label={UI.viewers.resetView}
-                    disabled={!zoomed}
-                    onPress={() => zoomRef.current?.reset()}
-                  >
-                    <RotateCcw size={18} aria-hidden />
-                  </ZoomButton>
-                  <ZoomButton
-                    label={UI.viewers.zoomIn}
-                    disabled={atMax}
-                    onPress={() => zoomRef.current?.zoomBy(1.5)}
-                  >
-                    <ZoomIn size={20} aria-hidden />
-                  </ZoomButton>
-                </div>
-              )}
-            </div>
-          )}
-          {/* A video or a model shows its caption and download link in its own frame. */}
-          {hasCaption && (
-            <div className={styles.caption}>
-              {item.caption && <span className={styles.captionText}>{item.caption}</span>}
-              <DownloadLink file={item.file} />
-            </div>
-          )}
-        </div>
-      )}
+      <div className={cn('ar-lightbox__bottom', styles.bottom)}>
+        {count > 1 && (
+          <div className={styles.nav}>
+            <LightboxButton label={UI.viewers.previous} disabled={false} onPress={() => go(-1)}>
+              <Icon icon={ChevronLeft} size={20} />
+            </LightboxButton>
+            <p className="ar-lightbox__count" aria-live="polite">
+              {UI.viewers.itemOf(index + 1, count)}
+            </p>
+            <LightboxButton label={UI.viewers.next} disabled={false} onPress={() => go(1)}>
+              <Icon icon={ChevronRight} size={20} />
+            </LightboxButton>
+          </div>
+        )}
+        {hasCaption && (
+          <p className={styles.caption}>
+            {item.caption && <span className={styles.captionText}>{item.caption}</span>}
+            <DownloadLink file={item.file} onNight />
+          </p>
+        )}
+      </div>
     </div>,
     document.body,
   );
 }
 
 /**
- * A control that stays focusable at its limit (aria-disabled, not disabled), so keyboard focus
- * is never dropped when a press reaches the end of the zoom range.
+ * A control on night that stays focusable at its limit (aria-disabled, not disabled), so keyboard
+ * focus is never dropped when a press reaches the end of the zoom range. With `text` it is the
+ * bundle's text button ("Fit"), named by its words.
  */
-function ZoomButton({
+function LightboxButton({
   label,
+  text,
   disabled,
   onPress,
   children,
 }: {
   label: string;
+  text?: string;
   disabled: boolean;
   onPress: () => void;
-  children: React.ReactNode;
+  children?: ReactNode;
 }) {
   return (
     <button
       type="button"
-      className={styles.button}
-      aria-label={label}
+      className={cn('ar-iconbtn', text && styles.textButton)}
+      aria-label={text ? undefined : label}
       title={label}
       aria-disabled={disabled || undefined}
       onClick={() => {
         if (!disabled) onPress();
       }}
     >
-      {children}
+      {text ?? children}
     </button>
+  );
+}
+
+/** The full-size file did not load: the image-off mark, the words, the alt text, and Try again (bundle). */
+function PhotoFailed({ alt, onRetry }: { alt: string; onRetry: () => void }) {
+  return (
+    <div className="ar-lightbox__msg" role="group">
+      <span className="ar-lightbox__icon" aria-hidden="true">
+        <Icon icon={ImageOff} size={28} />
+      </span>
+      <p className="ar-lightbox__said">{UI.placeholder.didNotLoad}</p>
+      {alt ? <p className="ar-lightbox__alt">{alt}</p> : null}
+      <button type="button" className="ar-lightbox__retry" onClick={onRetry}>
+        {UI.placeholder.tryAgain}
+      </button>
+    </div>
   );
 }
 
@@ -317,12 +328,14 @@ function PhotoStage({
   onController,
   onScale,
   onSwipe,
+  onFail,
 }: {
   media: ResolvedMedia;
   still: ResolvedImage;
   onController: (zp: ZoomPan | null) => void;
   onScale: (scale: number) => void;
   onSwipe?: (direction: 1 | -1) => void;
+  onFail: () => void;
 }) {
   const stageRef = useRef<HTMLDivElement>(null);
   const boxRef = useRef<HTMLDivElement>(null);
@@ -399,6 +412,7 @@ function PhotoStage({
               unoptimized={!canOptimize(still.src)}
               draggable={false}
               className={styles.img}
+              onError={onFail}
             />
           </div>
         )}
@@ -409,7 +423,7 @@ function PhotoStage({
 
 /** A video, an embed, or a 3D model: its own viewer, sized to fit the stage. */
 function PlayerItem({ item, takeFocus }: { item: ResolvedMedia; takeFocus: boolean }) {
-  const aspect = aspectOf(item, item.kind === 'model' ? 4 / 3 : 16 / 9);
+  const aspect = aspectOf(item, item.kind === 'model' ? 16 / 10 : 16 / 9);
   const style = { '--player-aspect': String(aspect) } as CSSProperties;
   return (
     <div className={styles.playerArea} data-lightbox-player="">
@@ -437,26 +451,26 @@ function PlayerFailed({ item }: { item: ResolvedMedia }) {
   const style = { aspectRatio: String(aspectOf(item, 16 / 9)) } as CSSProperties;
   return (
     <div>
-      <div className={styles.other} style={style}>
+      <div className={cn('ar-mv__well', styles.other)} style={style}>
         <Poster media={item} sizes="(min-width: 1024px) 900px, 100vw" />
       </div>
-      <div className={styles.caption}>
+      <p className={styles.caption}>
         <span className={styles.captionText}>{failureText(item.file)}</span>
-        <DownloadLink file={item.file} />
-      </div>
+        <DownloadLink file={item.file} onNight />
+      </p>
     </div>
   );
 }
 
-/** Any other kind: its poster or the placeholder; the download link sits in the footer. */
+/** Any other kind: its poster or the placeholder; the download link sits under the stage. */
 function OtherItem({ item }: { item: ResolvedMedia }) {
   const style = { aspectRatio: String(aspectOf(item, 4 / 3)) } as CSSProperties;
   return (
     <div className={styles.playerArea}>
-      <div className={styles.other} style={style}>
+      <div className={cn('ar-mv__well', styles.other)} style={style}>
         <Poster media={item} sizes="(min-width: 1024px) 900px, 100vw" />
       </div>
-      {item.alt && <p className="sr-only">{item.alt}</p>}
+      {item.alt && <p className="ar-sr">{item.alt}</p>}
     </div>
   );
 }

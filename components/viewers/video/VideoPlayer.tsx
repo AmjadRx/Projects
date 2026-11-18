@@ -3,6 +3,7 @@
 import dynamic from 'next/dynamic';
 import { Play } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import Icon from '@/components/sheet/Icon';
 import { aspectOf, type ResolvedFile } from '@/lib/media';
 import { UI } from '@/lib/strings';
 import { failureText } from '../shared/DownloadLink';
@@ -16,7 +17,7 @@ import type { VideoPlayerProps } from '../types';
 import { INITIAL_VIDEO_STATE, mergeState, type VideoEngineApi, type VideoState } from './contract';
 import EmbedPlayer from './EmbedPlayer';
 import { SEEK_STEP } from './time';
-import VideoControls from './VideoControls';
+import VideoControls, { FullscreenCorner } from './VideoControls';
 import styles from './VideoPlayer.module.css';
 
 /** The engine (the <video> element and what drives it) never ships in a page's first load. */
@@ -33,7 +34,7 @@ export default function VideoPlayer(props: VideoPlayerProps) {
 
 function Failure({ file }: { file: ResolvedFile }) {
   return (
-    <p className={styles.failure} role="status">
+    <p className="ar-mv__note" role="status">
       {failureText(file)}
     </p>
   );
@@ -159,11 +160,14 @@ function FilePlayer({ media, scrub = false, inLightbox = false, takeFocus = fals
     <div ref={rootRef} onKeyDown={onKeyDown}>
       <ViewerFrame
         label={UI.viewers.video.videoFallback}
+        kind={UI.viewers.kind.video}
         aspect={aspectOf(media, 16 / 9)}
         caption={media.caption}
+        fileName={media.file.name}
         description={media.alt || undefined}
-        download={media.file}
+        downloads={[{ file: media.file }]}
         allowFullscreen={false}
+        corner={ready ? <FullscreenCorner ready={ready} onToggle={toggleFullscreen} /> : undefined}
         toolbar={
           <VideoControls
             state={state}
@@ -175,7 +179,6 @@ function FilePlayer({ media, scrub = false, inLightbox = false, takeFocus = fals
             onPlay={togglePlay}
             onMute={() => apiRef.current?.toggleMute()}
             onCaptions={() => apiRef.current?.toggleCaptions()}
-            onFullscreen={toggleFullscreen}
           />
         }
       >
@@ -183,11 +186,7 @@ function FilePlayer({ media, scrub = false, inLightbox = false, takeFocus = fals
           {!state.started && (
             <div className={styles.poster}>
               {/* Without a poster, the bare grid while a button or status sits at the center. */}
-              {media.poster || !(waitingForTap || loading) ? (
-                <Poster media={media} />
-              ) : (
-                <div className="viewer-placeholder" aria-hidden="true" />
-              )}
+              {media.poster || !(waitingForTap || loading) ? <Poster media={media} /> : null}
             </div>
           )}
           {live && (
@@ -206,7 +205,7 @@ function FilePlayer({ media, scrub = false, inLightbox = false, takeFocus = fals
           {/* Clicking the picture plays and pauses; the toolbar is the keyboard path. */}
           <div className={styles.hit} onClick={togglePlay} aria-hidden="true" />
           {loading && !state.failed ? (
-            <span className={styles.status} aria-hidden="true">
+            <span className="ar-mv__note" aria-hidden="true">
               {UI.viewers.loading}
             </span>
           ) : (
@@ -214,12 +213,15 @@ function FilePlayer({ media, scrub = false, inLightbox = false, takeFocus = fals
             !state.failed &&
             !waitingForTap &&
             media.poster && (
-              <span className={styles.badge} aria-hidden="true">
-                <Play size={22} />
+              // The bundle's 56 px play plate over the poster; the bar's Play is the control.
+              <span className="ar-mv__play ar-mv__play--mark" aria-hidden="true">
+                <span className="ar-mv__btn">
+                  <Icon icon={Play} size={22} />
+                </span>
               </span>
             )
           )}
-          <span className="sr-only" role="status">
+          <span className="ar-sr" role="status">
             {loading && !state.failed ? UI.viewers.loading : ''}
           </span>
           {waitingForTap && (

@@ -1,13 +1,16 @@
+import Callout from '@/components/sheet/Callout';
 import Markdown from '@/components/ui/Markdown';
 import { UI } from '@/lib/strings';
 import type { BlockContext } from './context';
 
+/**
+ * A callout block (bundle Callout): the content's sentence on glass, `status` drawn in phantom
+ * line. The tone word ("Status", "Note") is read first by screen readers and is not drawn.
+ */
 export default function CalloutBlock({ tone, md, ctx }: { tone: 'note' | 'status'; md: string; ctx: BlockContext }) {
-  const label = tone === 'status' ? UI.callout.status : UI.callout.note;
   return (
-    <aside aria-label={label} className="rounded-sm border border-line border-l-2 border-l-accent bg-surface p-4 md:p-5">
-      <p className="mb-2 font-mono text-xs uppercase tracking-wider text-ink-mute">{label}</p>
+    <Callout tone={tone} label={tone === 'status' ? UI.callout.status : UI.callout.note}>
       <Markdown md={md} resolveLink={ctx.resolveLink} />
-    </aside>
+    </Callout>
   );
 }

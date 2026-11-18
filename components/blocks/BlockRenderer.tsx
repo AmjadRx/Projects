@@ -26,13 +26,17 @@ import TextBlock from './TextBlock';
 import VideoBlock from './VideoBlock';
 
 /**
- * Renders a list of blocks in order. A block of an unknown type renders nothing and never
- * throws (ARCHITECTURE.md 4), and a block with nothing to show renders nothing at all, not even
- * its wrapper (lib/blocks.ts). Heading levels come from what precedes each block: a `heading`
- * block sits at `ctx.level`, and a list heading after it one level deeper (docs/V3_PLAN.md D-67).
+ * Renders a list of blocks in order, in the project body's column (the canvas's pj-blocks: 24 px
+ * between blocks, a heading block 32 px more above it). A block of an unknown type renders
+ * nothing and never throws (ARCHITECTURE.md 4), and a block with nothing to show renders nothing
+ * at all, not even its wrapper (lib/blocks.ts). Heading levels come from what precedes each block:
+ * a `heading` block sits at `ctx.level`, and a list heading after it one level deeper
+ * (docs/V3_PLAN.md D-67). A spec table is named for screen readers by the heading before it, or by
+ * `ctx.label` (the project's title) when none precedes it.
  */
 export default function BlockRenderer({ blocks, ctx }: { blocks: Block[]; ctx: BlockContext }) {
   let headingSeen = false;
+  let lastHeading = '';
   const out: ReactNode[] = [];
   const repository = siteRepository();
 
@@ -40,8 +44,8 @@ export default function BlockRenderer({ blocks, ctx }: { blocks: Block[]; ctx: B
     if (!isKnownBlock(block)) return;
     if (!blockHasContent(block, repository)) return;
     const key = `${block.id}-${index}`;
-    const wrap = (node: ReactNode) => (
-      <div key={key} id={`${ctx.idPrefix}${block.id}`} data-block={block.type}>
+    const wrap = (node: ReactNode, className?: string) => (
+      <div key={key} id={`${ctx.idPrefix}${block.id}`} className={className} data-block={block.type}>
         {node}
       </div>
     );
@@ -49,6 +53,7 @@ export default function BlockRenderer({ blocks, ctx }: { blocks: Block[]; ctx: B
     switch (block.type) {
       case 'heading':
         headingSeen = true;
+        lastHeading = block.text;
         out.push(<HeadingBlock key={key} id={block.id} text={block.text} ctx={ctx} />);
         return;
       case 'text':
@@ -64,7 +69,7 @@ export default function BlockRenderer({ blocks, ctx }: { blocks: Block[]; ctx: B
         out.push(wrap(<VideoBlock media={block.media} scrub={block.scrub} />));
         return;
       case 'specTable':
-        out.push(wrap(<SpecTableBlock rows={block.rows} />));
+        out.push(wrap(<SpecTableBlock rows={block.rows} caption={lastHeading || ctx.label} />));
         return;
       case 'bullets':
         out.push(
@@ -82,7 +87,7 @@ export default function BlockRenderer({ blocks, ctx }: { blocks: Block[]; ctx: B
         const columnCtx = { ...ctx, level: headingSeen ? deeper(ctx.level) : ctx.level };
         out.push(
           wrap(
-            <div className="grid gap-8 md:grid-cols-2">
+            <div className="pj-two">
               <BlockRenderer blocks={block.left} ctx={columnCtx} />
               <BlockRenderer blocks={block.right} ctx={columnCtx} />
             </div>,
@@ -97,10 +102,10 @@ export default function BlockRenderer({ blocks, ctx }: { blocks: Block[]; ctx: B
         out.push(wrap(<LinkRowBlock links={block.links} ctx={ctx} />));
         return;
       case 'roadmap':
-        out.push(wrap(<RoadmapBlock stages={block.stages} />));
+        out.push(wrap(<RoadmapBlock stages={block.stages} label={ctx.label} />, 'pj-road'));
         return;
       case 'log':
-        out.push(wrap(<LogBlock id={block.id} entries={block.entries} ctx={ctx} />));
+        out.push(wrap(<LogBlock id={block.id} entries={block.entries} ctx={ctx} />, 'pj-log'));
         return;
       case 'file':
         out.push(wrap(<FileBlock label={block.label} src={block.src} note={block.note} />));
@@ -129,7 +134,7 @@ export default function BlockRenderer({ blocks, ctx }: { blocks: Block[]; ctx: B
         out.push(wrap(<PanzoomBlock media={block.media} />));
         return;
       case 'repo':
-        out.push(wrap(<RepoBlock url={block.url} />));
+        out.push(wrap(<RepoBlock url={block.url} title={ctx.label} />));
         return;
       default:
         return;
@@ -137,5 +142,5 @@ export default function BlockRenderer({ blocks, ctx }: { blocks: Block[]; ctx: B
   });
 
   if (out.length === 0) return null;
-  return <div className="flex flex-col gap-8 md:gap-10">{out}</div>;
+  return <div className="pj-blocks">{out}</div>;
 }

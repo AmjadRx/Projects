@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
-import { RotateCcw, ZoomIn, ZoomOut } from 'lucide-react';
+import { ZoomIn, ZoomOut } from 'lucide-react';
 import {
   useCallback,
   useEffect,
@@ -12,14 +12,17 @@ import {
   type CSSProperties,
   type ReactNode,
 } from 'react';
+import Icon from '@/components/sheet/Icon';
 import { aspectOf, extensionOf } from '@/lib/media';
 import { UI } from '@/lib/strings';
+import { cn } from '@/lib/utils';
 import { naturalSizeOf, stillOf } from '../image/still';
 import { failureText } from '../shared/DownloadLink';
 import Poster, { canOptimize } from '../shared/Poster';
 import TapToLoad from '../shared/TapToLoad';
 import ViewerErrorBoundary from '../shared/ViewerErrorBoundary';
 import ViewerFrame from '../shared/ViewerFrame';
+import { BODY_SIZES } from '../shared/sizes';
 import { useViewerActivation } from '../shared/useViewerActivation';
 import type { PanZoomProps } from '../types';
 import type { PanZoomHandle } from './PanZoomEngine';
@@ -28,7 +31,7 @@ import styles from './PanZoom.module.css';
 /** The pan, zoom, and overview code: a separate chunk, loaded when the viewer comes into view. */
 const PanZoomEngine = dynamic(() => import('./PanZoomEngine'), { ssr: false });
 
-const SIZES = '(min-width: 1280px) 1100px, 100vw';
+const SIZES = BODY_SIZES;
 const MAX_SCALE = 8;
 /** A drawing is never taller than this share of the window; a tall one gets a narrower frame. */
 const MAX_VH = 80;
@@ -36,7 +39,9 @@ const MAX_VH = 80;
 type Action = 'in' | 'out' | 'reset';
 
 /**
- * Pan and zoom for a schematic or a drawing (ARCHITECTURE.md 13A; DESIGN_DIRECTION.md 11).
+ * Pan and zoom for a schematic or a drawing (bundle DrawingViewer; ARCHITECTURE.md 13A): the bar
+ * holds zoom out, zoom in, Fit, and the hint "Drag to pan"; the mini-map sits in the well's
+ * bottom right corner while zoomed in.
  *
  * The drawing itself is the poster and paints with the page: an SVG through a plain image
  * element (which never runs scripts) at its own resolution, a raster drawing through next/image.
@@ -98,7 +103,9 @@ export default function PanZoom({ media }: PanZoomProps) {
 
   // Raster drawings ask for a sharper file once zoomed in; an SVG is drawn at every scale.
   const sizes =
-    sharpness === 1 ? SIZES : `(min-width: 1280px) ${1100 * sharpness}px, ${100 * sharpness}vw`;
+    sharpness === 1
+      ? SIZES
+      : `(min-width: 1312px) ${800 * sharpness}px, (min-width: 1024px) calc((66.67vw - 75px) * ${sharpness}), calc((100vw - 40px) * ${sharpness})`;
 
   const caps: string[] = [`calc(${MAX_VH}vh * ${ratio.toFixed(5)})`];
   if (natural && !vector) caps.push(`${natural.width}px`);
@@ -113,18 +120,18 @@ export default function PanZoom({ media }: PanZoomProps) {
         disabled={!ready || !zoomed}
         onPress={() => press('out')}
       >
-        <ZoomOut size={18} aria-hidden />
+        <Icon icon={ZoomOut} size={18} />
       </ToolButton>
       <ToolButton label={UI.viewers.zoomIn} disabled={ready && atMax} onPress={() => press('in')}>
-        <ZoomIn size={18} aria-hidden />
+        <Icon icon={ZoomIn} size={18} />
       </ToolButton>
       <ToolButton
-        label={UI.viewers.resetView}
+        label={UI.viewers.fitToFrame}
+        text={UI.viewers.fit}
         disabled={!ready || !zoomed}
         onPress={() => press('reset')}
-      >
-        <RotateCcw size={17} aria-hidden />
-      </ToolButton>
+      />
+      <span className="ar-mv__hint">{UI.viewers.panzoom.hint}</span>
     </>
   ) : undefined;
 
@@ -132,9 +139,11 @@ export default function PanZoom({ media }: PanZoomProps) {
     <div className={styles.frame} style={wrapperStyle}>
       <ViewerFrame
         label={UI.viewers.panzoom.label}
+        kind={UI.viewers.kind.drawing}
         aspect={ratio}
         caption={media.caption}
-        download={media.file}
+        fileName={media.file.name}
+        downloads={[{ file: media.file }]}
         toolbar={toolbar}
         allowFullscreen={!!still}
         maxWellHeight={`${MAX_VH}vh`}
@@ -177,7 +186,7 @@ export default function PanZoom({ media }: PanZoomProps) {
               )}
             </div>
             {active && (
-              <ViewerErrorBoundary fallback={<p className={styles.failed}>{failureText(media.file)}</p>}>
+              <ViewerErrorBoundary fallback={<p className="ar-mv__note">{failureText(media.file)}</p>}>
                 <PanZoomEngine
                   stageRef={stageRef}
                   boxRef={boxRef}
@@ -199,14 +208,14 @@ export default function PanZoom({ media }: PanZoomProps) {
                 }}
               />
             )}
-            <p id={hintId} className="sr-only">
+            <p id={hintId} className="ar-sr">
               {UI.viewers.panzoom.keys}
             </p>
           </div>
         ) : (
           <div ref={stageRef} className={styles.stage}>
             <Poster media={media} />
-            {media.alt && <p className="sr-only">{media.alt}</p>}
+            {media.alt && <p className="ar-sr">{media.alt}</p>}
           </div>
         )}
       </ViewerFrame>
@@ -220,30 +229,35 @@ function run(handle: PanZoomHandle, action: Action) {
   else handle.reset();
 }
 
-/** Stays focusable at a limit (aria-disabled), so focus is never dropped mid-use. */
+/**
+ * A bar button (bundle .ar-mv__btn) that stays focusable at a limit (aria-disabled), so focus is
+ * never dropped mid-use. With `text` it is the bundle's text button ("Fit"), named by its words.
+ */
 function ToolButton({
   label,
+  text,
   disabled,
   onPress,
   children,
 }: {
   label: string;
+  text?: string;
   disabled: boolean;
   onPress: () => void;
-  children: ReactNode;
+  children?: ReactNode;
 }) {
   return (
     <button
       type="button"
-      className="viewer-button"
-      aria-label={label}
+      className={cn('ar-mv__btn', text && 'ar-mv__btn--text')}
+      aria-label={text ? undefined : label}
       title={label}
       aria-disabled={disabled || undefined}
       onClick={() => {
         if (!disabled) onPress();
       }}
     >
-      {children}
+      {text ?? children}
     </button>
   );
 }

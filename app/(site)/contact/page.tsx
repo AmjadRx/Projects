@@ -1,21 +1,43 @@
 import type { Metadata } from 'next';
-import { FileText, Mail, MapPin } from 'lucide-react';
-import LinkIcon from '@/components/LinkIcon';
+import { ArrowUpRight, Calendar, Github, Globe, Linkedin, Mail, Phone, type LucideIcon } from 'lucide-react';
 import CopyAddress from '@/components/contact/CopyAddress';
-import { hasText } from '@/lib/format';
+import Button from '@/components/sheet/Button';
+import Glass from '@/components/sheet/Glass';
+import Icon from '@/components/sheet/Icon';
+import { hasText, isExternalUrl } from '@/lib/format';
 import { pageMetadata } from '@/lib/meta';
 import { navLabel, siteData, socialLinksFor } from '@/lib/site';
 import { UI } from '@/lib/strings';
+import type { SocialLink } from '@/lib/types';
+import { cn, detectIcon } from '@/lib/utils';
 
 export function generateMetadata(): Metadata {
   const { site } = siteData();
   return pageMetadata(site, { title: navLabel(site, '/contact', 'Contact'), description: site.seo.description, path: '/contact' });
 }
 
+/** Lucide outline glyphs for the contact links: the bundle allows the linkedin and github marks. */
+const CONTACT_ICONS: Record<string, LucideIcon> = {
+  linkedin: Linkedin,
+  github: Github,
+  mail: Mail,
+  calendar: Calendar,
+  phone: Phone,
+};
+
+function contactIcon(link: SocialLink): LucideIcon {
+  return CONTACT_ICONS[link.icon] ?? CONTACT_ICONS[detectIcon(link.url)] ?? Globe;
+}
+
 /**
  * Heading, body, the email button with a copy action, the contact links (LinkedIn, GitHub,
- * "Book a call", the phone number), the "Request my resume" button, and the location. No form,
- * and no resume file: the request button opens an email (ARCHITECTURE.md 4, 5).
+ * "Book a call", the phone number), the "Request my resume" button, and the location, in that
+ * order (ARCHITECTURE.md 5). No form, and no resume file: the request button opens an email
+ * (ARCHITECTURE.md 4).
+ *
+ * The Contact board's layout: from 1024 px the email panel holds the resume request too, and the
+ * links and the location sit in the right column. The reading order stays the order above, row by
+ * row; below 1024 px the parts stack in that order.
  */
 export default function ContactPage() {
   const { site } = siteData();
@@ -27,63 +49,65 @@ export default function ContactPage() {
     resume?.enabled && hasText(email) && hasText(resume.label)
       ? `mailto:${email}?subject=${encodeURIComponent(resume.subject)}&body=${encodeURIComponent(resume.body)}`
       : null;
+  const hasMain = hasText(contact.body) || hasText(email);
 
   return (
-    <div className="wrap py-12 md:py-16">
-      <h1 className="display-2 max-w-3xl">{hasText(contact.heading) ? contact.heading : navLabel(site, '/contact', 'Contact')}</h1>
-      {hasText(contact.body) && <p className="body-lg mt-5 max-w-2xl">{contact.body}</p>}
+    <div className="hm-wrap st-page">
+      <header className="st-head">
+        <h1 className="st-title">{hasText(contact.heading) ? contact.heading : navLabel(site, '/contact', 'Contact')}</h1>
+      </header>
 
-      {hasText(email) && (
-        <div className="mt-10 flex flex-col gap-4">
-          <p className="data break-all text-lg text-ink md:text-xl">{email}</p>
-          <div className="flex flex-wrap items-center gap-3">
-            <a href={`mailto:${email}`} className="btn-primary">
-              <Mail size={16} aria-hidden />
-              {UI.contact.emailMe}
-            </a>
-            <CopyAddress address={email} />
+      <div className={cn('st-contact__grid', hasMain && resumeHref && 'st-contact__grid--joined')}>
+        {hasMain ? (
+          <div className="st-contact__main">
+            {hasText(contact.body) ? <p className="hm-copy">{contact.body}</p> : null}
+            {hasText(email) ? (
+              <>
+                <p className="st-contact__addr">{email}</p>
+                <div className="st-contact__actions">
+                  <Button variant="primary" href={`mailto:${email}`} icon={Mail}>
+                    {UI.contact.emailMe}
+                  </Button>
+                  <CopyAddress
+                    address={email}
+                    labels={{ copy: UI.contact.copyAddress, copied: UI.contact.copied, failed: UI.contact.copyFailed }}
+                  />
+                </div>
+              </>
+            ) : null}
           </div>
-        </div>
-      )}
+        ) : null}
 
-      {links.length > 0 && (
-        <section className="mt-12" aria-labelledby="elsewhere-title">
-          <h2 id="elsewhere-title" className="text-xl font-semibold">
-            {UI.contact.elsewhere}
-          </h2>
-          <ul className="mt-4 flex flex-col gap-1">
+        {links.length > 0 ? (
+          <Glass as="ul" pad={false} className="st-links" aria-label={UI.contact.elsewhere}>
             {links.map((link) => (
               <li key={link.id}>
-                <a
-                  href={link.url}
-                  rel={link.url.startsWith('http') ? 'noopener noreferrer' : undefined}
-                  className="text-link inline-flex min-h-[44px] items-center gap-3 text-lg"
-                >
-                  <LinkIcon icon={link.icon} size={18} />
-                  {link.label}
+                <a href={link.url} rel={isExternalUrl(link.url) ? 'noopener noreferrer' : undefined}>
+                  <Icon icon={contactIcon(link)} size={20} />
+                  <span className="st-links__label">{link.label}</span>
+                  <span className="st-links__go" aria-hidden="true">
+                    <Icon icon={ArrowUpRight} size={18} />
+                  </span>
                 </a>
               </li>
             ))}
-          </ul>
-        </section>
-      )}
+          </Glass>
+        ) : null}
 
-      {resumeHref && resume && (
-        <div className="mt-10">
-          <a href={resumeHref} className="btn-ghost">
-            <FileText size={16} aria-hidden />
-            {resume.label}
-          </a>
-        </div>
-      )}
+        {resumeHref && resume ? (
+          <div className="st-contact__resume">
+            <Button variant="secondary" href={resumeHref}>
+              {resume.label}
+            </Button>
+          </div>
+        ) : null}
 
-      {hasText(personal.location) && (
-        <p className="mt-10 inline-flex items-center gap-2 text-ink-dim">
-          <MapPin size={16} aria-hidden />
-          <span className="sr-only">{UI.contact.location}: </span>
-          {personal.location}
-        </p>
-      )}
+        {hasText(personal.location) ? (
+          <dl className="st-loc">
+            <dt>{UI.contact.location}</dt> <dd>{personal.location}</dd>
+          </dl>
+        ) : null}
+      </div>
     </div>
   );
 }

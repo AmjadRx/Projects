@@ -1,0 +1,31 @@
+/*
+ * Interim: the v2 admin's helper classes, on the design tokens. No public page uses this file (Phase 4
+ * restyled them on app/sheet.css and app/styles/*). Do not add to it, and do not use these classes in
+ * new markup. It goes when Phase 6 rebuilds the admin.
+ */
+
+.kicker { font-family: var(--font-mono); font-size: 13px; line-height: 1.54; letter-spacing: 0.04em; color: var(--ink-dim); }
+
+.btn-primary, .btn-ghost {
+  display: inline-flex; min-height: 48px; align-items: center; justify-content: center; gap: var(--space-2);
+  padding: 0 var(--space-5); border: 1px solid transparent; border-radius: var(--radius);
+  font-size: 15px; line-height: 1.2; font-weight: 600; font-variation-settings: "wdth" 112; text-decoration: none; cursor: pointer;
+}
+.btn-primary { background-color: var(--action); color: var(--on-action); }
+.btn-ghost { border-color: var(--line); color: var(--ink); background-color: var(--glass); }
+.btn-ghost:hover { background-color: var(--sheet-3); }
+
+.pill {
+  display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.25rem 0.75rem; border-radius: var(--radius);
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.05em; color: var(--ink-dim);
+  border: 1px solid var(--rule); background-color: var(--sheet-2);
+}
+.card { border: 1px solid var(--rule); border-radius: var(--radius); background-color: var(--sheet-2); box-shadow: var(--shadow-card); }
+.input {
+  width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--ink-mute); border-radius: var(--radius);
+  background-color: var(--sheet-2); color: var(--ink); font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.25rem;
+}
+.input::placeholder { color: var(--ink-mute); }
+.input:focus { outline: none; border-color: var(--line); box-shadow: 0 0 0 3px color-mix(in srgb, var(--line) 20%, transparent); }
+.textarea { min-height: 90px; resize: vertical; line-height: 1.6; }
+.label { display: block; margin-bottom: 0.375rem; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-mute); }

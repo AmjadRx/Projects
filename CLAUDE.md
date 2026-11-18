@@ -105,6 +105,9 @@ This repository builds amjadrehawi.com for its owner, Amjad Rehawi. Version 3 is
 - Client components never receive whole content records: pass small objects built on the server, so a hidden project or an empty field cannot leak through props.
 - Content links go through `lib/links.ts`: a link to a hidden or unknown page prints as plain text. Media goes through `resolveMedia` in `lib/media-server.ts`, which returns nothing for an empty `src`.
 - Every viewer sits in `components/viewers/`, paints its poster first, and loads its engine through `useViewerActivation` and a dynamic import. After adding one, check that no three.js, pdf.js, docx-preview, or shiki code is in any first load (the route table that `next build` prints, and `.next/app-build-manifest.json`).
+- Every token value lives in `app/tokens.css`, the only file with hex values. Components use the design bundle's `ar-*` classes in `app/sheet.css` and the building blocks in `components/sheet/`; page styles live in `app/styles/`. `app/legacy.css` serves only the v2 admin until Phase 6.
+- Page layout uses container queries on the page frame (`@container frame (min-width: 1024px)` and so on), never viewport media queries: with a classic scrollbar the frame is narrower than the window, and the chrome follows the frame.
+- The thermal ramp (`--t0` to `--t6` and the `--heat` gradients) appears only in the eight places of `DESIGN_DIRECTION.md` 2.4, and a page has one filled amber element, its primary `Button`.
 - Run `npm test` before every commit, and `npm run test:build` after changes to pages, metadata, JSON-LD, or the sitemap.
 - `/dev/blocks` and `public/dev/samples/` are for testing the viewers and are removed before release.
 - `next dev` or `next build` with `NEXT_DIST_DIR` adds an entry to `tsconfig.json`; restore that file before committing.

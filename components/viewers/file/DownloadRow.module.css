@@ -1,0 +1,65 @@
+/*
+ * A file row in the media frame's family (app/sheet.css 25): a glass panel with a 1 px rule, the
+ * file's mark on a small night well, its label, note, type and size, and a secondary Download
+ * button. Nothing here animates. The row wraps on a narrow frame.
+ */
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3) var(--space-4);
+  padding: var(--space-4) var(--space-5);
+}
+
+@container frame (max-width: 767px) {
+  .row {
+    padding: var(--space-3) var(--space-4);
+  }
+}
+
+.mark {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  border-radius: var(--radius);
+  background-color: var(--night);
+  color: var(--on-night);
+}
+
+.text {
+  display: grid;
+  flex: 1 1 11rem;
+  gap: 2px;
+  min-width: 0;
+}
+
+.label {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.35;
+  font-weight: 600;
+  font-variation-settings: "wdth" 112;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.note {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--ink-dim);
+}
+
+.details {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-mute);
+}
+
+.button {
+  flex: none;
+}

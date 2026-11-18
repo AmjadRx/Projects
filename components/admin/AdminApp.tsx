@@ -74,7 +74,7 @@ function Login({ onAuthed }: { onAuthed: () => void }) {
         <button type="submit" disabled={busy || !password} className="btn-primary mt-5 w-full disabled:opacity-40">
           {busy ? 'Checking…' : 'Unlock'}
         </button>
-        <a href="/" className="mt-5 block text-center font-mono text-[11px] uppercase tracking-widest text-ink-mute hover:text-accent">
+        <a href="/" className="mt-5 block text-center font-mono text-[11px] uppercase tracking-widest text-ink-mute hover:text-line">
           ← Back to site
         </a>
       </form>
@@ -216,15 +216,15 @@ export default function AdminApp() {
   return (
     <div className="min-h-screen pb-28">
       <aside
-        className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col bg-surface md:flex"
-        style={{ borderRight: '1px solid var(--line)' }}
+        className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col bg-sheet-2 md:flex"
+        style={{ borderRight: '1px solid var(--rule)' }}
       >
-        <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid var(--line)' }}>
+        <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid var(--rule)' }}>
           <div>
             <p className="kicker">Admin</p>
             <p className="text-sm font-semibold text-ink">amjadrehawi.com</p>
           </div>
-          <button onClick={logout} aria-label="Sign out" className="text-ink-mute hover:text-accent">
+          <button onClick={logout} aria-label="Sign out" className="text-ink-mute hover:text-line">
             <LogOut size={15} />
           </button>
         </div>
@@ -235,22 +235,22 @@ export default function AdminApp() {
               onClick={() => setTab(t.id)}
               className={cn(
                 'block w-full rounded-sm px-3 py-2 text-left text-sm transition-colors',
-                tab === t.id ? 'bg-accent/10 font-medium text-accent' : 'text-ink-dim hover:bg-surface-2 hover:text-ink',
+                tab === t.id ? 'bg-line/10 font-medium text-line' : 'text-ink-dim hover:bg-sheet-3 hover:text-ink',
               )}
             >
               {t.label}
             </button>
           ))}
         </nav>
-        <div className="p-4" style={{ borderTop: '1px solid var(--line)' }}>
-          <a href="/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-ink-mute hover:text-accent">
+        <div className="p-4" style={{ borderTop: '1px solid var(--rule)' }}>
+          <a href="/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-ink-mute hover:text-line">
             <ExternalLink size={12} /> View site
           </a>
         </div>
       </aside>
 
       {/* mobile tab strip */}
-      <div className="sticky top-0 z-40 overflow-x-auto bg-surface md:hidden" style={{ borderBottom: '1px solid var(--line)' }}>
+      <div className="sticky top-0 z-40 overflow-x-auto bg-sheet-2 md:hidden" style={{ borderBottom: '1px solid var(--rule)' }}>
         <div className="flex gap-1 p-2">
           {TABS.map((t) => (
             <button
@@ -258,7 +258,7 @@ export default function AdminApp() {
               onClick={() => setTab(t.id)}
               className={cn(
                 'whitespace-nowrap rounded-sm px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider',
-                tab === t.id ? 'bg-accent/10 text-accent' : 'text-ink-mute',
+                tab === t.id ? 'bg-line/10 text-line' : 'text-ink-mute',
               )}
             >
               {t.label}
@@ -297,8 +297,8 @@ export default function AdminApp() {
       </main>
 
       <div
-        className="fixed inset-x-0 bottom-0 z-40 bg-surface/90 backdrop-blur md:left-60"
-        style={{ borderTop: '1px solid var(--line)' }}
+        className="fixed inset-x-0 bottom-0 z-40 bg-sheet-2/90 backdrop-blur md:left-60"
+        style={{ borderTop: '1px solid var(--rule)' }}
       >
         <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-4 px-5 py-3 md:px-10">
           <div className="min-w-0">
@@ -307,13 +307,13 @@ export default function AdminApp() {
             ) : saving ? (
               <span className="font-mono text-xs text-ink-dim">Committing…</span>
             ) : dirty ? (
-              <span className="font-mono text-xs text-accent-2">● Unsaved changes</span>
+              <span className="font-mono text-xs text-action">● Unsaved changes</span>
             ) : savedMode === 'github' ? (
-              <span className="font-mono text-xs text-accent">
+              <span className="font-mono text-xs text-line">
                 ✓ Saved and committed. Site rebuilds in ~1 to 2 min.
               </span>
             ) : savedMode === 'fs' ? (
-              <span className="font-mono text-xs text-accent">✓ Saved to local files.</span>
+              <span className="font-mono text-xs text-line">✓ Saved to local files.</span>
             ) : (
               <span className="font-mono text-xs text-ink-mute">All changes saved</span>
             )}

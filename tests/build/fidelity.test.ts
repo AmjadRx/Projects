@@ -193,7 +193,9 @@ describe('every page renders the content exactly', () => {
       thesis.kicker,
       thesis.headline,
       thesis.body,
-      ...thesis.pillars.flatMap((p) => [p.k, p.title, p.desc]),
+      // A pillar's key (the letters A to D) is not drawn: the design shows each pillar by its title
+      // (Phase 4). A one-letter key could not be checked here anyway, since any page holds it.
+      ...thesis.pillars.flatMap((p) => [p.title, p.desc]),
       ...site.now.map((n) => n.label),
       ...projects.flatMap((p) => [p.title, p.pitch, statusText(p), p.maturity?.label ?? '']),
       site.about.heading,
@@ -225,7 +227,11 @@ describe('every page renders the content exactly', () => {
 
   it('home: each readout prints its value and its label together, in content order', () => {
     const main = mainHtml('/');
-    const list = main.slice(main.indexOf('id="readouts-title"'), main.indexOf('id="thesis-title"'));
+    // A linked readout also names its proof's project for screen readers (a visually hidden span
+    // after the label); the visible text of each tile is what is compared.
+    const list = main
+      .slice(main.indexOf('id="readouts-title"'), main.indexOf('id="thesis-title"'))
+      .replace(/<span class="ar-sr">[\s\S]*?<\/span>/g, '');
     const shown = site.stats.filter((s) => hasText(s.value) && hasText(s.label));
     expect(elementTexts(list, 'li')).toEqual(shown.map((s) => `${statText(s)} ${s.label}`));
   });

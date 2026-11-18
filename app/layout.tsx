@@ -1,24 +1,50 @@
 import type { Metadata, Viewport } from 'next';
-import { JetBrains_Mono, Space_Grotesk } from 'next/font/google';
+import localFont from 'next/font/local';
 import { Analytics } from '@vercel/analytics/next';
 import { loadSite } from '@/lib/content';
 import { hasText } from '@/lib/format';
 import { siteUrl } from '@/lib/site';
+import { themeFromSetting, themeScript } from '@/lib/theme';
+import { tokenValue } from '@/lib/tokens';
+// The order matters: see app/globals.css.
+import './tokens.css';
 import './globals.css';
+import './sheet.css';
+import './styles/frame.css';
+import './styles/home.css';
+import './styles/project.css';
+import './styles/site.css';
+import './legacy.css';
+import './utilities.css';
 
-// Phase 1 replaces these with Archivo and B612 Mono (docs/V3_PLAN.md Q-16).
-const display = Space_Grotesk({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
+/*
+ * The two faces of the design system, self-hosted from the Claude Design bundle's files in
+ * app/fonts/ (SIL Open Font License 1.1; the licence texts are in licenses/). next/font serves
+ * them from this site with a metric-matched fallback, so the swap moves nothing. The loaders stay
+ * in this file: next/font preloads a font only for the layout or page that calls its loader.
+ *
+ * Archivo is one variable file with a weight axis (100 to 900) and a width axis (62 to 125), set
+ * with font-variation-settings ("wdth" 100 for body, 112 to 125 for headlines). B612 Mono is for
+ * data only (tables, the title block, readouts, dates, callouts); it is not preloaded, because no
+ * first view depends on it. Their variables are read by --font-sans and --font-mono in tokens.css.
+ */
+const archivo = localFont({
+  src: './fonts/Archivo-Variable.woff2',
+  weight: '100 900',
+  style: 'normal',
   display: 'swap',
-  variable: '--font-display',
+  variable: '--font-archivo',
+  declarations: [{ prop: 'font-stretch', value: '62% 125%' }],
 });
 
-const mono = JetBrains_Mono({
-  subsets: ['latin'],
-  weight: ['400', '500'],
+const b612Mono = localFont({
+  src: [
+    { path: './fonts/B612Mono-Regular.woff2', weight: '400', style: 'normal' },
+    { path: './fonts/B612Mono-Bold.woff2', weight: '700', style: 'normal' },
+  ],
   display: 'swap',
-  variable: '--font-mono',
+  preload: false,
+  variable: '--font-b612-mono',
 });
 
 /** Site-wide defaults from content: `seo.title`, `seo.description`, and the owner's name. */
@@ -38,30 +64,32 @@ export function generateMetadata(): Metadata {
   };
 }
 
-export const viewport: Viewport = {
-  themeColor: [
-    { media: '(prefers-color-scheme: dark)', color: '#0b0e14' },
-    { media: '(prefers-color-scheme: light)', color: '#f8f9fb' },
-  ],
-  width: 'device-width',
-  initialScale: 1,
-};
+/** The browser's color around the page: each theme's sheet, from app/tokens.css. */
+export function generateViewport(): Viewport {
+  const blueprint = tokenValue('sheet', 'blueprint');
+  const whiteprint = tokenValue('sheet', 'whiteprint');
+  return {
+    width: 'device-width',
+    initialScale: 1,
+    ...(blueprint && whiteprint
+      ? {
+          themeColor: [
+            { media: '(prefers-color-scheme: dark)', color: blueprint },
+            { media: '(prefers-color-scheme: light)', color: whiteprint },
+          ],
+        }
+      : {}),
+  };
+}
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  // `themeDefault` is validated by the schema ("dark" or "light"), so it is safe in the script.
-  const themeDefault = loadSite().settings.themeDefault;
-  // Runs before paint: the visitor's own choice (a cookie) wins, else the content's default.
-  const themeScript = `(function () { var d = '${themeDefault}'; try { var m = document.cookie.match(/(?:^|; )theme=(dark|light)/); document.documentElement.dataset.theme = m ? m[1] : d; } catch (e) { document.documentElement.dataset.theme = d; } })();`;
+  // Blueprint unless the content sets "light"; the visitor's own choice (the cookie) wins in the script.
+  const theme = themeFromSetting(loadSite().settings.themeDefault);
 
   return (
-    <html
-      lang="en"
-      data-theme={themeDefault}
-      className={`${display.variable} ${mono.variable}`}
-      suppressHydrationWarning
-    >
+    <html lang="en" data-theme={theme} className={`${archivo.variable} ${b612Mono.variable}`} suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <script dangerouslySetInnerHTML={{ __html: themeScript(theme) }} />
       </head>
       <body>
         {children}

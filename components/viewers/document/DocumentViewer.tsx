@@ -1,6 +1,7 @@
 'use client';
 
 import { UI } from '@/lib/strings';
+import { captionLine } from '../shared/caption';
 import type { DocumentViewerProps } from '../types';
 import PdfReader from './PdfReader';
 import WordReader from './WordReader';
@@ -17,17 +18,10 @@ import WordReader from './WordReader';
 export default function DocumentViewer({ media, title, docType }: DocumentViewerProps) {
   const name = title?.trim() || undefined;
   const label = name ?? UI.viewers.document.documentFallback;
-  const caption = captionLine(name, media.caption?.trim() || undefined);
+  const caption = captionLine(name, media.caption);
   return docType === 'docx' ? (
     <WordReader media={media} label={label} caption={caption} />
   ) : (
     <PdfReader media={media} label={label} caption={caption} />
   );
-}
-
-/** "Name: caption", or whichever of the two exists. */
-function captionLine(name: string | undefined, caption: string | undefined): string | undefined {
-  if (!name) return caption;
-  if (!caption) return name;
-  return /[.:;?!]$/.test(name) ? `${name} ${caption}` : `${name}: ${caption}`;
 }

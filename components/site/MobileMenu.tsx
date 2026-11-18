@@ -1,121 +1,176 @@
 'use client';
 
-import { Menu, X } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowRight, Menu, X } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { usePathname } from 'next/navigation';
-import LinkIcon from '@/components/LinkIcon';
+import AvailabilityBadge from '@/components/sheet/AvailabilityBadge';
+import Icon from '@/components/sheet/Icon';
+import TextLink from '@/components/sheet/TextLink';
 import { useFocusTrap } from '@/components/viewers/shared/hooks';
-import NavLinks, { type NavItem } from './NavLinks';
-import ThemeToggle, { type ThemeLabels } from './ThemeToggle';
+import type { Theme } from '@/lib/theme';
+import { currentValue, type NavItem } from './NavLinks';
+import ThemeToggle, { type ThemeToggleLabels } from './ThemeToggle';
 
 export interface MenuSocial {
   label: string;
   url: string;
-  icon: string;
+  external: boolean;
 }
 
-export interface MenuLabels extends ThemeLabels {
-  open: string;
+export interface MenuLabels {
+  /** The button's word and the dialog's name ("Menu"). */
+  menu: string;
+  /** The close button's word ("Close"). */
   close: string;
-  title: string;
+  /** The nav landmark's name. */
   nav: string;
-  home: string;
+  theme: ThemeToggleLabels;
 }
 
-/** The width from which the inline nav shows and this menu is hidden (Tailwind's `lg`). */
-const WIDE = '(min-width: 1024px)';
+/** The container width (the page frame, .ar-frame) from which the inline nav shows and this menu hides. */
+const WIDE = 1024;
 
 /**
- * The phone and tablet menu: a full-screen sheet with a focus trap that closes on Escape, on a
- * link, on its close button, and when the window becomes wide enough for the inline nav (a tablet
- * turned sideways), and returns focus to the menu button (docs/V3_PLAN.md D-63). No animation in
- * this phase. The labels come from the server (lib/strings.ts).
+ * The phone and tablet menu (bundle MobileMenu, bundle.css 19), under 1024 px: the Menu button in
+ * the nav and a full-screen glass sheet with the name, Close, the nav links (28 px, the current
+ * page in the line color), the nav's social links, the full theme toggle, and the availability
+ * badge. It opens at once (the unroll is Phase 5).
+ *
+ * A modal dialog with the shared focus trap: focus moves to Close, Tab stays inside, Escape closes,
+ * focus returns to the Menu button, and the page does not scroll behind it. It also closes on a
+ * link, on a route change, and when the page frame reaches 1024 px (a tablet turned sideways),
+ * measured on the frame itself so it agrees with the container queries that hide the button
+ * (docs/V3_PLAN.md D-63). The sheet is drawn in a portal on <body>, outside the frame. Every word
+ * comes from the server (lib/strings.ts).
  */
-export default function MobileMenu({ items, socials, labels }: { items: NavItem[]; socials: MenuSocial[]; labels: MenuLabels }) {
+export default function MobileMenu({
+  name,
+  items,
+  socials,
+  availability,
+  labels,
+  initialTheme,
+}: {
+  name: string;
+  items: NavItem[];
+  socials: MenuSocial[];
+  /** The hiring line, only when the setting shows it. */
+  availability?: string;
+  labels: MenuLabels;
+  initialTheme: Theme;
+}) {
   const [open, setOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
-  const titleId = useId();
-  const pathname = usePathname();
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const menuId = useId();
+  const pathname = usePathname() ?? '/';
 
-  useFocusTrap(panelRef, open, () => setOpen(false));
+  useFocusTrap(panelRef, open, () => setOpen(false), { initialFocus: closeRef });
 
   useEffect(() => {
     setOpen(false);
   }, [pathname]);
 
-  // The sheet is hidden from the `lg` width up, so an open menu would keep the page locked with
-  // no visible way out. Close it as soon as the window reaches that width.
+  // An open menu on a frame that has become wide would leave the page locked behind a hidden
+  // button. Close it as soon as the frame reaches the width of the inline nav.
   useEffect(() => {
-    if (!open) return;
-    const query = window.matchMedia(WIDE);
-    if (query.matches) {
+    if (!open) return undefined;
+    const frame = buttonRef.current?.closest<HTMLElement>('.ar-frame') ?? null;
+    const wide = () => (frame ? frame.getBoundingClientRect().width : window.innerWidth) >= WIDE;
+    if (wide()) {
       setOpen(false);
-      return;
+      return undefined;
     }
-    const onChange = (event: MediaQueryListEvent) => {
-      if (event.matches) setOpen(false);
+    const check = () => {
+      if (wide()) setOpen(false);
     };
-    query.addEventListener('change', onChange);
-    return () => query.removeEventListener('change', onChange);
+    if (frame && typeof ResizeObserver !== 'undefined') {
+      const observer = new ResizeObserver(check);
+      observer.observe(frame);
+      return () => observer.disconnect();
+    }
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
   }, [open]);
+
+  const close = () => setOpen(false);
 
   return (
     <>
       <button
+        ref={buttonRef}
         type="button"
-        className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-sm text-ink lg:hidden"
-        aria-expanded={open}
+        className="ar-menubtn"
         aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-controls={open ? menuId : undefined}
         onClick={() => setOpen(true)}
       >
-        <Menu size={20} aria-hidden />
-        <span className="sr-only">{labels.open}</span>
+        <span>{labels.menu}</span>
+        <Icon icon={Menu} size={20} />
       </button>
-      {open && (
-        <div
-          ref={panelRef}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby={titleId}
-          className="fixed inset-0 z-50 flex flex-col overflow-y-auto bg-bg lg:hidden"
-        >
-          <div className="wrap flex min-h-[64px] items-center justify-between border-b border-line">
-            <p id={titleId} className="font-medium text-ink">
-              {labels.title}
-            </p>
-            <button
-              type="button"
-              className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-sm text-ink"
-              onClick={() => setOpen(false)}
-            >
-              <X size={20} aria-hidden />
-              <span className="sr-only">{labels.close}</span>
-            </button>
-          </div>
-          <nav aria-label={labels.nav} className="wrap py-6">
-            <NavLinks
-              items={[{ label: labels.home, href: '/' }, ...items]}
-              className="flex flex-col gap-1"
-              linkClassName="text-2xl"
-              onNavigate={() => setOpen(false)}
-            />
-          </nav>
-          <div className="wrap mt-auto flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-line py-6">
-            {socials.map((social) => (
-              <a
-                key={social.url}
-                href={social.url}
-                rel="noopener noreferrer"
-                className="inline-flex min-h-[44px] items-center gap-2 text-ink-dim hover:text-ink"
-              >
-                <LinkIcon icon={social.icon} size={18} />
-                <span>{social.label}</span>
-              </a>
-            ))}
-            <ThemeToggle labels={labels} withLabel />
-          </div>
-        </div>
-      )}
+      {open
+        ? createPortal(
+            <div ref={panelRef} id={menuId} className="ar-mmenu" role="dialog" aria-modal="true" aria-label={labels.menu}>
+              <div className="ar-mmenu__roll">
+                <div className="ar-mmenu__sheet">
+                  <div className="ar-mmenu__top">
+                    <Link href="/" className="ar-nav__name" onClick={close}>
+                      {name}
+                    </Link>
+                    <button ref={closeRef} type="button" className="ar-menubtn" onClick={close}>
+                      <span>{labels.close}</span>
+                      <Icon icon={X} size={20} />
+                    </button>
+                  </div>
+                  <nav aria-label={labels.nav}>
+                    <ul className="ar-mmenu__links">
+                      {items.map((item) => (
+                        <li key={item.href}>
+                          {item.external ? (
+                            <a href={item.href} rel="noopener noreferrer" className="ar-mmenu__link" onClick={close}>
+                              <span>{item.label}</span>
+                              <Icon icon={ArrowRight} size={22} />
+                            </a>
+                          ) : (
+                            <Link
+                              href={item.href}
+                              aria-current={currentValue(pathname, item.href)}
+                              className="ar-mmenu__link"
+                              onClick={close}
+                            >
+                              <span>{item.label}</span>
+                              <Icon icon={ArrowRight} size={22} />
+                            </Link>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </nav>
+                  <div className="ar-mmenu__foot">
+                    {socials.length > 0 ? (
+                      <ul className="ar-mmenu__social">
+                        {socials.map((social) => (
+                          <li key={social.url}>
+                            <TextLink href={social.url} variant="standalone" external={social.external}>
+                              {social.label}
+                            </TextLink>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
+                    <ThemeToggle variant="full" labels={labels.theme} initial={initialTheme} />
+                    {availability ? <AvailabilityBadge text={availability} /> : null}
+                  </div>
+                </div>
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
     </>
   );
 }

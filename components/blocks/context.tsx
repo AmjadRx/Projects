@@ -10,6 +10,11 @@ export interface BlockContext {
   level: HeadingLevel;
   /** Prefix for element ids, so anchors stay unique when blocks from several projects meet. */
   idPrefix: string;
+  /**
+   * The name of what the blocks belong to (the project's title), for names screen readers hear:
+   * a spec table's caption when no heading precedes it, and a roadmap's name.
+   */
+  label?: string;
 }
 
 export function deeper(level: HeadingLevel): HeadingLevel {

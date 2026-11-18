@@ -1,6 +1,11 @@
 import Image from 'next/image';
 import { Box, FileText, Film, Image as ImageIcon, Music } from 'lucide-react';
-import { extensionOf, isRemoteUrl, objectPosition, type MediaKind, type ResolvedMedia } from '@/lib/media';
+import Icon from '@/components/sheet/Icon';
+import { canOptimize, drawnFraction, objectPosition, scaleSizes, type MediaKind, type ResolvedMedia } from '@/lib/media';
+import { BODY_SIZES } from './sizes';
+
+/** Lives in lib/media.ts (Phase 4); exported here too for the viewers that import it from this file. */
+export { canOptimize };
 
 const KIND_ICONS: Record<MediaKind, typeof Box> = {
   image: ImageIcon,
@@ -12,48 +17,40 @@ const KIND_ICONS: Record<MediaKind, typeof Box> = {
 };
 
 /**
- * True when next/image may optimize the file: local files, and files on the owner's own Blob
- * store when its host is configured (next.config.mjs). SVG and other remote files are served as
- * they are.
- */
-export function canOptimize(src: string): boolean {
-  if (extensionOf(src) === 'svg') return false;
-  if (!isRemoteUrl(src)) return true;
-  const blobHost = process.env.NEXT_PUBLIC_BLOB_STORE_HOST;
-  if (!blobHost) return false;
-  try {
-    return new URL(src).hostname === blobHost;
-  } catch {
-    return false;
-  }
-}
-
-/**
- * The still image a viewer paints first. With no poster it draws a quiet placeholder with the
- * kind's icon and the file type, so the well never looks broken and never shifts the layout.
- * Works in server and client components.
+ * The still image a viewer paints first. With no poster it draws the well's quiet placeholder
+ * (bundle .ar-mv__ph): the kind's mark and the file type in on-night-dim over the grid, so the well
+ * never looks broken and never shifts the layout. Works in server and client components.
+ *
+ * `sizes` describes the well (a viewer in the project body by default); with `wellAspect`, a
+ * contained poster narrower than its well asks for the share of that width it is drawn at.
  */
 export default function Poster({
   media,
-  sizes = '(min-width: 1280px) 1200px, 100vw',
+  sizes = BODY_SIZES,
   fit = 'contain',
   priority = false,
   showType = true,
+  wellAspect,
 }: {
   media: ResolvedMedia;
   sizes?: string;
   fit?: 'contain' | 'cover';
   priority?: boolean;
   showType?: boolean;
+  /** The well's width over height. */
+  wellAspect?: number;
 }) {
   const poster = media.poster;
   if (poster) {
+    const natural =
+      poster.width && poster.height ? { width: poster.width, height: poster.height } : undefined;
+    const drawn = fit === 'contain' && wellAspect ? scaleSizes(sizes, drawnFraction(natural, wellAspect)) : sizes;
     return (
       <Image
         src={poster.src}
         alt=""
         fill
-        sizes={sizes}
+        sizes={drawn}
         priority={priority}
         unoptimized={!canOptimize(poster.src)}
         className={fit === 'cover' ? 'object-cover' : 'object-contain'}
@@ -61,11 +58,10 @@ export default function Poster({
       />
     );
   }
-  const Icon = KIND_ICONS[media.kind] ?? FileText;
   return (
-    <div className="viewer-placeholder" aria-hidden>
-      <Icon size={36} strokeWidth={1.25} />
-      {showType && <span className="viewer-placeholder__label">{media.file.typeLabel}</span>}
+    <div className="ar-mv__ph" aria-hidden="true">
+      <Icon icon={KIND_ICONS[media.kind] ?? FileText} size={32} strokeWidth={1.25} />
+      {showType && <span>{media.file.typeLabel}</span>}
     </div>
   );
 }

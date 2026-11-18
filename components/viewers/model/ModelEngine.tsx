@@ -7,8 +7,9 @@
  *
  * - Realistic: the model's own physically based materials, lit by a procedural room environment
  *   (no file and no CDN), with a contact shadow.
- * - Blueprint: edge lines and silhouettes in the link color on the panel color; the fill hides
- *   hidden edges; the block's callouts are drawn as leaders to labels in the data type.
+ * - Blueprint: edge lines and silhouettes in the night's line color over the night well and its
+ *   grid (bundle ModelViewer); the fill, in the night, hides hidden edges; the block's callouts
+ *   are drawn as leaders to labels in the data type on night plates.
  * - Thermal: an illustrative shader on the seven ramp stops. The shell shows the caption.
  *
  * Rendering is on demand: a frame is drawn only when something changes, continuously only while
@@ -34,11 +35,9 @@ import {
 } from 'react';
 import {
   Box3,
-  Color,
   NeutralToneMapping,
   PMREMGenerator,
   Spherical,
-  SRGBColorSpace,
   TOUCH,
   Vector3,
   type Camera,
@@ -48,7 +47,6 @@ import {
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { UI } from '@/lib/strings';
-import { cn } from '@/lib/utils';
 import { useViewerFrame } from '../shared/ViewerFrame';
 import type { ModelView } from '../types';
 import { ROTATE_STEP, ZOOM_STEP, type EngineHandle, type EnginePart, type ModelEngineProps } from './engine-types';
@@ -260,7 +258,7 @@ export default function ModelEngine({
         aria-label={UI.viewers.model.modelFallback}
         aria-describedby={descriptionId ? `${descriptionId} ${hintId}` : hintId}
         tabIndex={ready ? 0 : -1}
-        className={cn('absolute inset-0', styles.surface)}
+        className={styles.surface}
         onPointerDownCapture={onPointerDownCapture}
         onPointerLeave={onPointerLeave}
         onWheelCapture={onWheelCapture}
@@ -294,7 +292,7 @@ export default function ModelEngine({
       {callouts.length > 0 && palette && (
         <CalloutLayer callouts={callouts} nodes={calloutNodes} palette={palette} visible={ready && view === 'blueprint'} />
       )}
-      <p id={hintId} className="sr-only">
+      <p id={hintId} className="ar-sr">
         {UI.viewers.model.keys}
       </p>
     </>
@@ -407,7 +405,9 @@ function Scene(props: SceneProps) {
     rig.setPalette(palette);
     rig.setView(view);
     rig.setHighlight(highlight);
-    scene.background = view === 'blueprint' ? new Color().setRGB(...palette.panel, SRGBColorSpace) : null;
+    // Every view sits on the night well and its grid (bundle ModelViewer); the Blueprint view's
+    // solid is filled with the night, so the grid shows around it and never through it.
+    scene.background = null;
     invalidate();
   }, [rig, palette, view, highlight, scene, invalidate]);
 
@@ -657,8 +657,8 @@ function CalloutLayer({
   const line = cssColor(palette.line);
   const panel = cssColor(palette.panel);
   return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden" hidden={!visible}>
-      <svg className="absolute inset-0 h-full w-full" aria-hidden="true" focusable="false">
+    <div className={styles.callouts} hidden={!visible}>
+      <svg className={styles.leaders} aria-hidden="true" focusable="false">
         {callouts.map((callout, i) => (
           <g key={`${callout.label}-${i}`}>
             <polyline
@@ -687,10 +687,10 @@ function CalloutLayer({
             ref={(element) => {
               nodes.current.labels[i] = element;
             }}
-            className={cn(styles.callout, 'font-mono text-[11px] text-ink')}
+            className={styles.callout}
             style={{ background: panel, boxShadow: `inset 0 0 0 1px ${line}` }}
           >
-            <span className="text-ink-dim">{callout.label}</span> <span className="data">{callout.value}</span>
+            <span className={styles.calloutLabel}>{callout.label}</span> <span>{callout.value}</span>
           </li>
         ))}
       </ul>

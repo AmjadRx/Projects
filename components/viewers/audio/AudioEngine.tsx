@@ -116,6 +116,7 @@ export default function AudioEngine({ media, playOnReady, apiRef, timeRef, onSta
       ],
       ['timeupdate', paint],
       ['seeked', paint],
+      ['volumechange', () => onState({ muted: audio.muted })],
       ['loadedmetadata', onDuration],
       ['durationchange', onDuration],
       [
@@ -159,11 +160,14 @@ export default function AudioEngine({ media, playOnReady, apiRef, timeRef, onSta
         else audio.pause();
       },
       seekBy: (seconds) => seekTo((audio.currentTime || 0) + seconds),
+      toggleMute: () => {
+        audio.muted = !audio.muted;
+      },
     };
 
     // React sets `src` while it renders, before this effect: the element may have loaded its
     // metadata, or failed, before any listener above was attached.
-    onState({ ready: true, duration: durationOf(audio) });
+    onState({ ready: true, duration: durationOf(audio), muted: audio.muted });
     if (audio.error) onState({ failed: true, playing: false });
     setDuration(durationOf(audio));
     paint();

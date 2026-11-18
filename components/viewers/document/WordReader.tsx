@@ -2,14 +2,14 @@
 
 import { FileText, MoveHorizontal, ZoomIn, ZoomOut } from 'lucide-react';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
-import { aspectOf, type ResolvedMedia } from '@/lib/media';
+import Icon from '@/components/sheet/Icon';
+import type { ResolvedMedia } from '@/lib/media';
 import { UI } from '@/lib/strings';
 import { failureText } from '../shared/DownloadLink';
 import TapToLoad from '../shared/TapToLoad';
 import ViewerFrame from '../shared/ViewerFrame';
 import { useViewerActivation } from '../shared/useViewerActivation';
 import {
-  FullscreenButton,
   PageControl,
   ReaderPoster,
   ReaderScroller,
@@ -36,8 +36,8 @@ import styles from './reader.module.css';
  * match's box). This page scrolls its own page area to the page or the match.
  */
 const FRAME_SRC = '/viewers/docx-frame.html';
-/** Letter-sized portrait, for a document that has no poster yet. */
-const FALLBACK_ASPECT = 1 / 1.294;
+/** The reader's well (bundle DocumentReader): 4:3, the document at its full width, scrolling inside. */
+const DOCUMENT_ASPECT = 4 / 3;
 /** Larger files are offered only as a download. */
 const MAX_BYTES = 50_000_000;
 /**
@@ -429,23 +429,23 @@ export default function WordReader({ media, label, caption }: { media: ResolvedM
         : undefined;
 
   const toolbar = (
-    <div className="flex w-full flex-wrap items-center gap-x-3 gap-y-1">
+    <>
       <PageControl page={page} total={pages?.length ?? null} ready={ready} onGo={goToPage} />
       <SearchToggle search={search} ready={ready} />
-      <div className="flex items-center gap-1">
+      <div className="ar-mv__group">
         <ToolButton
           label={UI.viewers.zoomOut}
           onClick={() => zoomBy(1 / ZOOM_STEP)}
           disabled={!ready || scale === null || scale <= WORD_SCALE.min + 0.001}
         >
-          <ZoomOut size={18} aria-hidden />
+          <Icon icon={ZoomOut} size={18} />
         </ToolButton>
         <ToolButton
           label={UI.viewers.zoomIn}
           onClick={() => zoomBy(ZOOM_STEP)}
           disabled={!ready || scale === null || scale >= WORD_SCALE.max - 0.001}
         >
-          <ZoomIn size={18} aria-hidden />
+          <Icon icon={ZoomIn} size={18} />
         </ToolButton>
         <ToolButton
           label={UI.viewers.document.fitWidth}
@@ -453,28 +453,27 @@ export default function WordReader({ media, label, caption }: { media: ResolvedM
           disabled={!ready}
           pressed={ready && zoom.mode === 'width'}
         >
-          <MoveHorizontal size={18} aria-hidden />
+          <Icon icon={MoveHorizontal} size={18} />
         </ToolButton>
       </div>
       <SearchRow search={search} ready={ready} />
-      <FullscreenButton className="ml-auto" />
-      <p className="data order-2 min-w-0 basis-full text-xs text-ink-mute">{UI.viewers.document.wordNotice}</p>
-    </div>
+      <p className={styles.note}>{UI.viewers.document.wordNotice}</p>
+    </>
   );
 
   return (
     <ViewerFrame
       label={label}
-      aspect={aspectOf(media, FALLBACK_ASPECT)}
-      maxWellHeight="80vh"
+      kind={UI.viewers.kind.document}
+      aspect={DOCUMENT_ASPECT}
       caption={caption}
+      fileName={media.file.name}
       description={media.alt || undefined}
-      download={media.file}
+      downloads={[{ file: media.file }]}
       toolbar={toolbar}
-      allowFullscreen={false}
     >
       <div ref={hostRef} className="absolute inset-0">
-        {(!natural || failed) && <ReaderPoster media={media} waitingForTap={requiresTap && !active} />}
+        {(!natural || failed) && <ReaderPoster media={media} waitingForTap={requiresTap && !active} wellAspect={DOCUMENT_ASPECT} />}
         {live && (
           <ReaderScroller ref={scrollerRef} label={label} onScroll={onScroll}>
             <div className={styles.stage}>
@@ -497,7 +496,7 @@ export default function WordReader({ media, label, caption }: { media: ResolvedM
         {requiresTap && !active && (
           <TapToLoad
             label={UI.viewers.document.open}
-            icon={<FileText size={18} aria-hidden />}
+            icon={<Icon icon={FileText} size={18} />}
             onActivate={() => {
               setTapped(true);
               activate();

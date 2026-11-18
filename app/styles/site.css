@@ -1,0 +1,187 @@
+/*
+ * About, Experience, Build log, Contact, and Sheet not found (the canvas's site.css, st-*), written
+ * by the site pages pass of Phase 4. The page frame (.hm-wrap, .hm-h2, .hm-copy) is in frame.css;
+ * the components (glass, tables, the timeline, buttons, links) are in app/sheet.css.
+ *
+ * Breakpoints are container queries on the frame: (max-width: 767px) phone, (min-width: 768px)
+ * tablet and up, (min-width: 1024px) desktop. The page title and its line are the canvas's
+ * .pj-title and .pj-sub (project.css), kept here as .st-title and .st-sub so these pages do not
+ * depend on the project page styles.
+ */
+
+/* ---------- The page: title, its line, sections ---------- */
+
+.st-page { padding-top: var(--space-6); }
+@container frame (min-width: 1024px) { .st-page { padding-top: var(--space-7); } }
+.st-head { display: grid; gap: var(--space-3); max-width: 1040px; margin-bottom: var(--space-6); }
+@container frame (min-width: 1024px) { .st-head { margin-bottom: var(--space-7); } }
+/* Titles wrap at spaces, balanced; a single word wider than the screen breaks as a last resort. */
+.st-title {
+  margin: 0; color: var(--ink); text-wrap: balance; overflow-wrap: break-word; hyphens: manual;
+  font-size: clamp(40px, calc(3.8095cqi + 25.143px), 80px); line-height: 1.02; font-weight: 700;
+  letter-spacing: -0.02em; font-variation-settings: "wdth" 118;
+}
+.st-sub {
+  margin: 0; max-width: 60ch; color: var(--ink-dim);
+  font-size: clamp(17px, calc(0.381cqi + 15.5px), 21px); line-height: 1.45; font-weight: 500;
+}
+.st-sec { padding-top: var(--space-9); }
+@container frame (min-width: 1024px) { .st-sec { padding-top: var(--space-10); } }
+.st-sec > .hm-h2 { margin-bottom: var(--space-5); }
+
+/* ---------- About: the paragraphs beside the headshot and the facts; then skills, education, honors ---------- */
+
+.st-about { display: grid; gap: var(--space-5); }
+@container frame (min-width: 1024px) {
+  .st-about { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter-desktop); align-items: start; }
+  .st-about__text { grid-column: 1 / span 7; }
+  .st-about__side { grid-column: 9 / -1; }
+}
+.st-about__text { display: grid; gap: var(--space-4); }
+.st-about__side { display: grid; gap: var(--space-4); align-content: start; min-width: 0; }
+
+/* The headshot: a 3:4 well on the night color, the photo cropped to fill around its focal point. */
+.st-photo {
+  position: relative; width: min(100%, 240px); margin: 0; aspect-ratio: 3 / 4; overflow: hidden;
+  border: 1px solid var(--rule); border-radius: var(--radius); background-color: var(--night);
+}
+@container frame (min-width: 1024px) { .st-photo { width: 100%; } }
+/* The whole photo is the button that opens it larger; its ring sits inside the well. */
+.st-photo__open {
+  position: absolute; inset: 0; display: block; width: 100%; height: 100%; margin: 0; padding: 0;
+  border: 0; background: none; cursor: zoom-in;
+}
+.st-photo__open:focus-visible { outline: none; }
+.st-photo__open:focus-visible::after {
+  content: ""; position: absolute; inset: 0; z-index: 3; pointer-events: none;
+  box-shadow: inset 0 0 0 2px var(--night), inset 0 0 0 4px var(--on-night), inset 0 0 0 6px var(--night);
+}
+.st-photo__mark {
+  position: absolute; right: var(--space-2); bottom: var(--space-2); z-index: 2;
+  display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: var(--radius);
+  border: 1px solid var(--night-rule); color: var(--on-night); background-color: color-mix(in srgb, var(--night) 82%, transparent);
+}
+
+/* The facts: the spec table's look (label in Archivo, value in B612 Mono) on a definition list, as
+   wide as the photo above it. (The board's panel is 48 px narrower from 1024 px only because the
+   canvas's home.css rule for its home photo spreads the photo over four tracks of this column; at
+   that width the values would run into the panel's padding.) */
+.st-facts { padding: var(--space-1) var(--space-5); }
+.st-facts__list { display: table; width: 100%; margin: 0; border-collapse: collapse; }
+.st-facts__row { display: table-row; }
+.st-facts__row > dt, .st-facts__row > dd { display: table-cell; vertical-align: top; }
+.st-facts__row + .st-facts__row > dt, .st-facts__row + .st-facts__row > dd { border-top: 1px solid var(--rule); }
+.st-facts__row > dt {
+  width: 34%; padding: var(--space-3) var(--space-5) var(--space-3) 0; text-align: left;
+  font-size: 15px; line-height: 1.6; font-weight: 500; color: var(--ink-dim);
+}
+.st-facts__row > dd { margin: 0; padding: var(--space-3) 0; font-family: var(--font-mono); font-size: 15px; line-height: 1.6; color: var(--ink); }
+@container frame (max-width: 767px) {
+  .st-facts__list, .st-facts__row, .st-facts__row > dt, .st-facts__row > dd { display: block; width: auto; }
+  .st-facts__row { padding: var(--space-3) 0; }
+  .st-facts__row + .st-facts__row { border-top: 1px solid var(--rule); }
+  .st-facts__row + .st-facts__row > dt, .st-facts__row + .st-facts__row > dd { border-top: 0; }
+  .st-facts__row > dt, .st-facts__row > dd { padding: 0; }
+  .st-facts__row > dd { margin-top: var(--space-1); }
+}
+
+.st-edu { display: grid; gap: var(--space-4); margin: 0; padding: 0; list-style: none; }
+@container frame (min-width: 768px) { .st-edu { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--gutter-desktop); } }
+.st-edu__item { display: grid; gap: var(--space-1); align-content: start; padding: var(--space-5); }
+.st-edu__dates { margin: 0 0 var(--space-1); font-family: var(--font-mono); font-size: 13px; line-height: 1.5; color: var(--ink-dim); }
+/* A card title: it wraps as the board's does, not balanced like the page headings. */
+.st-edu__school { margin: 0; font-size: 21px; line-height: 1.3; font-weight: 600; font-variation-settings: "wdth" 112; color: var(--ink); text-wrap: wrap; }
+.st-edu__degree { margin: 0; font-size: 17px; line-height: 1.55; color: var(--ink); }
+.st-edu__details { margin: var(--space-1) 0 0; font-size: 15px; line-height: 1.6; color: var(--ink-dim); }
+
+.st-hon { margin: 0; padding: var(--space-1) var(--space-5); list-style: none; }
+.st-hon > li { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-1); padding: var(--space-4) 0; }
+.st-hon > li + li { border-top: 1px solid var(--rule); }
+@container frame (min-width: 768px) { .st-hon > li { grid-template-columns: 136px minmax(0, 1fr); column-gap: var(--space-5); } }
+.st-hon__year { margin: 0; font-family: var(--font-mono); font-size: 13px; line-height: 1.9; color: var(--ink-dim); white-space: nowrap; }
+/* The last column, also when an honor has no year. */
+.st-hon__body { display: grid; grid-column: -2 / -1; gap: var(--space-1); min-width: 0; }
+.st-hon__title { margin: 0; font-size: 17px; line-height: 1.45; font-weight: 600; font-variation-settings: "wdth" 112; color: var(--ink); }
+.st-hon__note { margin: 0; max-width: var(--measure); font-size: 15px; line-height: 1.6; color: var(--ink-dim); }
+
+/* ---------- Build log ---------- */
+
+.st-log .ar-rev { border-bottom: 0; }
+/* No entry in any project: the page says so and points to the projects (the States board). */
+.st-log-empty { display: grid; gap: var(--space-3); justify-items: start; }
+.st-log-empty p { margin: 0; font-size: 17px; line-height: 1.65; color: var(--ink); }
+
+/* ---------- Contact ---------- */
+
+/* Below 1024 px the parts stack in reading order: the email panel, the links, the resume request,
+   the location. */
+.st-contact__grid { display: grid; gap: var(--space-5); align-items: start; }
+.st-contact__main {
+  position: relative; display: grid; gap: var(--space-5); justify-items: start; min-width: 0;
+  padding: var(--space-5); border: 1px solid var(--rule); border-radius: var(--radius);
+  background-color: var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter);
+}
+.st-contact__resume { position: relative; min-width: 0; }
+.st-contact__addr {
+  margin: 0; font-size: clamp(24px, calc(1.1429cqi + 19.5px), 36px); line-height: 1.15; font-weight: 600;
+  font-variation-settings: "wdth" 112; color: var(--ink); overflow-wrap: anywhere;
+}
+.st-contact__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+.st-copied { min-width: 6ch; font-family: var(--font-mono); font-size: 13px; line-height: 1.5; color: var(--line); }
+.st-links { margin: 0; padding: var(--space-1) 0; list-style: none; }
+.st-links > li + li { border-top: 1px solid var(--rule); }
+.st-links a {
+  display: flex; align-items: center; gap: var(--space-3); min-height: 56px; padding: var(--space-2) var(--space-5);
+  font-size: 17px; line-height: 1.3; font-weight: 500; color: var(--ink); text-decoration: none;
+}
+.st-links a .ar-icon { color: var(--line); }
+.st-links__label { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.st-links__go { display: inline-flex; color: var(--ink-mute); transition: transform 150ms ease-out; }
+.st-links a:hover .st-links__go { color: var(--line); transform: translate(2px, -2px); }
+.st-loc { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--space-3); margin: 0; padding: 0 var(--space-5); }
+/* The label sits on the open sky, so it takes ink-dim: ink-mute would fall under AA over the dawn. */
+.st-loc dt { font-family: var(--font-mono); font-size: 13px; line-height: 1.5; letter-spacing: 0.04em; color: var(--ink-dim); }
+.st-loc dd { margin: 0; font-size: 17px; line-height: 1.5; color: var(--ink); }
+@container frame (min-width: 1024px) {
+  /* The email panel on the left, the links and under them the location on the right. The second
+     row is flexible, so a panel spanning both rows leaves the first at the height of the links. */
+  .st-contact__grid {
+    grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-rows: auto 1fr;
+    column-gap: var(--gutter-desktop); row-gap: 0;
+  }
+  .st-contact__main { grid-column: 1 / span 7; grid-row: 1 / span 2; padding: var(--space-6); }
+  .st-links { grid-column: 9 / -1; grid-row: 1; }
+  .st-contact__resume { grid-column: 1 / span 7; grid-row: 2; padding-top: var(--space-4); }
+  .st-loc { grid-column: 9 / -1; grid-row: 2; margin-top: var(--space-4); }
+  /* With the resume request too, one glass panel holds the email and the request, as the board
+     draws it, in two rows: the email beside the links, then the request beside the location. The
+     reading order (ARCHITECTURE.md 5) runs row by row, and row 2 always starts below row 1. */
+  .st-contact__grid--joined::before {
+    content: ""; grid-column: 1 / span 7; grid-row: 1 / span 2; align-self: stretch;
+    border: 1px solid var(--rule); border-radius: var(--radius);
+    background-color: var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter);
+  }
+  .st-contact__grid--joined .st-contact__main {
+    grid-row: 1; padding-bottom: 0; border-color: transparent; border-bottom: 0;
+    background-color: transparent; -webkit-backdrop-filter: none; backdrop-filter: none;
+  }
+  .st-contact__grid--joined .st-contact__resume { padding: var(--space-5) var(--space-6) var(--space-6); border: 1px solid transparent; border-top: 0; }
+}
+
+/* ---------- Sheet not found: the one centered page ---------- */
+
+/* The block fills the first screen under the nav (and inside the sheet frame from 1024 px), as the
+   board shows the page in the window; the footer follows below. */
+.st-404 {
+  --st-screen: 100vh;
+  display: grid; justify-items: center; align-content: center; gap: var(--space-5);
+  min-height: calc(var(--st-screen) - var(--nav-height) - 1px);
+  padding-top: var(--space-6); padding-bottom: var(--space-6); text-align: center;
+}
+@supports (height: 100svh) { .st-404 { --st-screen: 100svh; } }
+@container frame (min-width: 1024px) {
+  .st-404 { min-height: calc(var(--st-screen) - var(--nav-height) - 1px - 2 * var(--frame-inset)); padding-top: var(--space-8); }
+}
+.st-404__well { width: min(100%, 520px); border: 1px solid var(--rule); }
+.st-404 .st-sub { margin: 0 auto; }
+.st-404__actions { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-3); }

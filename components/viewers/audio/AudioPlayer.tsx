@@ -1,13 +1,15 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { Pause, Play } from 'lucide-react';
+import { Pause, Play, Volume2, VolumeX } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import Icon from '@/components/sheet/Icon';
 import { UI } from '@/lib/strings';
 import { cn } from '@/lib/utils';
 import { failureText } from '../shared/DownloadLink';
 import TapToLoad from '../shared/TapToLoad';
 import ViewerErrorBoundary from '../shared/ViewerErrorBoundary';
+import { captionLine } from '../shared/caption';
 import ViewerFrame from '../shared/ViewerFrame';
 import { useViewerActivation } from '../shared/useViewerActivation';
 import type { AudioPlayerProps } from '../types';
@@ -19,9 +21,8 @@ import styles from './AudioPlayer.module.css';
 /** The engine (the <audio> element, the seek control, the waveform) never ships in a first load. */
 const AudioEngine = dynamic(() => import('./AudioEngine'), { ssr: false });
 
-/** The well: a wide strip, capped in height on wide screens. */
+/** The well (bundle AudioPlayer): a 16:4 strip. */
 const AUDIO_ASPECT = 4;
-const AUDIO_MAX_HEIGHT = '7.5rem';
 
 /** The error boundary's fallback: marks the player as failed, so the shell shows the message. */
 function ReportFailure({ onFail }: { onFail: () => void }) {
@@ -30,13 +31,17 @@ function ReportFailure({ onFail }: { onFail: () => void }) {
 }
 
 /**
- * The audio viewer (ARCHITECTURE.md 13A; DESIGN_DIRECTION.md 11): a waveform player. The frame,
- * a plain progress bar, and the toolbar (play, the title or file name, the time) paint first;
- * the engine loads when the player nears the viewport (policy "view"), or on a tap on a slow
- * connection. The waveform is drawn from peaks stored with the media (computed once, at upload);
- * a file without them keeps the plain progress bar, and the file is never downloaded to draw one.
+ * The audio viewer (bundle AudioPlayer; ARCHITECTURE.md 13A): a waveform player in a 16:4 well.
+ * Play and pause sit on a night plate at the well's left, the waveform runs to its right; the bar
+ * holds the time and mute; the caption line names the title (or the caption, or the file). The
+ * frame, a plain progress line, and the controls paint first; the engine loads when the player
+ * nears the viewport (policy "view"), or on a tap on a slow connection. The waveform is drawn from
+ * peaks stored with the media (computed once, at upload); a file without them keeps the plain
+ * line, and the file is never downloaded to draw one.
+ *
  * Keyboard, anywhere in the player: Space or K play and pause (Space on a button presses that
- * button), the arrows seek 5 seconds; on the waveform, Page Up, Page Down, Home, and End also work.
+ * button), the arrows seek 5 seconds, M mutes; on the waveform, Page Up, Page Down, Home, and End
+ * also work.
  */
 export default function AudioPlayer({ media, title }: AudioPlayerProps) {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -47,6 +52,7 @@ export default function AudioPlayer({ media, title }: AudioPlayerProps) {
   const [state, setState] = useState<AudioState>(INITIAL_AUDIO_STATE);
   const [playIntent, setPlayIntent] = useState(false);
   const label = title?.trim() || media.file.name;
+  const ready = state.ready && !state.failed;
 
   const onState = useCallback((patch: Partial<AudioState>) => setState((prev) => mergeState(prev, patch)), []);
   const onFail = useCallback(() => onState({ failed: true, playing: false }), [onState]);
@@ -80,52 +86,60 @@ export default function AudioPlayer({ media, title }: AudioPlayerProps) {
         return;
       case 'ArrowLeft':
       case 'ArrowRight':
-        if (!api || !state.ready || state.failed) return;
+        if (!api || !ready) return;
         event.preventDefault();
         api.seekBy(event.key === 'ArrowLeft' ? -SEEK_STEP : SEEK_STEP);
+        return;
+      case 'm':
+      case 'M':
+        if (!api || !ready) return;
+        event.preventDefault();
+        api.toggleMute();
         return;
       default:
     }
   };
 
   const playLabel = state.playing ? UI.viewers.audio.pause : UI.viewers.audio.play;
+  const muteLabel = state.muted ? UI.viewers.audio.unmute : UI.viewers.audio.mute;
 
   return (
     <div ref={rootRef} onKeyDown={onKeyDown}>
       <ViewerFrame
         label={label}
+        kind={UI.viewers.kind.audio}
         aspect={AUDIO_ASPECT}
-        maxWellHeight={AUDIO_MAX_HEIGHT}
-        caption={media.caption}
+        caption={captionLine(title, media.caption)}
+        fileName={media.file.name}
         description={media.alt || undefined}
-        download={media.file}
+        downloads={[{ file: media.file }]}
         allowFullscreen={false}
         toolbar={
           <div className={styles.controls}>
-            <button
-              ref={playRef}
-              type="button"
-              className="viewer-button"
-              onClick={togglePlay}
-              disabled={state.failed}
-              aria-label={playLabel}
-              title={playLabel}
-            >
-              {state.playing ? <Pause size={18} aria-hidden /> : <Play size={18} aria-hidden />}
-            </button>
-            <span className={styles.title}>{label}</span>
-            <span className={cn('data', styles.time)}>
+            <span className="ar-mv__time">
               <span ref={timeRef}>0:00</span>
               <span className={state.duration > 0 ? undefined : styles.pending}> / {formatClock(state.duration)}</span>
             </span>
+            <button
+              type="button"
+              className="ar-mv__btn"
+              onClick={() => apiRef.current?.toggleMute()}
+              disabled={!ready}
+              aria-label={muteLabel}
+              title={muteLabel}
+            >
+              <Icon icon={state.muted ? VolumeX : Volume2} size={18} />
+            </button>
           </div>
         }
       >
         <div className={styles.stage}>
-          {/* The poster: a plain progress bar at the start, until the engine draws its own. */}
+          {/* The poster: a plain progress line, until the engine draws its own. */}
           {!state.ready && (
-            <div className={styles.track} aria-hidden="true">
-              <div className={styles.fill} />
+            <div className={styles.area} aria-hidden="true">
+              <div className={styles.track}>
+                <div className={styles.fill} />
+              </div>
             </div>
           )}
           {active && (
@@ -133,8 +147,21 @@ export default function AudioPlayer({ media, title }: AudioPlayerProps) {
               <AudioEngine media={media} playOnReady={playIntent} apiRef={apiRef} timeRef={timeRef} onState={onState} />
             </ViewerErrorBoundary>
           )}
+          <span className="ar-mv__play ar-mv__play--left">
+            <button
+              ref={playRef}
+              type="button"
+              className="ar-mv__btn"
+              onClick={togglePlay}
+              disabled={state.failed}
+              aria-label={playLabel}
+              title={playLabel}
+            >
+              <Icon icon={state.playing ? Pause : Play} size={20} />
+            </button>
+          </span>
           {requiresTap && !active && (
-            <div className={styles.layer}>
+            <div className={cn(styles.area, styles.layer)}>
               <TapToLoad
                 label={UI.viewers.loadViewer}
                 onActivate={() => {
@@ -146,7 +173,7 @@ export default function AudioPlayer({ media, title }: AudioPlayerProps) {
             </div>
           )}
           {state.failed && (
-            <p className={styles.failure} role="status">
+            <p className="ar-mv__note" role="status">
               {failureText(media.file)}
             </p>
           )}

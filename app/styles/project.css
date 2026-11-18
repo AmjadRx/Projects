@@ -1,0 +1,151 @@
+/*
+ * Project pages (the canvas's project.css, pj-*), the blocks they show, and the projects index.
+ * The page frame (.hm-wrap, .hm-label, the footer spacing) is in frame.css. Breakpoints are
+ * container queries on the frame: phone under 768 px, tablet 768 to 1023 px, desktop 1024 px and
+ * up. On phones and tablets the title block sits under the cover; on desktop it rides in the
+ * right rail beside a main column of eight.
+ */
+
+/* ---------- Back link, title, subtitle ---------- */
+
+.pj-top { padding-top: var(--space-5); padding-bottom: var(--space-6); }
+@container frame (min-width: 1024px) { .pj-top { padding-top: var(--space-6); padding-bottom: var(--space-7); } }
+.pj-back {
+  display: inline-flex; align-items: center; gap: var(--space-2); min-height: var(--touch-target);
+  font-size: 15px; line-height: 1.2; font-weight: 600; font-variation-settings: "wdth" 112;
+  color: var(--line); text-decoration: none;
+}
+.pj-back:hover .pj-back__text { text-decoration: underline; text-underline-offset: 0.22em; text-decoration-thickness: 1px; }
+.pj-head { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-3); margin-top: var(--space-3); max-width: 1040px; }
+.pj-title {
+  margin: 0; color: var(--ink); text-wrap: balance;
+  font-size: clamp(40px, calc(3.8095cqi + 25.143px), 80px); line-height: 1.02; font-weight: 700;
+  letter-spacing: -0.02em; font-variation-settings: "wdth" 118;
+}
+/* A long title on a phone. Titles never truncate: they wrap at spaces and after hyphens, balanced,
+   never with automatic hyphens; a single word wider than the column breaks inside itself only as a
+   last resort ("STMicroelectronics" at 40 px on a phone). A title over 56 characters steps down
+   to 32 px under 768 px, so no title runs past four lines. */
+.pj-title { overflow-wrap: break-word; hyphens: manual; }
+@container frame (max-width: 767px) { .pj-title--long { font-size: 32px; line-height: 1.05; } }
+/* site: a title with a word too long for a phone's column at 40 px (--pj-word is its length in
+   characters, set by the page) steps down until the word fits whole, to 24 px at the least; only
+   past that does break-word split it. Archivo at width 118, weight 700, sets about 0.6 em a letter. */
+@container frame (max-width: 767px) {
+  .pj-title--word { font-size: clamp(24px, calc((100cqi - 2 * var(--gutter-phone)) / (var(--pj-word) * 0.62)), 40px); }
+  .pj-title--long.pj-title--word { font-size: clamp(24px, calc((100cqi - 2 * var(--gutter-phone)) / (var(--pj-word) * 0.62)), 32px); }
+}
+.pj-sub { margin: 0; max-width: 60ch; font-size: clamp(17px, calc(0.381cqi + 15.5px), 21px); line-height: 1.45; font-weight: 500; color: var(--ink-dim); }
+
+/* ---------- The body: cover, title block, summary, progress, blocks ---------- */
+
+/* One column on phones and tablets, in reading order: the cover, the title block, the rest. On
+   desktop the title block takes columns 9 to 12 down the whole body, sticky under the nav (the
+   title block's own rail rule), beside a main column of eight. */
+.pj-grid { display: flex; flex-direction: column; gap: var(--space-6); }
+.pj-grid > * { min-width: 0; }
+@container frame (min-width: 1024px) {
+  .pj-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter-desktop); row-gap: 0; align-items: start; }
+  .pj-grid > * { grid-column: 1 / span 8; }
+  .pj-grid > * + * { margin-top: var(--space-8); }
+  .pj-grid > .pj-rail { grid-column: 9 / -1; grid-row: 1 / span 8; align-self: stretch; margin-top: 0; }
+}
+.pj-cover { position: relative; }
+
+/* Pitch and highlights. Highlights are separated by rules alone: a running number would count nothing. */
+.pj-intro { display: grid; gap: var(--space-5); }
+.pj-pitch { margin: 0; max-width: 60ch; font-size: clamp(19px, calc(0.381cqi + 17.5px), 23px); line-height: 1.5; font-weight: 500; color: var(--ink); }
+.pj-hl { margin: 0; padding: var(--space-1) var(--space-5); list-style: none; }
+.pj-hl li { padding: var(--space-3) 0; font-size: 17px; line-height: 1.6; color: var(--ink); }
+.pj-hl li + li { border-top: 1px solid var(--rule); }
+@container frame (max-width: 767px) { .pj-hl { padding: var(--space-1) var(--space-4); } }
+
+.pj-progress { display: grid; gap: var(--space-4); }
+
+/* ---------- The content's blocks, in order ---------- */
+
+.pj-blocks { display: flex; flex-direction: column; gap: var(--space-5); min-width: 0; }
+.pj-blocks > * { min-width: 0; }
+.pj-h2 {
+  margin: var(--space-6) 0 0; color: var(--ink); text-wrap: balance; scroll-margin-top: 96px;
+  font-size: clamp(28px, calc(1.1429cqi + 23.543px), 40px); line-height: 1.1; font-weight: 600;
+  letter-spacing: -0.01em; font-variation-settings: "wdth" 112;
+}
+@container frame (min-width: 1024px) { .pj-h2 { scroll-margin-top: calc(var(--frame-inset) + 96px); } }
+.pj-h3 { margin: 0 0 var(--space-3); font-size: 21px; line-height: 1.3; font-weight: 600; font-variation-settings: "wdth" 112; color: var(--ink); }
+
+/* Text: the content's Markdown at the reading measure. */
+.pj-text { max-width: var(--measure); font-size: 17px; line-height: 1.65; color: var(--ink); }
+.pj-text p, .pj-text ul, .pj-text ol { margin: 0; }
+.pj-text > * + * { margin-top: var(--space-4); }
+.pj-text ul, .pj-text ol { display: grid; gap: var(--space-2); padding-left: 1.25em; }
+.pj-text ul { list-style: disc; }
+.pj-text ol { list-style: decimal; }
+.pj-text a, .pj-list a, .pj-hl a {
+  color: var(--line); text-decoration-line: underline; text-decoration-thickness: 1px;
+  text-underline-offset: 0.22em; text-decoration-color: var(--rule);
+}
+.pj-text a:hover, .pj-list a:hover, .pj-hl a:hover { text-decoration-color: currentColor; }
+.pj-text code, .pj-list code { font-family: var(--font-mono); font-size: 0.9em; }
+
+/* Spec table on glass: the panel's padding, no outer rules. */
+.pj-spec { padding: var(--space-2) var(--space-5); }
+@container frame (max-width: 767px) { .pj-spec { padding: var(--space-1) var(--space-4); } }
+.pj-spec .ar-spec { border-top: 0; border-bottom: 0; }
+
+/* Bullets: a short line in the line color before each item. A list of short items (the six
+   electrical areas) sets in two columns from 768 px, each item on a rule. */
+.pj-list { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+.pj-list li { position: relative; max-width: var(--measure); padding-left: var(--space-6); font-size: 17px; line-height: 1.6; color: var(--ink); }
+.pj-list li::before { content: ""; position: absolute; left: 2px; top: 0.8em; width: 14px; height: 1px; background-color: var(--line); }
+@container frame (min-width: 768px) { .pj-list--cols { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: var(--space-6); } }
+.pj-list--cols li { padding-top: var(--space-2); padding-bottom: var(--space-2); border-top: 1px solid var(--rule); }
+.pj-list--cols li::before { top: calc(0.8em + var(--space-2)); }
+
+/* Roadmap: eight stages in a column of eight, two rows of four on desktop. */
+@container frame (min-width: 1024px) { .pj-road .ar-road { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+/* Build log: a drafting label over the revision table on glass. */
+.pj-log { display: grid; gap: var(--space-4); min-width: 0; }
+.pj-log .ar-rev { border-bottom: 0; }
+
+/* site: the blocks the canvas does not draw, on the same terms. A quote is the content's own
+   sentence on glass; a link row is a row of standalone links with their glyphs; two columns sit
+   side by side from 768 px. */
+.pj-quote { margin: 0; }
+.pj-quote blockquote { margin: 0; }
+.pj-quote blockquote p { margin: 0; max-width: var(--measure); font-size: 21px; line-height: 1.45; font-weight: 500; font-variation-settings: "wdth" 112; color: var(--ink); }
+.pj-quote figcaption { margin-top: var(--space-3); font-size: 15px; line-height: 1.5; color: var(--ink-dim); }
+.pj-links { display: flex; flex-wrap: wrap; gap: 0 var(--space-5); margin: 0; padding: 0; list-style: none; }
+.pj-links .ar-link--standalone { gap: var(--space-2); }
+.pj-links__plain { display: inline-flex; align-items: center; gap: var(--space-2); min-height: var(--touch-target); font-weight: 500; color: var(--ink-dim); }
+.pj-two { display: grid; gap: var(--space-6); }
+@container frame (min-width: 768px) { .pj-two { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--gutter-desktop); } }
+
+/* ---------- Previous and next project ---------- */
+
+.pj-pager { display: grid; gap: var(--space-4); padding-top: var(--space-9); }
+@container frame (min-width: 768px) {
+  .pj-pager { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--gutter-desktop); }
+  .pj-pager__link--next { grid-column: 2; justify-items: end; text-align: right; }
+}
+@container frame (min-width: 1024px) { .pj-pager { padding-top: var(--space-10); } }
+.pj-pager__link {
+  display: grid; gap: var(--space-1); align-content: start; padding: var(--space-5);
+  color: var(--ink); text-decoration: none;
+}
+.pj-pager__link:hover { border-color: var(--line); }
+.pj-pager__dir { display: inline-flex; align-items: center; gap: var(--space-2); font-size: 15px; line-height: 1.2; font-weight: 600; font-variation-settings: "wdth" 112; color: var(--line); }
+.pj-pager__sheet { margin-top: var(--space-2); font-family: var(--font-mono); font-size: 13px; line-height: 1.5; letter-spacing: 0.04em; color: var(--ink-mute); }
+.pj-pager__title { font-size: 21px; line-height: 1.3; font-weight: 600; font-variation-settings: "wdth" 112; }
+.pj-pager__link:hover .pj-pager__title { color: var(--line); }
+
+/* ---------- The projects index (/projects; the canvas draws it in Site.dc.html with st-page, st-head and st-cards) ---------- */
+
+.pj-index { padding-top: var(--space-6); }
+@container frame (min-width: 1024px) { .pj-index { padding-top: var(--space-7); } }
+.pj-index__head { display: grid; gap: var(--space-3); max-width: 1040px; margin-bottom: var(--space-6); }
+@container frame (min-width: 1024px) { .pj-index__head { margin-bottom: var(--space-7); } }
+.pj-cards { display: grid; gap: var(--space-5); margin-top: var(--space-6); }
+@container frame (min-width: 768px) { .pj-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-6); } }
+@container frame (min-width: 1024px) { .pj-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--gutter-desktop); } }

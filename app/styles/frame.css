@@ -1,0 +1,44 @@
+/*
+ * The page frame shared by every public page, from the canvas's home.css ("The page" and the
+ * section headings), adapted to the site: components/site/SiteChrome renders
+ *   .ar-frame.ar-page.hm > .ar-backdrop + .hm-body > (header.ar-nav, main.hm-main, .hm-foot)
+ * and pages put their content in main, in .hm-wrap containers and .hm-sec sections.
+ * Breakpoints are container queries on .ar-frame. Page-specific rules live in home.css,
+ * project.css and site.css beside this file.
+ */
+
+.hm { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; overflow-x: clip; }
+/* No z-index here: the sticky nav (30), the sheet frame (40) and a viewer's fixed full-screen
+   overlay (60) stack together inside .ar-frame, the frame's one stacking context. */
+.hm-body { position: relative; display: flex; flex-direction: column; flex: 1 0 auto; min-width: 0; }
+/* Inside the sheet frame (1024 px and up) the page keeps the frame's inset. */
+@container frame (min-width: 1024px) { .hm-body { padding: var(--frame-inset); } }
+.hm-main { display: flex; flex-direction: column; flex: 1 0 auto; min-width: 0; }
+.hm-main:focus { outline: none; }
+.hm-wrap { width: 100%; max-width: var(--max-content); margin: 0 auto; padding: 0 var(--gutter-phone); }
+@container frame (min-width: 1024px) { .hm-wrap { padding: 0 var(--gutter-desktop); } }
+
+.hm-sec { padding-top: var(--space-9); scroll-margin-top: var(--nav-height); }
+@container frame (min-width: 1024px) { .hm-sec { padding-top: var(--space-10); } }
+.hm-foot { margin-top: auto; padding-top: var(--space-9); }
+@container frame (min-width: 1024px) { .hm-foot { padding-top: var(--space-10); } }
+
+/* Headings. Display headlines come from the content; section labels are small drafting labels. */
+.hm-h1 {
+  margin: 0; color: var(--ink); text-wrap: balance;
+  font-size: clamp(28px, calc(2.6667cqi + 17.6px), 56px); line-height: 1.08; font-weight: 600;
+  letter-spacing: -0.015em; font-variation-settings: "wdth" 112;
+}
+.hm-h2 {
+  margin: 0; color: var(--ink); text-wrap: balance;
+  font-size: clamp(28px, calc(1.1429cqi + 23.543px), 40px); line-height: 1.1; font-weight: 600;
+  letter-spacing: -0.01em; font-variation-settings: "wdth" 112;
+}
+.hm-label {
+  display: flex; align-items: center; gap: var(--space-3); margin: 0;
+  font-family: var(--font-mono); font-size: 13px; line-height: 1.54; font-weight: 400;
+  letter-spacing: 0.04em; color: var(--ink-dim);
+}
+.hm-label::before { content: ""; width: 24px; height: 1px; flex: none; background-color: var(--line); }
+.hm-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--space-3) var(--space-5); margin-bottom: var(--space-6); }
+.hm-copy { margin: 0; font-size: 17px; line-height: 1.65; color: var(--ink); max-width: var(--measure); }

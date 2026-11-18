@@ -12,13 +12,20 @@ export const UI = {
     home: 'Home',
     primaryNav: 'Main',
     footerNav: 'Footer',
-    openMenu: 'Open menu',
-    closeMenu: 'Close menu',
+    /** The phone menu: its button, its dialog's name, and the button that closes it. */
     menu: 'Menu',
-    toBlueprint: 'Switch to Blueprint',
-    toWhiteprint: 'Switch to Whiteprint',
+    close: 'Close',
+    /** The theme toggle: the group's name, the two options, and their names in the compact toggle. */
+    theme: 'Theme',
+    blueprint: 'Blueprint',
+    whiteprint: 'Whiteprint',
+    blueprintTheme: 'Blueprint theme',
+    whiteprintTheme: 'Whiteprint theme',
     lastUpdated: 'Last updated',
     copyright: (year: number, name: string) => `© ${year} ${name}`,
+    /** The zone marks of the sheet frame: 1 to 8 across the top, A to F down the side. */
+    zoneColumns: ['1', '2', '3', '4', '5', '6', '7', '8'],
+    zoneRows: ['A', 'B', 'C', 'D', 'E', 'F'],
   },
   hero: {
     seeTheWork: 'See the work',
@@ -29,32 +36,46 @@ export const UI = {
   },
   home: {
     readouts: 'In numbers',
+    /** Read after a readout's value and label: the project its link opens. */
+    readoutProof: (title: string) => `, proof: ${title}`,
     now: 'Now',
     selectedWork: 'Selected work',
     allProjects: 'All projects',
     moreAbout: 'More about me',
     tools: 'Tools',
-    contactPage: 'All the ways to reach me',
+    /** The column heads of the index of the projects that are not featured (shown from 1024 px). */
+    index: { sheet: 'Sheet', project: 'Project', domain: 'Domain', status: 'Status', maturity: 'Maturity' },
   },
   projects: {
     intro: 'Filter by domain, or open any project.',
-    filterLabel: 'Domain',
-    filterAll: 'All domains',
+    filterLabel: 'Filter by domain',
+    filterAll: 'All',
     showing: (shown: number, total: number) => `Showing ${shown} of ${total} projects`,
     backToProjects: 'All projects',
-    previous: 'Previous project',
-    next: 'Next project',
-    highlights: 'Highlights',
+    previous: 'Previous',
+    next: 'Next',
+    /** The pitch and highlights, as one region. */
+    summary: 'Summary',
     progress: 'Progress',
+    /** The progress strip's name. */
+    progressOf: (title: string) => `${title} progress`,
     callouts: 'Key figures',
     moreProjects: 'More projects',
+    /** The previous and next project links at the foot of a project page, and their sheet line. */
+    pager: 'Previous and next project',
+    sheetOf: (n: number, total: number) => `Sheet ${n} of ${total}`,
+    /** The label over a log block on a project page. */
+    buildLog: 'Build log',
   },
+  /** The project card: the cue on a featured card, and the tag on a cover that is a video or a model. */
+  card: { open: 'Open project', video: 'Video', model: '3D model' },
   maturity: {
     label: 'Maturity',
     step: (step: number, total: number) => `Step ${step} of ${total}`,
   },
-  progressState: { done: 'Done', current: 'Current', todo: 'To do' },
-  roadmapStatus: { done: 'Done', 'in-progress': 'In progress', next: 'Next', future: 'Planned' },
+  progressState: { done: 'Done', current: 'In progress', todo: 'Planned' },
+  roadmap: { label: 'Roadmap', labelFor: (title: string) => `${title} roadmap`, stage: (n: number) => `Stage ${n}` },
+  roadmapStatus: { done: 'Done', 'in-progress': 'In progress', next: 'Planned, next', future: 'Planned' },
   titleBlock: {
     caption: 'Title block',
     project: 'Project',
@@ -74,14 +95,22 @@ export const UI = {
     caption: 'Revisions, newest first',
     photos: 'Photos',
   },
+  /** The /log page: the line under its title, and what it says when no project has an entry yet. */
+  log: {
+    intro: 'Every entry from every project, newest first.',
+    empty: 'No entries yet.',
+    seeProjects: 'See the projects',
+  },
   about: {
     facts: 'Facts',
     skills: 'Skills',
-    skillsCaption: 'Bill of materials',
     item: 'Item',
     skill: 'Skill',
     proof: 'Proof',
     tiers: { deep: 'Deep', strong: 'Strong', familiar: 'Familiar' },
+    /** The bill of materials, for screen readers: the table's name, and an item with no project page. */
+    bomTable: 'Skills, as a bill of materials, with the project that proves each one',
+    noProof: 'No project page',
     education: 'Education',
     honors: 'Honors',
   },
@@ -94,12 +123,20 @@ export const UI = {
     location: 'Location',
   },
   callout: { note: 'Note', status: 'Status' },
-  placeholder: { photoToCome: 'Photo to come' },
+  /** A media well with nothing to show: no file yet, a file on its way, or a file that did not load. */
+  placeholder: {
+    photoToCome: 'Photo to come',
+    loading: 'Loading photo',
+    didNotLoad: 'Photo did not load',
+    tryAgain: 'Try again',
+  },
   notFound: {
     heading: 'Sheet not found',
     body: 'Nothing is drawn at this address.',
     home: 'Go home',
     projects: 'See all projects',
+    /** The line in the empty drawing well above the heading. */
+    well: 'No sheet at this address',
   },
   heroCaption: 'Raven, tri-tiltrotor eVTOL. Illustration, not measured data.',
   viewers: {
@@ -113,13 +150,26 @@ export const UI = {
     exitFullscreen: 'Exit full screen',
     close: 'Close',
     download: 'Download',
-    downloadFile: (name: string) => `Download ${name}`,
     previous: 'Previous',
     next: 'Next',
     zoomIn: 'Zoom in',
     zoomOut: 'Zoom out',
     resetView: 'Reset view',
+    /** The text button that returns a zoomed photo or drawing to the whole picture, and its tooltip. */
+    fit: 'Fit',
+    fitToFrame: 'Fit to frame',
     itemOf: (n: number, total: number) => `${n} of ${total}`,
+    /** The kind that leads a viewer's caption line (bundle MediaFrame), and the gallery's tags. */
+    kind: {
+      photo: 'Photo',
+      video: 'Video',
+      document: 'Document',
+      model: '3D model',
+      audio: 'Audio',
+      code: 'Code',
+      compare: 'Before and after',
+      drawing: 'Drawing',
+    },
     image: {
       open: 'Open image',
       lightbox: 'Image viewer',
@@ -127,7 +177,14 @@ export const UI = {
       keysMany:
         'Use the left and right arrow keys to move between items, plus and minus to zoom, 0 to reset, and the arrow keys to move around while zoomed in.',
     },
-    gallery: { label: 'Gallery', openItem: (n: number, total: number) => `Open item ${n} of ${total}` },
+    gallery: {
+      label: 'Gallery',
+      /** What a screen reader calls the strip (aria-roledescription). */
+      roleDescription: 'gallery',
+      openItem: (n: number, total: number) => `Open item ${n} of ${total}`,
+      videoDidNotLoad: 'Video did not load',
+      modelDidNotLoad: '3D model did not load',
+    },
     video: {
       play: 'Play',
       pause: 'Pause',
@@ -152,7 +209,7 @@ export const UI = {
       seconds: (n: number) => (n === 1 ? '1 second' : `${n} seconds`),
       timeOf: (current: string, total: string) => `${current} of ${total}`,
     },
-    audio: { play: 'Play', pause: 'Pause', seek: 'Seek', audioFallback: 'Audio' },
+    audio: { play: 'Play', pause: 'Pause', mute: 'Mute', unmute: 'Unmute', seek: 'Seek', audioFallback: 'Audio' },
     document: {
       open: 'Open document',
       page: 'Page',
@@ -175,6 +232,7 @@ export const UI = {
       blueprint: 'Blueprint',
       thermal: 'Thermal',
       thermalCaption: 'Illustration, not measured data.',
+      hint: 'Drag to orbit',
       explode: 'Exploded view',
       parts: 'Parts',
       rotateLeft: 'Rotate left',
@@ -193,6 +251,7 @@ export const UI = {
       label: 'Pan and zoom',
       minimap: 'Overview',
       keys: 'Use plus and minus to zoom, the arrow keys to move around while zoomed in, and 0 to reset.',
+      hint: 'Drag to pan',
     },
     compare: {
       label: 'Before and after',

@@ -282,7 +282,7 @@ export default function BlockEditor({
                 />
               </div>
               {isOpen && (
-                <div className="px-4 pb-4" style={{ borderTop: '1px solid var(--line)' }}>
+                <div className="px-4 pb-4" style={{ borderTop: '1px solid var(--rule)' }}>
                   <div className="pt-4">
                     <BlockBody
                       block={block}
@@ -313,7 +313,7 @@ export default function BlockEditor({
                   setOpen((o) => ({ ...o, [block.id]: true }));
                   setMenuOpen(false);
                 }}
-                className="rounded-sm px-3 py-1.5 text-left font-mono text-xs text-ink-dim hover:bg-surface-2 hover:text-ink"
+                className="rounded-sm px-3 py-1.5 text-left font-mono text-xs text-ink-dim hover:bg-sheet-3 hover:text-ink"
               >
                 {type}
               </button>

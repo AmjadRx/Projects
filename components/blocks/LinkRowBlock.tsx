@@ -1,39 +1,51 @@
 import Link from 'next/link';
-import LinkIcon from '@/components/LinkIcon';
+import { ArrowUpRight } from 'lucide-react';
+import Icon from '@/components/sheet/Icon';
+import { linkGlyph } from '@/components/sheet/linkGlyph';
 import { hasText } from '@/lib/format';
-import { detectIcon } from '@/lib/utils';
 import type { Link as ContentLink } from '@/lib/types';
 import type { BlockContext } from './context';
 
+/**
+ * A link row block: standalone links in the line color, each with its Lucide glyph (the bundle
+ * allows LinkedIn and GitHub as its only brand marks) and, when it leaves the site, the arrow. A
+ * link the resolver refuses (a hidden project, an unsafe address) prints as plain words.
+ */
 export default function LinkRowBlock({ links, ctx }: { links: ContentLink[]; ctx: BlockContext }) {
   const shown = links.filter((link) => hasText(link.label));
   if (shown.length === 0) return null;
   return (
-    <ul className="flex flex-wrap gap-x-6 gap-y-2">
+    <ul className="pj-links">
       {shown.map((link, i) => {
         const target = ctx.resolveLink(link.url);
-        const icon = <LinkIcon icon={link.icon || detectIcon(link.url)} size={16} />;
+        const glyph = linkGlyph(link.icon, link.url);
+        const icon = glyph ? <Icon icon={glyph} size={18} /> : null;
         if (!target) {
           return (
-            <li key={i} className="inline-flex min-h-[44px] items-center gap-2 text-ink-dim">
+            <li key={i} className="pj-links__plain">
               {icon}
               {link.label}
             </li>
           );
         }
-        const className = 'text-link inline-flex min-h-[44px] items-center gap-2';
+        const body = (
+          <>
+            {icon}
+            <span className="ar-link__text">{link.label}</span>
+            {target.external ? <Icon icon={ArrowUpRight} size={16} /> : null}
+          </>
+        );
+        const internal = !target.external && target.href.startsWith('/') && !target.href.startsWith('//');
         return (
           <li key={i}>
-            {target.external ? (
-              <a href={target.href} rel="noopener noreferrer" className={className}>
-                {icon}
-                {link.label}
-              </a>
-            ) : (
-              <Link href={target.href} className={className}>
-                {icon}
-                {link.label}
+            {internal ? (
+              <Link href={target.href} className="ar-link ar-link--standalone">
+                {body}
               </Link>
+            ) : (
+              <a href={target.href} rel={target.external ? 'noopener noreferrer' : undefined} className="ar-link ar-link--standalone">
+                {body}
+              </a>
             )}
           </li>
         );

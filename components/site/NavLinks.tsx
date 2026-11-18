@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { cn } from '@/lib/utils';
 
 export interface NavItem {
   label: string;
@@ -18,49 +17,33 @@ export function isCurrent(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export default function NavLinks({
-  items,
-  className,
-  linkClassName,
-  onNavigate,
-}: {
-  items: NavItem[];
-  className?: string;
-  linkClassName?: string;
-  onNavigate?: () => void;
-}) {
+/** aria-current for a nav item: "page" on the page itself, "true" on a page under it. */
+export function currentValue(pathname: string, href: string): 'page' | 'true' | undefined {
+  if (pathname === href) return 'page';
+  return isCurrent(pathname, href) ? 'true' : undefined;
+}
+
+/**
+ * The desktop nav's links (bundle Nav, bundle.css 8): ink-dim, ink on hover with the underline
+ * drawn from the left; the current page keeps a 2 px underline and aria-current.
+ */
+export default function NavLinks({ items }: { items: NavItem[] }) {
   const pathname = usePathname() ?? '/';
-  const base = 'inline-flex min-h-[44px] min-w-[44px] items-center text-sm';
   return (
-    <ul className={className}>
-      {items.map((item) => {
-        if (item.external) {
-          return (
-            <li key={item.href}>
-              <a href={item.href} rel="noopener noreferrer" onClick={onNavigate} className={cn(base, 'text-ink-dim hover:text-ink', linkClassName)}>
-                {item.label}
-              </a>
-            </li>
-          );
-        }
-        const current = isCurrent(pathname, item.href);
-        return (
-          <li key={item.href}>
-            <Link
-              href={item.href}
-              aria-current={pathname === item.href ? 'page' : current ? 'true' : undefined}
-              onClick={onNavigate}
-              className={cn(
-                base,
-                current ? 'text-ink underline decoration-accent decoration-2 underline-offset-[6px]' : 'text-ink-dim hover:text-ink',
-                linkClassName,
-              )}
-            >
+    <ul className="ar-nav__links">
+      {items.map((item) => (
+        <li key={item.href}>
+          {item.external ? (
+            <a href={item.href} rel="noopener noreferrer" className="ar-nav__link">
+              {item.label}
+            </a>
+          ) : (
+            <Link href={item.href} aria-current={currentValue(pathname, item.href)} className="ar-nav__link">
               {item.label}
             </Link>
-          </li>
-        );
-      })}
+          )}
+        </li>
+      ))}
     </ul>
   );
 }

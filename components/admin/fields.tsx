@@ -81,8 +81,8 @@ export function Toggle({
       className="flex items-center gap-3 py-1"
     >
       <span
-        className={`relative h-5 w-9 rounded-full transition-colors ${checked ? 'bg-accent' : 'bg-surface-2'}`}
-        style={{ border: '1px solid var(--line)' }}
+        className={`relative h-5 w-9 rounded-full transition-colors ${checked ? 'bg-line' : 'bg-sheet-3'}`}
+        style={{ border: '1px solid var(--rule)' }}
       >
         <span
           className={`absolute top-0.5 h-3.5 w-3.5 rounded-full bg-ink transition-transform ${checked ? 'translate-x-[18px]' : 'translate-x-0.5'}`}
@@ -134,7 +134,7 @@ export function IconBtn({
       aria-label={label}
       title={label}
       className={`flex h-7 w-7 items-center justify-center rounded-sm text-ink-mute transition-colors disabled:opacity-30 ${danger ? 'hover:text-red-400' : 'hover:text-ink'}`}
-      style={{ border: '1px solid var(--line)' }}
+      style={{ border: '1px solid var(--rule)' }}
     >
       {children}
     </button>

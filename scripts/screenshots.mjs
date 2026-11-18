@@ -23,7 +23,8 @@ const base = arg('base', 'http://localhost:3000').replace(/\/+$/, '');
 const label = arg('label', 'latest');
 const pages = (arg('pages', '/,/projects/raven,/about')).split(',');
 const widths = (arg('widths', '390,768,1024,1440')).split(',').map(Number);
-const themes = ['dark', 'light'];
+// The theme cookie holds the theme's name (lib/theme.ts); Blueprint is the default.
+const themes = ['blueprint', 'whiteprint'];
 const out = path.join(root, 'screenshots', label);
 fs.mkdirSync(out, { recursive: true });
 

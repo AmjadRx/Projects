@@ -1,50 +1,38 @@
 import type { Metadata } from 'next';
-import DomainFilter, { type DomainOption } from '@/components/projects/DomainFilter';
-import ProjectCard from '@/components/projects/ProjectCard';
-import { domainKey, projectDomains } from '@/lib/format';
+import DomainFilter from '@/components/sheet/DomainFilter';
+import ProjectCard, { CARD_SIZES } from '@/components/sheet/ProjectCard';
 import { pageMetadata } from '@/lib/meta';
 import { navLabel, siteData } from '@/lib/site';
 import { UI } from '@/lib/strings';
-import type { Project } from '@/lib/types';
 
 export function generateMetadata(): Metadata {
   const { site } = siteData();
   return pageMetadata(site, { title: navLabel(site, '/projects', 'Projects'), description: site.seo.description, path: '/projects' });
 }
 
-/** Domains grouped without regard to case, labelled with their first spelling (docs/V3_PLAN.md Q-11). */
-function domainOptions(projects: Project[]): DomainOption[] {
-  const map = new Map<string, DomainOption>();
-  for (const project of projects) {
-    const seen = new Set<string>();
-    for (const domain of projectDomains(project)) {
-      const key = domainKey(domain);
-      if (!key || seen.has(key)) continue;
-      seen.add(key);
-      const existing = map.get(key);
-      if (existing) existing.count += 1;
-      else map.set(key, { key, label: domain, count: 1 });
-    }
-  }
-  return [...map.values()].sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
-}
-
+/**
+ * Every visible project in sheet order (ARCHITECTURE.md 5; the canvas's Projects board): the
+ * heading and one line, the domain filter, and the cards, one column on phones, two from 768 px,
+ * three from 1024 px. The cards sit straight in the grid, so a filtered-out card leaves no cell.
+ */
 export default function ProjectsPage() {
   const { site, projects } = siteData();
   const heading = navLabel(site, '/projects', 'Projects');
   const gridId = 'project-grid';
   return (
-    <div className="wrap py-12 md:py-16">
-      <h1 className="display-2">{heading}</h1>
-      <p className="body-lg mt-3 max-w-2xl">{UI.projects.intro}</p>
-      <div className="mt-8">
-        <DomainFilter gridId={gridId} options={domainOptions(projects)} total={projects.length} />
-      </div>
-      <div id={gridId} className="mt-8 grid gap-6 md:grid-cols-2">
+    <section className="hm-wrap pj-index" aria-labelledby="projects-title">
+      <header className="pj-index__head">
+        <h1 className="pj-title" id="projects-title">
+          {heading}
+        </h1>
+        <p className="pj-sub">{UI.projects.intro}</p>
+      </header>
+      <DomainFilter projects={projects} gridId={gridId} />
+      <div id={gridId} className="pj-cards">
         {projects.map((project, i) => (
-          <ProjectCard key={project.slug} project={project} headingLevel={2} priority={i < 2} />
+          <ProjectCard key={project.slug} project={project} headingLevel={2} priority={i < 3} sizes={CARD_SIZES.third} />
         ))}
       </div>
-    </div>
+    </section>
   );
 }

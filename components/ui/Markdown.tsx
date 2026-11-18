@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import ReactMarkdown, { type Components } from 'react-markdown';
 import type { LinkResolver } from '@/lib/links';
-import { cn } from '@/lib/utils';
 
 /**
  * Markdown from content with a strict allow-list (ARCHITECTURE.md 2): paragraphs, emphasis,
@@ -39,6 +38,7 @@ export default function Markdown({
   resolveLink: LinkResolver;
   /** Render without paragraph or list elements, for table cells and short lines. */
   inline?: boolean;
+  /** Styles the text: the caller's sheet or page class (`pj-text`, `ar-rev__text`, ...). */
   className?: string;
 }) {
   const body = (
@@ -52,5 +52,5 @@ export default function Markdown({
     </ReactMarkdown>
   );
   if (inline) return body;
-  return <div className={cn('prose-md', className)}>{body}</div>;
+  return <div className={className}>{body}</div>;
 }

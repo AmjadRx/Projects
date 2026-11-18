@@ -45,15 +45,16 @@
     margin-bottom: 16px;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
   }
-  /* Search matches, in the site's light-theme accent; the current one is stronger and outlined. */
+  /* Search matches, in Whiteprint's line color (the page is drawn light, and this sandboxed page
+     cannot read the site's tokens); the current one is stronger and outlined. */
   #root mark[data-docx-match] {
-    background: rgba(29, 78, 216, 0.25);
+    background: rgba(21, 87, 192, 0.25);
     color: inherit;
     border-radius: 2px;
   }
   #root mark[data-docx-match][data-current] {
-    background: rgba(29, 78, 216, 0.45);
-    outline: 2px solid rgb(29, 78, 216);
+    background: rgba(21, 87, 192, 0.45);
+    outline: 2px solid rgb(21, 87, 192);
   }
 </style>
 </head>

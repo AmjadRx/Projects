@@ -12,6 +12,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import Icon from '@/components/sheet/Icon';
 import type { ResolvedFile } from '@/lib/media';
 import { UI } from '@/lib/strings';
 import { cn } from '@/lib/utils';
@@ -19,9 +20,11 @@ import DownloadLink from './DownloadLink';
 import { useFocusTrap } from './hooks';
 
 /**
- * The one frame every viewer sits in (DESIGN_DIRECTION.md 11): a media well on the night color
- * with a 1 px rule, a caption line in the data type, a full-screen button, and a plain download
- * link beside the viewer (ARCHITECTURE.md 13A).
+ * The one frame every viewer sits in (bundle MediaFrame, app/sheet.css 25): a glass panel with a
+ * 1 px rule, the media well on night with the flat grid and the full-screen button in its top
+ * right corner, the viewer's controls on the bar under it, and the caption line in B612 Mono: the
+ * kind, then the content's caption (or the file's name), then the plain download link
+ * (ARCHITECTURE.md 13A).
  *
  * Full screen uses the Fullscreen API where the browser has it, and otherwise a fixed overlay
  * that behaves like the lightbox: focus stays inside and Escape closes it (docs/V3_PLAN.md D-63).
@@ -47,21 +50,33 @@ export function useViewerFrame(): ViewerFrameContextValue {
   return value;
 }
 
+/** A file offered beside the viewer, with an optional label in place of "Download". */
+export interface FrameDownload {
+  file: ResolvedFile;
+  label?: string;
+}
+
 export interface ViewerFrameProps {
   /** Accessible name of the viewer region, for example "3D model". */
   label: string;
+  /** The kind that leads the caption line ("Photo", "Video"): UI.viewers.kind. */
+  kind: string;
   /** Width over height of the media well: reserves the space before anything loads. */
   aspect: number;
-  /** The caption line under the well (the content's caption). */
+  /** The content's caption. Without one the caption line names the file (`fileName`). */
   caption?: string;
+  /** The file's name, printed when the content gives no caption. */
+  fileName?: string;
   /** The text alternative for models and documents; read by assistive technology. */
   description?: string;
-  /** The file for the plain download link beside the viewer. Omit to hide the link. */
-  download?: ResolvedFile;
-  /** Viewer controls, shown in a row under the well. */
+  /** The files for the plain download links. A file not offered for download prints no link (R-16). */
+  downloads?: FrameDownload[];
+  /** Viewer controls, on the bar under the well. */
   toolbar?: ReactNode;
-  /** Show the full-screen button. */
+  /** Show the frame's own full-screen button in the well's top right corner. */
   allowFullscreen?: boolean;
+  /** A control for that corner in place of the frame's own button (the video's, which needs its engine). */
+  corner?: ReactNode;
   /** Cap the well height (CSS length), for tall media on wide screens. */
   maxWellHeight?: string;
   className?: string;
@@ -72,12 +87,15 @@ export interface ViewerFrameProps {
 
 export default function ViewerFrame({
   label,
+  kind,
   aspect,
   caption,
+  fileName,
   description,
-  download,
+  downloads = [],
   toolbar,
   allowFullscreen = true,
+  corner,
   maxWellHeight,
   className,
   wellClassName,
@@ -121,6 +139,10 @@ export default function ViewerFrame({
     [isFullscreen, toggleFullscreen, describedBy],
   );
 
+  const text = caption?.trim() || fileName?.trim() || '';
+  const offered = downloads.filter((d) => d.file.downloadHref !== '');
+  const fullscreenLabel = isFullscreen ? UI.viewers.exitFullscreen : UI.viewers.fullscreen;
+
   return (
     <ViewerFrameContext.Provider value={context}>
       <figure
@@ -130,39 +152,44 @@ export default function ViewerFrame({
         aria-describedby={describedBy}
         data-fullscreen={isFullscreen ? 'true' : undefined}
         aria-modal={pseudo ? true : undefined}
-        className={cn('viewer-frame', pseudo && 'viewer-frame--pseudo', className)}
+        className={cn('ar-mv', className)}
       >
         <div
-          className={cn('viewer-well', wellClassName)}
+          className={cn('ar-mv__well', wellClassName)}
           style={isFullscreen ? undefined : { aspectRatio: String(aspect), maxHeight: maxWellHeight }}
         >
           {children}
-        </div>
-        {(toolbar || allowFullscreen) && (
-          <div className="viewer-toolbar">
-            <div className="viewer-toolbar__controls">{toolbar}</div>
-            {allowFullscreen && (
-              // The label says what a press does; a toggle that renames itself carries no pressed state.
+          {corner ? (
+            <span className="ar-mv__full">{corner}</span>
+          ) : allowFullscreen ? (
+            <span className="ar-mv__full">
+              {/* The label says what a press does; a toggle that renames itself carries no pressed state. */}
               <button
                 type="button"
-                className="viewer-button"
+                className="ar-mv__btn"
                 onClick={toggleFullscreen}
-                aria-label={isFullscreen ? UI.viewers.exitFullscreen : UI.viewers.fullscreen}
-                title={isFullscreen ? UI.viewers.exitFullscreen : UI.viewers.fullscreen}
+                aria-label={fullscreenLabel}
+                title={fullscreenLabel}
               >
-                {isFullscreen ? <Minimize2 size={18} aria-hidden /> : <Maximize2 size={18} aria-hidden />}
+                <Icon icon={isFullscreen ? Minimize2 : Maximize2} size={18} />
               </button>
-            )}
-          </div>
-        )}
-        {(caption || download?.downloadHref) && (
-          <figcaption className="viewer-caption">
-            {caption && <span className="viewer-caption__text">{caption}</span>}
-            {download?.downloadHref && <DownloadLink file={download} />}
-          </figcaption>
-        )}
+            </span>
+          ) : null}
+        </div>
+        {toolbar ? <div className="ar-mv__bar">{toolbar}</div> : null}
+        <figcaption className="ar-mv__cap">
+          <span className="ar-mv__kind">{kind}</span>
+          {text ? <span className="ar-mv__text">{text}</span> : null}
+          {offered.length > 0 ? (
+            <span className="ar-mv__dls">
+              {offered.map((d) => (
+                <DownloadLink key={d.file.src} file={d.file} label={d.label} />
+              ))}
+            </span>
+          ) : null}
+        </figcaption>
         {description && (
-          <p id={descriptionId} className="sr-only">
+          <p id={descriptionId} className="ar-sr">
             {description}
           </p>
         )}

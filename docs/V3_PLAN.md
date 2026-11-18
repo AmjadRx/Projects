@@ -18,7 +18,7 @@ Phase 0 of the v3 build (`ARCHITECTURE.md` section 14). Written on 2026-11-16 on
 8. Questions for the owner
 9. Tools for this build
 10. Phase 1, after your go
-11. Phases 2 and 3, as built
+11. Phases 2 to 4, as built
 
 ## 1. Summary
 
@@ -613,9 +613,9 @@ Phase 1 is done when both themes render the shell at 390, 768, 1024, and 1440 px
 
 Pushing this commit lets Vercel build a preview of the unchanged v2 code plus these two documents, if the project builds every branch (its default). Nothing reaches production.
 
-## 11. Phases 2 and 3, as built
+## 11. Phases 2 to 4, as built
 
-The owner ran Phase 2 and then Phase 3 before Phase 1, so both stand on the v2 stack: Next.js 14.2.15, React 18.3, Tailwind CSS 3, and the v2 palette and fonts. Phase 1 still upgrades everything in section 4 and replaces the palette with `tokens.css`. The code is written to carry over: page `params` are already awaited, as Next 16 requires, and no component depends on a Next 14 behavior except where this section says so.
+The owner ran Phases 2, 3, and 4 before Phase 1, so all three stand on the v2 stack: Next.js 14.2.15, React 18.3, and Tailwind CSS 3. Phase 4 already brought the design bundle's tokens, fonts, and themes (11.3); Phase 1 still upgrades everything in section 4 and moves the Tailwind mapping of `app/tokens.css` into Tailwind 4's `@theme`. The code is written to carry over: page `params` are already awaited, as Next 16 requires, and no component depends on a Next 14 behavior except where this section says so.
 
 ### 11.1 Phase 2 (commit `62cfe9f`)
 
@@ -645,3 +645,17 @@ Schema version 3 in zod 4.6.7, the typed loaders, `lib/lint.ts`, the seed in `co
 - React Three Fiber moves from 8 to 9 and drei from 9 to 10 with React 19.
 
 **Open after Phase 3** (also in the phase report): the three files whose bytes do not match their extensions (R-16, Q-26) show correctly, resized, but get no download link until Q-26 re-encodes them; pan and zoom does not yet render a PDF page as its source; nothing has been tested in Safari, in Firefox, or on a real phone. Links into this repository are refused by the check, and dropped by the build, only where `GITHUB_REPO` is set. The Word reader pages a file at its explicit page and section breaks (docx-preview's `ignoreLastRenderedPageBreak` stays on, so no paragraph is split), so a file without breaks reads as one page. A `model3d` block with `explode: false` and several named parts still adds its parts row when the model loads, a small shift that Phase 6 can remove by reading the part names at upload.
+
+### 11.3 Phase 4
+
+- **The design bundle.** Applied from the owner's two Claude Design artifacts of 2026-11-17: the design system "Amjad Rehawi" (README, tokens, reference components and their READMEs) and the canvas "amjadrehawi.com home page" (the page boards and their CSS). Where the bundle and the handoff disagree, visual details follow the bundle; behavior, data, security, and content rules follow `ARCHITECTURE.md` and `CONTENT_RULES.md`. Each case and what was done is in the phase report.
+- **Tokens.** `app/tokens.css` is the bundle's `tokens.css` without its `@font-face` rules, and the only file with hex values. Phase 1 had not run, so Phase 4 wrote it on the current stack and mapped it into Tailwind 3 in `tailwind.config.ts` (colors are the token names: `sheet`, `ink`, `line`, `rule`, `night`, and so on). `lib/tokens.ts` reads a token's literal value at build time for the browser's theme color.
+- **Fonts.** Archivo (variable, weight 100 to 900, width 62 to 125) and B612 Mono, self-hosted through `next/font/local` from the bundle's files, with their OFL texts in `licenses/`. Space Grotesk and JetBrains Mono are gone. On Windows, Next 14.2 never records `next/font` files for preload (a path check expects forward slashes), so a local build has no font preload; a Vercel build does.
+- **Themes.** Blueprint (the default) and Whiteprint: `<html data-theme>`, the `theme` cookie holds `blueprint` or `whiteprint`, and the head script still reads the old `dark` and `light`.
+- **Styles.** `app/sheet.css` is the bundle's component stylesheet with its `ar-*` class names, less the preview scaffolding, the model hero, the command palette, and the live sky. `app/styles/frame.css`, `home.css`, `project.css`, and `site.css` hold the canvas's page styles (`hm-*`, `pj-*`, `st-*`). Page layout uses container queries on the page frame (`@container frame`), never viewport media queries, because with a classic scrollbar the frame is narrower than the window and the chrome follows the frame. `app/legacy.css` keeps only the v2 admin's helper classes until Phase 6.
+- **Components.** `components/sheet/`: Icon, Glass, Button, TextLink, Placeholder, CoverImage, AvailabilityBadge, DimensionCallouts, MaturityScale, Readout, TitleBlock, SpecTable, BomTable, RevisionTable, Roadmap, ProgressStrip, Callout, FilterBar with DomainFilter, Timeline, and ProjectCard. The chrome in `components/site/`: Nav, MobileMenu, ThemeToggle, Footer, and SheetFrame (zone ticks from 1024 px, no lit zone yet). Every viewer sits in the bundle's one media frame.
+- **The thermal ramp** renders only in the primary button's hover sweep, the maturity scale, the roadmap, and the 3D viewer's thermal view (`DESIGN_DIRECTION.md` 2.4, items 5, 2, 4, and 8), checked in the source and on every route in both themes. The hero lens, the heat rule, the Open Graph images, and the sky's dawn arrive with Phases 5 and 7. Each page has at most one filled amber element, its primary button.
+- **Not in this phase.** The live sky and its dawn (Blueprint shows the token gradient with the ground grid), the hero drawing, lens, and model (the hero stays in media mode), the heat rule, the lit zone, card tilt, callout draw-in, moving covers, the menu unroll, the ticker's motion, the load sequence, and the footer's sky credit line (Phase 5); the search button, the command palette, the print stylesheet, and the Open Graph images (Phase 7).
+- **Tests.** No test changed what it proves. The home fidelity test no longer lists the thesis pillars' one-letter keys, which the design does not draw and which any page would have matched anyway.
+
+**Open after Phase 4** (also in the phase report): the owner's answer to Q-12 (the bundle prints the five step names under the maturity scale; the site prints only the content's label); the home page's selected work index, which also prints each pitch because the Phase 3 fidelity test requires every pitch on the home page (the board's index has none); "See the work", which opens `/projects` where the board scrolls to the selected work; and four new interface words: "Every entry from every project, newest first.", "No entries yet.", "See the projects", and "No sheet at this address".

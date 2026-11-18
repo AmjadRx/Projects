@@ -168,6 +168,23 @@ export function isRemoteUrl(src: string): boolean {
   return /^https?:\/\//i.test(src);
 }
 
+/**
+ * True when next/image may optimize the file: local files, and files on the owner's own Blob
+ * store when its host is configured (next.config.mjs). SVG and other remote files are served as
+ * they are.
+ */
+export function canOptimize(src: string): boolean {
+  if (extensionOf(src) === 'svg') return false;
+  if (!isRemoteUrl(src)) return true;
+  const blobHost = process.env.NEXT_PUBLIC_BLOB_STORE_HOST;
+  if (!blobHost) return false;
+  try {
+    return new URL(src).hostname === blobHost;
+  } catch {
+    return false;
+  }
+}
+
 export function fileNameOf(src: string): string {
   const clean = src.split(/[?#]/)[0];
   const name = clean.slice(clean.lastIndexOf('/') + 1);

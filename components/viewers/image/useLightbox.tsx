@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic';
 import { X } from 'lucide-react';
 import { Component, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import Icon from '@/components/sheet/Icon';
 import { UI } from '@/lib/strings';
 import { useFocusTrap } from '../shared/hooks';
 import type { LightboxProps } from './Lightbox';
@@ -18,9 +19,11 @@ import type { LightboxProps } from './Lightbox';
 const Lightbox = dynamic(() => import('./Lightbox'), { ssr: false, loading: () => null });
 
 /**
- * Shown for the moment the lightbox code takes to arrive: the lightbox's own background with a
- * close button. Escape or the button cancels the open, and the lightbox never appears after.
- * Focus stays inside, and the page behind does not scroll, as in the lightbox itself.
+ * Shown for the moment the lightbox code takes to arrive: the lightbox itself (bundle Lightbox,
+ * state "loading"), with Close in its corner and an empty stage; after 600 ms a 2 px line runs
+ * along the stage's foot (not under reduced motion). Escape or Close cancels the open, and the
+ * lightbox never appears after. Focus stays inside, and the page behind does not scroll, as in the
+ * lightbox itself.
  */
 function LightboxLoading({ label, onClose }: { label: string; onClose: () => void }) {
   const coverRef = useRef<HTMLDivElement>(null);
@@ -28,30 +31,19 @@ function LightboxLoading({ label, onClose }: { label: string; onClose: () => voi
   // takes over, focus is already inside it and stays there.
   useFocusTrap(coverRef, true, onClose, { restoreFocus: false });
   return createPortal(
-    <div
-      ref={coverRef}
-      role="dialog"
-      aria-modal="true"
-      aria-label={label}
-      aria-busy="true"
-      className="fixed inset-0 z-[70] flex flex-col bg-well text-well-ink"
-    >
-      <div className="flex min-h-[52px] items-center justify-end border-b border-[color:var(--well-line)] py-1 pl-4 pr-2">
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label={UI.viewers.close}
-          title={UI.viewers.close}
-          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[2px] px-2 hover:bg-well-ink/10 focus-visible:outline-well-ink"
-        >
-          <X size={20} aria-hidden />
+    <div ref={coverRef} role="dialog" aria-modal="true" aria-label={label} aria-busy="true" className="ar-lightbox ar-lightbox--one">
+      <div className="ar-lightbox__top">
+        <button type="button" className="ar-iconbtn" onClick={onClose} aria-label={UI.viewers.close} title={UI.viewers.close}>
+          <Icon icon={X} size={20} />
         </button>
       </div>
-      <div className="flex flex-1 items-center justify-center">
-        <span className="data text-sm" role="status">
+      <div className="ar-lightbox__stage">
+        <span className="ar-lightbox__bar" aria-hidden="true" />
+        <span className="ar-sr" role="status">
           {UI.viewers.loading}
         </span>
       </div>
+      <div className="ar-lightbox__bottom" aria-hidden="true" />
     </div>,
     document.body,
   );

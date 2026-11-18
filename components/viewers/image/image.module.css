@@ -1,6 +1,7 @@
 /*
- * The inline photo and the gallery strip. Nothing here animates. Photos sit on the night color;
- * small or off-ratio photos are contained at no more than their natural size (docs/V3_PLAN.md R-15).
+ * The photo viewer's well and the build log's photo wells. The media frame, the gallery strip and
+ * the lightbox are app/sheet.css 18 and 25 (the bundle's ar-mv, ar-gal and ar-lightbox). Nothing
+ * here animates. Colors are tokens; there are no viewport media queries: layout reads the frame.
  */
 
 /* The photo inside a viewer well is a button: selecting it opens the lightbox (D-63). */
@@ -12,6 +13,7 @@
   justify-content: center;
   width: 100%;
   height: 100%;
+  margin: 0;
   padding: 0;
   border: 0;
   background: transparent;
@@ -27,77 +29,18 @@
   height: 100%;
 }
 
-/* The mark in the corner that says the photo opens larger. */
+/* The full-screen plate in the top right corner says the photo opens larger; the whole well is the button. */
 .mark {
-  position: absolute;
-  right: 8px;
-  bottom: 8px;
-  z-index: 2;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 2px;
-  border: 1px solid var(--well-line);
-  background: rgb(var(--well) / 0.8);
-  color: rgb(var(--well-ink));
   pointer-events: none;
 }
 
-.grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-}
-
-@media (min-width: 768px) {
-  .grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
-  }
-}
-
-/* One gallery item: a 4:3 well with the photo or the poster, as a button. */
-.thumb {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  aspect-ratio: 4 / 3;
-  overflow: hidden;
-  padding: 0;
-  border: 1px solid var(--line);
-  border-radius: 2px;
-  background: rgb(var(--well));
-  color: rgb(var(--well-ink));
-  cursor: zoom-in;
-}
-
-/* The play mark on a video and the 3D mark on a model. */
-.kindMark {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  z-index: 2;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  transform: translate(-50%, -50%);
-  border-radius: 2px;
-  border: 1px solid rgb(var(--well-ink) / 0.6);
-  background: rgb(var(--well) / 0.82);
-  color: rgb(var(--well-ink));
-  pointer-events: none;
+.open:hover .mark :global(.ar-mv__btn) {
+  border-color: var(--on-night);
 }
 
 /*
- * The focus ring of the inline photo is drawn inside the well, above the photo: the frame clips
- * anything outside it, and a dark, light, dark ring stays visible on any photo. Gallery items keep the
- * site's own ring, which has room around them.
+ * The focus ring of the photo is drawn inside the well, above the photo: the frame clips anything
+ * outside it, and a dark, light, dark ring stays visible on any photo.
  */
 .open:focus-visible {
   outline: none;
@@ -110,17 +53,64 @@
   z-index: 3;
   pointer-events: none;
   box-shadow:
-    inset 0 0 0 2px rgb(var(--well)),
-    inset 0 0 0 4px rgb(var(--well-ink)),
-    inset 0 0 0 6px rgb(var(--well));
+    inset 0 0 0 2px var(--night),
+    inset 0 0 0 4px var(--on-night),
+    inset 0 0 0 6px var(--night);
 }
 
 .img {
   -webkit-user-drag: none;
 }
 
-/* The shared download link wraps its type and size under its name on narrow screens. */
-.frame :global(.download-link) {
+.frame {
+  min-width: 0;
+}
+
+/*
+ * The build log's photos (bundle RevisionTable): small 16:10 night wells, 128 px wide, each a
+ * button that opens the entry's photos in the lightbox. On a phone one photo takes the column's
+ * width, at most 280 px.
+ */
+.wells {
+  display: flex;
   flex-wrap: wrap;
-  column-gap: 6px;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wellItem {
+  flex: none;
+  width: 128px;
+}
+
+@container frame (max-width: 767px) {
+  .one .wellItem {
+    width: min(100%, 280px);
+  }
+}
+
+.well {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: var(--cover-ratio);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background-color: var(--night);
+  color: var(--on-night);
+  cursor: zoom-in;
+}
+
+.well:focus-visible {
+  outline-offset: 2px;
+}
+
+/* A small well whose file did not load: the mark alone; the words go to screen readers. */
+.wellFailed {
+  cursor: auto;
 }

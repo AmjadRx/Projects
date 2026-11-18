@@ -1,7 +1,11 @@
 'use client';
 
 /**
- * The 3D model viewer (ARCHITECTURE.md 13A "ModelViewer"; DESIGN_DIRECTION.md 6.1 and 11).
+ * The 3D model viewer (bundle ModelViewer; ARCHITECTURE.md 13A "ModelViewer"; DESIGN_DIRECTION.md
+ * 6.1 and 11): a 16:10 well, the views (Realistic, Blueprint, Thermal) as a pressed group on the
+ * bar with the camera buttons beside it and the hint "Drag to orbit" until the first touch, then
+ * the exploded-view range and the parts list. The Thermal view is labelled "Illustration, not
+ * measured data." in the well's bottom left corner.
  *
  * This shell is all a page ships: the poster, the toolbar, and the state. The engine
  * (ModelEngine.tsx, with three.js) loads with next/dynamic only when the viewer may run: in view
@@ -13,9 +17,9 @@
  * design geometry. The text alternative is the content's alt text.
  */
 import dynamic from 'next/dynamic';
-import { Box, ChevronDown, ChevronUp, Home, Play, RotateCcw, RotateCw, ZoomIn, ZoomOut } from 'lucide-react';
-import { useCallback, useEffect, useId, useRef, useState, type FocusEvent, type ReactNode } from 'react';
-import { aspectOf } from '@/lib/media';
+import { Box, ChevronDown, ChevronUp, Home, Play, RotateCcw, RotateCw, ZoomIn, ZoomOut, type LucideIcon } from 'lucide-react';
+import { useCallback, useEffect, useId, useRef, useState, type FocusEvent } from 'react';
+import Icon from '@/components/sheet/Icon';
 import { UI } from '@/lib/strings';
 import { cn } from '@/lib/utils';
 import Poster from '../shared/Poster';
@@ -27,8 +31,12 @@ import { useDocumentVisible, useInView, useReducedMotion } from '../shared/hooks
 import { useViewerActivation } from '../shared/useViewerActivation';
 import type { ModelView, ModelViewerProps } from '../types';
 import { ROTATE_STEP, ZOOM_STEP, type EngineHandle, type EnginePart } from './engine-types';
+import styles from './ModelViewer.module.css';
 
 const ModelEngine = dynamic(() => import('./ModelEngine'), { ssr: false, loading: () => null });
+
+/** The well (bundle MediaFrame): 16:10. */
+const MODEL_ASPECT = 16 / 10;
 
 let webgl2: boolean | undefined;
 
@@ -49,29 +57,29 @@ function supportsWebGL2(): boolean {
 
 function ToolButton({
   label,
+  icon,
   onClick,
   disabled,
-  children,
 }: {
   label: string;
+  icon: LucideIcon;
   onClick: () => void;
   disabled: boolean;
-  children: ReactNode;
 }) {
   return (
-    <button type="button" className="viewer-button" aria-label={label} title={label} disabled={disabled} onClick={onClick}>
-      {children}
+    <button type="button" className="ar-mv__btn" aria-label={label} title={label} disabled={disabled} onClick={onClick}>
+      <Icon icon={icon} size={18} />
     </button>
   );
 }
 
-/** A short message over the poster: why the engine is not running. */
+/** A short line on a night plate over the poster: why the engine is not running. */
 function Notice({ text, onShown }: { text: string; onShown?: () => void }) {
   useEffect(() => {
     onShown?.();
   }, [onShown]);
   return (
-    <p role="status" className="absolute inset-x-3 bottom-3 rounded-sm bg-well/90 px-3 py-2 font-mono text-xs text-well-ink">
+    <p role="status" className="ar-mv__note">
       {text}
     </p>
   );
@@ -183,15 +191,15 @@ export default function ModelViewer({ media, views, explode: offerExplode, callo
   const thermalOn = view === 'thermal' && live && ready;
 
   const toolbar = (
-    <div className="flex min-w-0 flex-1 flex-col gap-1">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+    <>
+      <div className={styles.row}>
         {offered.length > 1 && (
-          <div role="group" aria-label={UI.viewers.model.views} className="flex flex-wrap items-center gap-1">
+          <div role="group" aria-label={UI.viewers.model.views} className="ar-mv__views">
             {offered.map((option) => (
               <button
                 key={option}
                 type="button"
-                className="viewer-button px-3"
+                className="ar-mv__btn ar-mv__btn--text"
                 aria-pressed={view === option}
                 disabled={failed || webgl === false}
                 onClick={() => chooseView(option)}
@@ -201,35 +209,25 @@ export default function ModelViewer({ media, views, explode: offerExplode, callo
             ))}
           </div>
         )}
-        <div className="flex flex-wrap items-center gap-1">
-          <ToolButton label={UI.viewers.model.rotateLeft} disabled={controlsDisabled} onClick={command((api) => api.rotate(ROTATE_STEP, 0))}>
-            <RotateCcw size={18} aria-hidden />
-          </ToolButton>
-          <ToolButton label={UI.viewers.model.rotateRight} disabled={controlsDisabled} onClick={command((api) => api.rotate(-ROTATE_STEP, 0))}>
-            <RotateCw size={18} aria-hidden />
-          </ToolButton>
-          <ToolButton label={UI.viewers.model.rotateUp} disabled={controlsDisabled} onClick={command((api) => api.rotate(0, ROTATE_STEP))}>
-            <ChevronUp size={18} aria-hidden />
-          </ToolButton>
-          <ToolButton label={UI.viewers.model.rotateDown} disabled={controlsDisabled} onClick={command((api) => api.rotate(0, -ROTATE_STEP))}>
-            <ChevronDown size={18} aria-hidden />
-          </ToolButton>
-          <ToolButton label={UI.viewers.zoomIn} disabled={controlsDisabled} onClick={command((api) => api.zoom(1 / ZOOM_STEP))}>
-            <ZoomIn size={18} aria-hidden />
-          </ToolButton>
-          <ToolButton label={UI.viewers.zoomOut} disabled={controlsDisabled} onClick={command((api) => api.zoom(ZOOM_STEP))}>
-            <ZoomOut size={18} aria-hidden />
-          </ToolButton>
-          <ToolButton label={UI.viewers.resetView} disabled={controlsDisabled} onClick={command((api) => api.reset())}>
-            <Home size={18} aria-hidden />
-          </ToolButton>
+        <div className="ar-mv__group">
+          <ToolButton label={UI.viewers.model.rotateLeft} icon={RotateCcw} disabled={controlsDisabled} onClick={command((api) => api.rotate(ROTATE_STEP, 0))} />
+          <ToolButton label={UI.viewers.model.rotateRight} icon={RotateCw} disabled={controlsDisabled} onClick={command((api) => api.rotate(-ROTATE_STEP, 0))} />
+          <ToolButton label={UI.viewers.model.rotateUp} icon={ChevronUp} disabled={controlsDisabled} onClick={command((api) => api.rotate(0, ROTATE_STEP))} />
+          <ToolButton label={UI.viewers.model.rotateDown} icon={ChevronDown} disabled={controlsDisabled} onClick={command((api) => api.rotate(0, -ROTATE_STEP))} />
+          <ToolButton label={UI.viewers.zoomIn} icon={ZoomIn} disabled={controlsDisabled} onClick={command((api) => api.zoom(1 / ZOOM_STEP))} />
+          <ToolButton label={UI.viewers.zoomOut} icon={ZoomOut} disabled={controlsDisabled} onClick={command((api) => api.zoom(ZOOM_STEP))} />
+          <ToolButton label={UI.viewers.resetView} icon={Home} disabled={controlsDisabled} onClick={command((api) => api.reset())} />
         </div>
+        {/* Until the first touch; it keeps its place after, so the bar never moves. */}
+        <span className={cn('ar-mv__hint', (touched || failed || webgl === false) && styles.hintHidden)}>
+          {UI.viewers.model.hint}
+        </span>
       </div>
       {showPartsRow && (
-        <div className="flex min-h-[44px] min-w-0 flex-nowrap items-center gap-x-4">
+        <div className={styles.partsRow}>
           {offerExplode && (
-            <label className={cn('flex min-h-[44px] shrink-0 items-center gap-2 pl-2', explodeHidden && 'invisible')}>
-              <span className="font-mono text-xs text-ink-mute">{UI.viewers.model.explode}</span>
+            <label className={cn('ar-mv__range', explodeHidden && styles.invisible)}>
+              <span>{UI.viewers.model.explode}</span>
               <input
                 type="range"
                 min={0}
@@ -242,26 +240,21 @@ export default function ModelViewer({ media, views, explode: offerExplode, callo
                   setExplodeAmount(Number(event.target.value));
                   interact();
                 }}
-                className="h-11 w-28 cursor-pointer disabled:cursor-not-allowed sm:w-40"
               />
             </label>
           )}
           {parts && hasParts && (
-            // Width 0 and a share of the free space: a long list never widens the toolbar.
-            <div className="flex w-0 min-w-0 flex-1 items-center gap-2 pl-2">
-              <span id={partsLabelId} className="shrink-0 font-mono text-xs text-ink-mute">
+            // Width 0 and a share of the free space: a long list never widens the bar.
+            <div className={styles.parts}>
+              <span id={partsLabelId} className={styles.partsLabel}>
                 {UI.viewers.model.parts}
               </span>
-              {/* The padding, offset by the margin, keeps the 2 px focus ring inside the scrolling list. */}
-              <ul
-                aria-labelledby={partsLabelId}
-                className="-m-1 flex min-w-0 flex-nowrap items-center gap-1 overflow-x-auto p-1 [scrollbar-width:thin]"
-              >
+              <ul aria-labelledby={partsLabelId} className={styles.partsList}>
                 {parts.map((part) => (
-                  <li key={part.id} className="shrink-0">
+                  <li key={part.id}>
                     <button
                       type="button"
-                      className="viewer-button px-3 font-mono text-xs"
+                      className={cn('ar-mv__btn ar-mv__btn--text', styles.part)}
                       aria-pressed={pinned === part.id}
                       disabled={controlsDisabled}
                       onPointerEnter={(event) => {
@@ -283,25 +276,22 @@ export default function ModelViewer({ media, views, explode: offerExplode, callo
           )}
         </div>
       )}
-    </div>
+    </>
   );
 
   return (
     <ViewerFrame
       label={UI.viewers.model.modelFallback}
-      aspect={aspectOf(media, 4 / 3)}
+      kind={UI.viewers.kind.model}
+      aspect={MODEL_ASPECT}
       caption={media.caption}
+      fileName={media.file.name}
       description={media.alt || undefined}
       toolbar={toolbar}
     >
-      <div ref={wellRef} className="absolute inset-0">
-        {!(live && ready) &&
-          (media.poster || !(requiresTap && !started) ? (
-            <Poster media={media} />
-          ) : (
-            // Waiting for a tap with no poster: the plain grid, so nothing shows around the button.
-            <div className="viewer-placeholder" aria-hidden />
-          ))}
+      <div ref={wellRef} className={styles.well}>
+        {/* Waiting for a tap with no poster: the plain grid, so nothing shows around the button. */}
+        {!(live && ready) && (media.poster || !(requiresTap && !started)) && <Poster media={media} wellAspect={MODEL_ASPECT} />}
         {engineOn && (
           <ViewerErrorBoundary fallback={<Notice text={UI.viewers.model.failed} onShown={handleFailed} />}>
             <ModelEngine
@@ -322,31 +312,23 @@ export default function ModelViewer({ media, views, explode: offerExplode, callo
           </ViewerErrorBoundary>
         )}
         {requiresTap && !started && (
-          <TapToLoad label={UI.viewers.model.load} onActivate={startFromButton} icon={<Box size={18} aria-hidden />} />
+          <TapToLoad label={UI.viewers.model.load} onActivate={startFromButton} icon={<Icon icon={Box} size={18} />} />
         )}
         {suspended && (
-          <div className="viewer-tap px-4">
-            <div className="flex max-w-xs flex-col items-center gap-3 rounded-sm bg-well/90 px-4 py-3 text-center">
-              <p className="font-mono text-xs text-well-ink">{UI.viewers.model.paused}</p>
-              <button type="button" className="viewer-tap__button" onClick={startFromButton}>
-                <Play size={18} aria-hidden />
-                <span>{UI.viewers.model.resume}</span>
-              </button>
-            </div>
-          </div>
+          <>
+            <TapToLoad label={UI.viewers.model.resume} onActivate={startFromButton} icon={<Icon icon={Play} size={18} />} />
+            <p className="ar-mv__note">{UI.viewers.model.paused}</p>
+          </>
         )}
         {webgl === false && <Notice text={UI.viewers.model.noWebgl} />}
         {live && !ready && (
-          <p role="status" className="absolute bottom-3 left-3 font-mono text-xs text-well-ink">
+          <p role="status" className="ar-mv__note">
             {UI.viewers.loading}
           </p>
         )}
-        <div aria-live="polite" className="pointer-events-none absolute left-3 top-3">
-          {thermalOn && (
-            <p className="rounded-sm bg-well/75 px-2 py-1 font-mono text-xs text-well-ink">
-              {UI.viewers.model.thermalCaption}
-            </p>
-          )}
+        {/* The Thermal view's label (bundle .ar-mv__note), announced when it appears. */}
+        <div aria-live="polite">
+          {thermalOn && <p className="ar-mv__note">{UI.viewers.model.thermalCaption}</p>}
         </div>
       </div>
     </ViewerFrame>

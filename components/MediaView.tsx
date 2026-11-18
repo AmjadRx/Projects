@@ -21,7 +21,7 @@ export function MediaPlaceholder({ label, className }: { label?: string; classNa
   return (
     <div
       className={cn(
-        'relative flex h-full w-full items-center justify-center overflow-hidden bg-surface-2',
+        'relative flex h-full w-full items-center justify-center overflow-hidden bg-sheet-3',
         className,
       )}
       aria-hidden
@@ -32,7 +32,7 @@ export function MediaPlaceholder({ label, className }: { label?: string; classNa
             <path
               d="M 28 0 L 0 0 0 28"
               fill="none"
-              stroke="rgb(var(--ink-mute) / 0.25)"
+              stroke="color-mix(in srgb, var(--ink-mute) 25%, transparent)"
               strokeWidth="1"
             />
           </pattern>
@@ -41,8 +41,8 @@ export function MediaPlaceholder({ label, className }: { label?: string; classNa
       </svg>
       <div className="relative flex flex-col items-center gap-2">
         <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden>
-          <path d="M6 27 L18 9 L30 27" stroke="rgb(var(--ink-mute))" strokeWidth="1.5" strokeLinejoin="round" />
-          <path d="M12 20 L24 20" stroke="rgb(var(--ink-mute) / 0.5)" strokeWidth="1.5" />
+          <path d="M6 27 L18 9 L30 27" stroke="var(--ink-mute)" strokeWidth="1.5" strokeLinejoin="round" />
+          <path d="M12 20 L24 20" stroke="color-mix(in srgb, var(--ink-mute) 50%, transparent)" strokeWidth="1.5" />
         </svg>
         {label && (
           <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute">

@@ -1,75 +1,76 @@
-import { ExternalLink } from 'lucide-react';
-import LinkIcon from '@/components/LinkIcon';
+import { ArrowUpRight, ExternalLink, Github } from 'lucide-react';
+import Icon from '@/components/sheet/Icon';
 import { loadRepoCard, type RepoCardData } from '@/lib/github-repo';
 import { UI } from '@/lib/strings';
 
-const linkClass = 'text-link inline-flex min-h-[44px] items-center [overflow-wrap:anywhere]';
+/** The repository's own name, after its owner ("AmjadRx/MoonLight" gives "MoonLight"). */
+function repoName(fullName: string): string {
+  const slash = fullName.indexOf('/');
+  return slash >= 0 ? fullName.slice(slash + 1) : fullName;
+}
 
-function Card({ card }: { card: RepoCardData }) {
+/**
+ * The card (bundle RepoCard, app/sheet.css 26): one link around a glass card with the GitHub
+ * glyph, the project's title (or the repository's name), its address in the data type, its
+ * description, its language and last update (read at build time), and "Open on GitHub". No stars,
+ * forks, or other counts. Hover turns the rule to the line color and moves the arrow; focus draws
+ * the ring around the card.
+ */
+function Card({ card, title }: { card: RepoCardData; title?: string }) {
+  const address = card.href.replace(/^https?:\/\//i, '');
   return (
-    <div role="group" aria-label={UI.viewers.repo.repository} className="viewer-frame">
-      <div className="flex flex-col gap-2 p-4 md:p-5">
-        <p className="flex items-center gap-2.5 text-lg font-medium">
-          <span className="shrink-0 text-ink">
-            <LinkIcon icon="github" size={20} />
-          </span>
-          <a href={card.href} rel="noopener noreferrer" className={linkClass}>
-            {card.fullName}
-          </a>
-        </p>
-        {card.description && <p className="max-w-[72ch] text-ink-dim">{card.description}</p>}
+    <a href={card.href} rel="noopener noreferrer" className="ar-repo">
+      <span className="ar-repo__icon">
+        <Icon icon={Github} size={22} />
+      </span>
+      <span className="ar-repo__body">
+        <span className="ar-repo__title">{title ?? repoName(card.fullName)}</span>
+        <span className="ar-repo__name">{address}</span>
+        {card.description && <span className="ar-repo__desc">{card.description}</span>}
         {(card.language || card.pushed) && (
-          <dl className="flex flex-wrap gap-x-8 gap-y-1 text-sm">
+          <span className="ar-repo__meta">
             {card.language && (
-              <div className="flex items-baseline gap-2">
-                <dt className="text-ink-mute">{UI.viewers.repo.language}</dt>
-                <dd className="data text-ink">{card.language}</dd>
-              </div>
+              <span>
+                <span className="ar-repo__key">{UI.viewers.repo.language}</span> {card.language}
+              </span>
             )}
             {card.pushed && (
-              <div className="flex items-baseline gap-2">
-                <dt className="text-ink-mute">{UI.viewers.repo.updated}</dt>
-                <dd className="data text-ink">
-                  <time dateTime={card.pushed.iso}>{card.pushed.date}</time>
-                </dd>
-              </div>
+              <span>
+                <span className="ar-repo__key">{UI.viewers.repo.updated}</span>{' '}
+                <time dateTime={card.pushed.iso}>{card.pushed.date}</time>
+              </span>
             )}
-          </dl>
+          </span>
         )}
-      </div>
-      <div className="viewer-toolbar">
-        <a
-          href={card.href}
-          rel="noopener noreferrer"
-          className="inline-flex min-h-[44px] items-center gap-2 rounded-sm px-2 text-sm text-accent underline underline-offset-[3px]"
-        >
-          <ExternalLink size={16} aria-hidden />
-          <span>{UI.viewers.repo.open}</span>
-        </a>
-      </div>
-    </div>
+      </span>
+      <span className="ar-repo__go">
+        {UI.viewers.repo.open}
+        <Icon icon={ArrowUpRight} size={16} />
+      </span>
+    </a>
   );
 }
 
 /**
  * A public GitHub repository (ARCHITECTURE.md 13A, DESIGN_DIRECTION.md 11): its name, description,
  * language, and last update, read at build time and checked like content. Whenever that cannot be
- * done safely (lib/github-repo.ts says when), the block is the plain link. No script runs here.
+ * done safely (lib/github-repo.ts says when), the block is the same card with the address alone
+ * (a GitHub address), or a plain link (any other address). No script runs here.
  */
-export default async function RepoCard({ url }: { url: string }) {
+export default async function RepoCard({ url, title }: { url: string; title?: string }) {
   const result = await loadRepoCard(url);
   if (result.kind === 'none') return null;
   if (result.kind === 'link') {
+    if (result.github) {
+      const fullName = result.text.replace(/^github\.com\//i, '');
+      return <Card card={{ href: result.href, fullName }} title={title} />;
+    }
     return (
-      <p className="flex items-center gap-2">
-        <span className="shrink-0 text-ink-dim">
-          {result.github ? <LinkIcon icon="github" size={18} /> : <ExternalLink size={18} aria-hidden />}
-        </span>
-        <a href={result.href} rel="noopener noreferrer" className={linkClass}>
-          {result.text}
-        </a>
-      </p>
+      <a href={result.href} rel="noopener noreferrer" className="ar-mv__link">
+        <Icon icon={ExternalLink} size={16} />
+        <span>{result.text}</span>
+      </a>
     );
   }
-  return <Card card={result.card} />;
+  return <Card card={result.card} title={title} />;
 }

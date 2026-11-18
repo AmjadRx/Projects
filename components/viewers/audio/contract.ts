@@ -11,16 +11,18 @@ import type { ResolvedMedia } from '@/lib/media';
 export interface AudioState {
   ready: boolean;
   playing: boolean;
+  muted: boolean;
   /** Seconds; 0 until the metadata has loaded. */
   duration: number;
   failed: boolean;
 }
 
-export const INITIAL_AUDIO_STATE: AudioState = { ready: false, playing: false, duration: 0, failed: false };
+export const INITIAL_AUDIO_STATE: AudioState = { ready: false, playing: false, muted: false, duration: 0, failed: false };
 
 export interface AudioEngineApi {
   togglePlay: () => void;
   seekBy: (seconds: number) => void;
+  toggleMute: () => void;
 }
 
 export interface AudioEngineProps {

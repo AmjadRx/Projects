@@ -84,15 +84,28 @@ export interface WaveColors {
   head: string;
 }
 
-/** Colors from the well's ink token, so the waveform follows the theme. */
+/** A custom property's computed color, as the browser resolves it (rgb() or color()). */
+function tokenColor(element: Element, name: string, fallback: string): string {
+  const probe = document.createElement('span');
+  probe.style.cssText = `position:absolute;width:0;height:0;overflow:hidden;visibility:hidden;transition:none !important;color:var(${name}, ${fallback})`;
+  element.appendChild(probe);
+  try {
+    return getComputedStyle(probe).color || fallback;
+  } finally {
+    probe.remove();
+  }
+}
+
+/**
+ * Colors from the well's tokens, so the waveform follows the theme (bundle AudioPlayer): the bars
+ * in on-night, the played part in the night's line color (the line color in Blueprint, on-night
+ * in Whiteprint), and the playhead in on-night.
+ */
 export function readWaveColors(element: Element): WaveColors {
-  const raw = getComputedStyle(element).getPropertyValue('--well-ink').trim();
-  const parts = raw.split(/[\s,/]+/).map(Number);
-  const [r, g, b] = parts.length >= 3 && parts.slice(0, 3).every(Number.isFinite) ? parts : [255, 255, 255];
   return {
-    played: `rgba(${r}, ${g}, ${b}, 0.95)`,
-    rest: `rgba(${r}, ${g}, ${b}, 0.34)`,
-    head: `rgba(${r}, ${g}, ${b}, 1)`,
+    played: tokenColor(element, '--night-line', 'white'),
+    rest: tokenColor(element, '--on-night-dim', 'gray'),
+    head: tokenColor(element, '--on-night', 'white'),
   };
 }
 

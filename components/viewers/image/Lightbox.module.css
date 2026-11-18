@@ -1,53 +1,81 @@
 /*
- * The lightbox (docs/V3_PLAN.md D-63): a full-screen dialog on the night color in both themes,
- * with 44 px controls (D-67). Nothing here animates.
+ * The lightbox's parts that the bundle's .ar-lightbox (app/sheet.css 18) does not draw: the zoom
+ * group, the caption line, the photo stage's zoom and pan, and the players. Night in both themes,
+ * 44 px controls (D-67). Nothing here animates. The dialog is a portal on <body>, outside the page
+ * frame, so it is its own container, named `frame` too: a player inside it reads the window's
+ * width as it would read the page frame's.
  */
 .dialog {
-  position: fixed;
-  inset: 0;
-  z-index: 70;
-  display: flex;
-  flex-direction: column;
-  background: rgb(var(--well));
-  color: rgb(var(--well-ink));
+  container: lightbox frame / inline-size;
   outline: none;
+  font-family: var(--font-sans);
   /* A drag on the bars never scrolls the page behind (some phones ignore the scroll lock). */
   touch-action: none;
   overscroll-behavior: contain;
 }
 
-/* Focus rings in the well ink: the accent is too dark on the night color in the light theme. */
-.dialog :focus-visible {
-  outline: 2px solid rgb(var(--well-ink));
-  outline-offset: 2px;
+/* Zoom at the left of the top bar, Close at the right. */
+.dialog .top {
+  justify-content: space-between;
 }
 
-.bar {
+.group {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  min-height: 52px;
-  padding: 4px 8px 4px 16px;
-  border-bottom: 1px solid var(--well-line);
+  gap: var(--space-2);
 }
 
-.count {
-  font-size: 0.875rem;
-  color: rgb(var(--well-ink) / 0.85);
+/* "Fit": the icon button's plate, as wide as its word. */
+.dialog .textButton {
+  width: auto;
+  padding: 0 var(--space-3);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1;
+  font-weight: 500;
+}
+
+/* Previous, the count, and Next, centered; the caption line under them. */
+.dialog .bottom {
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.caption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1) var(--space-4);
+  max-width: 72ch;
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--on-night-dim);
+}
+
+.captionText {
+  color: var(--on-night);
 }
 
 .stage {
-  position: relative;
-  flex: 1 1 auto;
-  min-height: 0;
   overflow: hidden;
 }
 
-/* The modal stage owns every touch: drag pans, two fingers zoom, the page behind is locked. */
+/* The modal stage owns every touch: drag pans, two fingers zoom, the page behind is locked. It
+   keeps the bundle's 16 px from each side of the window. */
 .photoStage {
   position: absolute;
-  inset: 0;
+  inset: 0 var(--space-4);
   overflow: hidden;
   touch-action: none;
   user-select: none;
@@ -88,13 +116,13 @@
   overscroll-behavior: contain;
   /* A player taller than the stage scrolls inside it. */
   touch-action: pan-x pan-y;
-  padding: 12px;
+  padding: 0 var(--space-4);
 }
 
 /*
  * A player is as wide as the stage allows while its frame still fits the height (16rem holds the
- * lightbox bars and the player's own controls and caption). On a short screen it keeps a usable
- * width, and the stage scrolls.
+ * lightbox bars and the player's own bar and caption). On a short screen it keeps a usable width,
+ * and the stage scrolls. It sits in its own media frame: the frame's ink, not the night's.
  */
 .player {
   width: 100%;
@@ -102,87 +130,26 @@
   max-width: calc((100dvh - 16rem) * var(--player-aspect, 1.7778));
   min-width: min(100%, 480px);
   margin: auto;
+  color: var(--ink);
 }
 
 .other {
-  position: relative;
   width: min(100%, 900px);
   margin: auto;
-  overflow: hidden;
-  border: 1px solid var(--well-line);
-  border-radius: 2px;
+  border: 1px solid var(--night-rule);
+  border-radius: var(--radius);
 }
 
-.footer {
-  border-top: 1px solid var(--well-line);
-  padding: 4px 8px;
+.loading {
+  margin: 0;
+  padding: var(--space-4);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--on-night);
 }
 
-.controls {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.group {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 44px;
-  min-height: 44px;
-  padding: 0 8px;
-  border-radius: 2px;
-  color: rgb(var(--well-ink));
-  background: transparent;
-}
-
-.button:hover {
-  background: rgb(var(--well-ink) / 0.1);
-}
-
-.button[aria-disabled='true'] {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.button[aria-disabled='true']:hover {
-  background: transparent;
-}
-
-.caption {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  column-gap: 16px;
-  row-gap: 2px;
-  padding: 2px 8px 4px;
-  font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 0.75rem;
-  color: rgb(var(--well-ink) / 0.8);
-}
-
-.captionText {
-  color: rgb(var(--well-ink));
-}
-
-/*
- * The shared download link, recolored for the night background in both themes; its type and
- * size wrap under its name on narrow screens.
- */
-.caption :global(.download-link) {
-  flex-wrap: wrap;
-  column-gap: 6px;
-  color: rgb(var(--well-ink));
-}
-
-.caption :global(.download-link__meta) {
-  color: rgb(var(--well-ink) / 0.75);
+@container lightbox (max-width: 767px) {
+  .playerArea {
+    padding: 0 var(--space-2);
+  }
 }

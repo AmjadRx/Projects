@@ -1,0 +1,1124 @@
+/*
+ * The design system's component styles, ported from the Claude Design bundle (bundle.css) with its
+ * class names (ar-*) and section numbers. Colors, sizes and spaces come from app/tokens.css.
+ *
+ * Breakpoints are container queries on .ar-frame (the page wrapper in components/site/SiteChrome):
+ * phone under 768 px, tablet 768 to 1023 px, desktop 1024 px and up.
+ *
+ * Left out of the bundle: 6 (heat rule), 22 (preview scaffolding), 27 (hero model), 33 (command
+ * palette), the live sky, the preview-only state classes (is-hover, is-focus, is-pressed), and,
+ * until Phase 5, the motion of the callout draw-in, the card tilt and rim highlight, moving card
+ * covers, and the menu unroll. Hover transitions stay; reduced motion turns them off.
+ * Rules marked "site" are additions for real markup.
+ */
+
+/* ---------- 1. The sheet ---------- */
+
+.ar-frame {
+  container: frame / inline-size;
+  position: relative;
+  /* site: the backdrop (section 23) paints between this background and the content */
+  isolation: isolate;
+  background-color: var(--sheet);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 17px;
+  line-height: 1.65;
+  font-variation-settings: "wdth" 100;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  --heat: linear-gradient(90deg, var(--t0), var(--t1), var(--t2), var(--t3), var(--t4), var(--t5), var(--t6));
+  --heat-scale: linear-gradient(90deg, var(--t1), var(--t2), var(--t3), var(--t4), var(--t5), var(--t6));
+  --heat-scale-v: linear-gradient(180deg, var(--t1), var(--t2), var(--t3), var(--t4), var(--t5), var(--t6));
+  --heat-sweep: linear-gradient(90deg, var(--t0), var(--t1), var(--t2), var(--t3), var(--t4), var(--t5));
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.ar-frame *, .ar-frame *::before, .ar-frame *::after { box-sizing: border-box; }
+
+/* Glass and the night wells. Glass dims and blurs the sky behind a panel; Whiteprint has no sky,
+   so its glass is the plain white panel. Inside a night well (photos, video, viewers) lines and
+   labels use the night inks in both themes. */
+:root, [data-theme] {
+  --glass-filter: blur(var(--glass-blur)) brightness(var(--glass-dim));
+  --night-line: var(--line);
+  --on-night-dim: color-mix(in srgb, var(--on-night) 72%, var(--night));
+  --night-rule: color-mix(in srgb, var(--on-night) 30%, transparent);
+  --night-grid-minor: var(--grid-minor);
+  --night-grid-major: var(--grid-major);
+}
+[data-theme="whiteprint"] {
+  --glass-filter: none;
+  --night-line: var(--on-night);
+  --night-grid-minor: color-mix(in srgb, var(--on-night) 6%, transparent);
+  --night-grid-major: color-mix(in srgb, var(--on-night) 12%, transparent);
+}
+.ar-glassy { background-color: var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); }
+.ar-frame img { max-width: 100%; }
+
+.ar-grid {
+  background-image:
+    linear-gradient(var(--grid-major) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-major) 1px, transparent 1px),
+    linear-gradient(var(--grid-minor) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-minor) 1px, transparent 1px);
+  background-size:
+    var(--grid-step-major) var(--grid-step-major),
+    var(--grid-step-major) var(--grid-step-major),
+    var(--grid-step-minor) var(--grid-step-minor),
+    var(--grid-step-minor) var(--grid-step-minor);
+}
+
+/* Width axis of Archivo. Headlines run at 112 to 125, body at 100. */
+.ar-w100 { font-variation-settings: "wdth" 100; }
+.ar-w112 { font-variation-settings: "wdth" 112; }
+.ar-w118 { font-variation-settings: "wdth" 118; }
+.ar-w125 { font-variation-settings: "wdth" 125; }
+
+/* Fluid steps: phone value at 390 px, token value at 1440 px. */
+.ar-fluid-hero { font-size: clamp(44px, calc(4.9524cqi + 24.686px), 96px); }
+.ar-fluid-display { font-size: clamp(40px, calc(3.8095cqi + 25.143px), 80px); }
+.ar-fluid-h1 { font-size: clamp(28px, calc(2.6667cqi + 17.6px), 56px); }
+.ar-fluid-h2 { font-size: clamp(28px, calc(1.1429cqi + 23.543px), 40px); }
+.ar-fluid-h3 { font-size: clamp(21px, calc(0.6667cqi + 18.4px), 28px); }
+.ar-fluid-readout { font-size: clamp(40px, calc(1.5238cqi + 34.057px), 56px); }
+
+.ar-tnum { font-variant-numeric: tabular-nums; }
+.ar-sr {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0;
+  overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+}
+
+/* Focus: a 2 px ring in line, 2 px from the control. */
+.ar-frame :focus-visible { outline: var(--focus-width) solid var(--line); outline-offset: var(--focus-offset); }
+.ar-frame :focus:not(:focus-visible) { outline: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ar-frame *, .ar-frame *::before, .ar-frame *::after,
+  .ar-mmenu *, .ar-mmenu *::before, .ar-mmenu *::after { transition: none !important; animation: none !important; }
+}
+
+/* site: the skip link, hidden until it has focus, then a 44 px plate in the top left corner. */
+.ar-skip {
+  position: absolute; left: var(--space-3); top: var(--space-3); z-index: 100;
+  display: inline-flex; align-items: center; min-height: var(--touch-target); padding: 0 var(--space-4);
+  border: 1px solid var(--line); border-radius: var(--radius); background-color: var(--sheet-2); color: var(--ink);
+  font-size: 15px; line-height: 1.2; font-weight: 600; font-variation-settings: "wdth" 112; text-decoration: none;
+  transform: translateY(-200%);
+}
+.ar-skip:focus, .ar-skip:focus-visible { position: fixed; transform: none; }
+
+/* ---------- 2. Icons ---------- */
+
+.ar-icon { display: inline-block; flex: none; vertical-align: middle; }
+
+/* ---------- 3. Buttons ---------- */
+
+.ar-btn {
+  position: relative; isolation: isolate;
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
+  min-height: 48px; margin: 0; padding: 0 var(--space-5);
+  border: 1px solid transparent; border-radius: var(--radius);
+  font-family: var(--font-sans); font-size: 15px; line-height: 1.2; font-weight: 600;
+  font-variation-settings: "wdth" 112; letter-spacing: 0.005em;
+  text-decoration: none; white-space: nowrap; cursor: pointer; overflow: hidden;
+  transition: transform 120ms var(--ease-out);
+  -webkit-tap-highlight-color: transparent;
+}
+.ar-btn::before { content: ""; position: absolute; inset: 0; z-index: -1; opacity: 0; transition: opacity 150ms ease-out; }
+.ar-btn:active { transform: translateY(1px); }
+
+.ar-btn--primary { background-color: var(--action); color: var(--on-action); }
+.ar-btn__sweep {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 3px;
+  background-image: var(--heat-sweep);
+  transform: scaleX(0); transform-origin: left center;
+  transition: transform 240ms var(--ease-out);
+}
+.ar-btn--primary:hover .ar-btn__sweep { transform: scaleX(1); }
+
+.ar-btn--secondary { background-color: var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); border-color: var(--line); color: var(--ink); }
+.ar-btn--secondary::before { background-color: var(--sheet-3); }
+.ar-btn--secondary:hover::before { opacity: 1; }
+
+.ar-btn--text {
+  min-height: var(--touch-target); padding: 0 var(--space-1);
+  border: 0; background: none; color: var(--line); overflow: visible;
+}
+.ar-btn--text .ar-btn__label { position: relative; }
+.ar-btn--text .ar-btn__label::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -3px; height: 1px;
+  background-color: currentColor; transform: scaleX(0); transform-origin: left center;
+  transition: transform 150ms ease-out;
+}
+.ar-btn--text:hover .ar-btn__label::after { transform: scaleX(1); }
+.ar-btn--text .ar-icon { transition: transform 150ms ease-out; }
+.ar-btn--text:hover .ar-icon { transform: translateX(3px); }
+
+/* Disabled: drawn in phantom line, the convention for what is not available. */
+.ar-btn:disabled, .ar-btn[aria-disabled="true"] {
+  background: transparent; border: 1px dashed var(--ink-mute); color: var(--ink-mute);
+  cursor: not-allowed; transform: none;
+}
+.ar-btn:disabled .ar-btn__sweep, .ar-btn[aria-disabled="true"] .ar-btn__sweep { display: none; }
+.ar-btn--text:disabled, .ar-btn--text[aria-disabled="true"] { border: 0; }
+.ar-btn--text:disabled .ar-btn__label::after, .ar-btn--text[aria-disabled="true"] .ar-btn__label::after { display: none; }
+
+.ar-iconbtn {
+  position: relative; isolation: isolate;
+  display: inline-grid; place-items: center; width: var(--touch-target); height: var(--touch-target);
+  margin: 0; padding: 0; border: 1px solid var(--line); border-radius: var(--radius);
+  background: transparent; color: var(--ink); cursor: pointer;
+  transition: transform 120ms var(--ease-out);
+}
+.ar-iconbtn::before { content: ""; position: absolute; inset: 0; z-index: -1; background-color: var(--sheet-3); opacity: 0; transition: opacity 150ms ease-out; }
+.ar-iconbtn:hover::before { opacity: 1; }
+.ar-iconbtn:active { transform: translateY(1px); }
+.ar-iconbtn:disabled { border-style: dashed; border-color: var(--ink-mute); color: var(--ink-mute); cursor: not-allowed; transform: none; }
+.ar-iconbtn:disabled::before { display: none; }
+
+/* ---------- 4. Links ---------- */
+
+.ar-link { color: var(--line); text-decoration: none; border-radius: 1px; }
+.ar-link--inline {
+  text-decoration-line: underline; text-decoration-thickness: 1px;
+  text-underline-offset: 0.22em; text-decoration-color: var(--rule);
+}
+.ar-link--inline:hover { text-decoration-color: currentColor; }
+.ar-link--standalone {
+  display: inline-flex; align-items: center; gap: var(--space-1);
+  min-height: var(--touch-target); font-weight: 500;
+}
+.ar-link__text { position: relative; }
+.ar-link--standalone .ar-link__text::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -2px; height: 1px;
+  background-color: currentColor; transform: scaleX(0); transform-origin: left center;
+  transition: transform 150ms ease-out;
+}
+.ar-link--standalone:hover .ar-link__text::after { transform: scaleX(1); }
+
+/* site: links inside content Markdown that sits in a sheet component take the inline link style. */
+.ar-rev__text a, .ar-callout__text a {
+  color: var(--line); text-decoration-line: underline; text-decoration-thickness: 1px;
+  text-underline-offset: 0.22em; text-decoration-color: var(--rule);
+}
+.ar-rev__text a:hover, .ar-callout__text a:hover { text-decoration-color: currentColor; }
+
+/* ---------- 5. Availability badge (the only pill) ---------- */
+
+.ar-badge {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  width: fit-content; min-height: 32px; margin: 0; padding: 0 var(--space-3) 0 10px;
+  border: 1px solid var(--line); border-radius: var(--radius-pill);
+  background-color: var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter);
+  font-size: 15px; line-height: 1.2; font-weight: 500; color: var(--ink); white-space: nowrap;
+}
+.ar-badge__dot { width: 8px; height: 8px; border-radius: 50%; background-color: var(--line); flex: none; }
+
+/* ---------- 7. Theme toggle ---------- */
+
+.ar-theme {
+  display: inline-flex; gap: 2px; padding: 2px; margin: 0;
+  border: 1px solid var(--ink-mute); border-radius: var(--radius);
+  background-color: var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter);
+}
+.ar-theme__opt {
+  position: relative; display: inline-flex; align-items: center; gap: var(--space-2);
+  min-height: 38px; padding: 0 var(--space-3); border: 0; border-radius: 1px;
+  background: transparent; color: var(--ink-dim);
+  font-family: var(--font-sans); font-size: 15px; line-height: 1.2; font-weight: 500; cursor: pointer;
+}
+.ar-theme__opt:hover { color: var(--ink); }
+/* site: the active option follows the page's theme, so it is right from the first paint, before the
+   buttons' aria-pressed is set in the browser. */
+html[data-theme="blueprint"] .ar-theme__opt[data-value="blueprint"],
+html[data-theme="whiteprint"] .ar-theme__opt[data-value="whiteprint"] { background-color: var(--sheet-3); color: var(--ink); }
+.ar-theme__swatch { display: inline-block; width: 12px; height: 12px; border: 1px solid var(--line); background-color: var(--sheet); flex: none; }
+.ar-theme--compact .ar-theme__opt { width: 38px; padding: 0; justify-content: center; }
+/* site: each option answers a 44 px target (D-67) while it is drawn at the bundle's 38 px. */
+.ar-theme__opt::after { content: ""; position: absolute; inset: -3px; }
+
+/* ---------- 8. Nav ---------- */
+
+.ar-nav { position: relative; z-index: 10; background-color: var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); border-bottom: 1px solid var(--rule); }
+/* site: the nav is sticky; inside the sheet frame it starts at the frame's inset. */
+.ar-nav--sticky { position: sticky; top: 0; z-index: 30; }
+.ar-nav__in {
+  display: flex; align-items: center; gap: var(--space-6);
+  height: var(--nav-height); max-width: var(--max-content); margin: 0 auto; padding: 0 var(--gutter-phone);
+}
+.ar-nav__name {
+  display: inline-flex; align-items: center; min-height: var(--touch-target);
+  font-size: 17px; line-height: 1; font-weight: 650; font-variation-settings: "wdth" 118;
+  letter-spacing: -0.005em; color: var(--ink); text-decoration: none; white-space: nowrap;
+}
+.ar-nav__links { display: none; align-items: center; gap: var(--space-5); margin: 0; padding: 0; list-style: none; }
+.ar-nav__link {
+  position: relative; display: inline-flex; align-items: center; justify-content: center;
+  min-width: var(--touch-target); min-height: var(--touch-target);
+  font-size: 15px; line-height: 1; font-weight: 500; color: var(--ink-dim); text-decoration: none; white-space: nowrap;
+}
+.ar-nav__link::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 10px; height: 1px;
+  background-color: var(--line); transform: scaleX(0); transform-origin: left center; transition: transform 150ms ease-out;
+}
+.ar-nav__link:hover { color: var(--ink); }
+.ar-nav__link:hover::after { transform: scaleX(1); }
+/* site: "page" on the page itself, "true" on a page under it (a project under Projects). */
+.ar-nav__link[aria-current] { color: var(--ink); }
+.ar-nav__link[aria-current]::after { transform: scaleX(1); height: 2px; }
+.ar-nav__tools { display: flex; align-items: center; gap: var(--space-3); margin-left: auto; }
+.ar-nav__tools .ar-nav__desk { display: none; }
+.ar-nav__social { place-items: center; width: var(--touch-target); height: var(--touch-target); border-radius: var(--radius); color: var(--ink-dim); }
+.ar-nav__social:hover { color: var(--ink); }
+/* site: LinkedIn and GitHub keep their words in the nav (CONTENT_RULES.md 4): icon and word. */
+.ar-nav__social--word {
+  gap: var(--space-2); width: auto; padding: 0 var(--space-1);
+  font-size: 15px; line-height: 1; font-weight: 500; text-decoration: none; white-space: nowrap;
+}
+.ar-menubtn {
+  display: inline-flex; align-items: center; gap: var(--space-2); min-height: var(--touch-target); padding: 0 var(--space-3);
+  border: 1px solid var(--line); border-radius: var(--radius); background: transparent; color: var(--ink);
+  font-family: var(--font-sans); font-size: 15px; font-weight: 600; cursor: pointer;
+}
+@container frame (min-width: 1024px) {
+  .ar-nav--sticky { top: var(--frame-inset); }
+  .ar-nav__in { padding: 0 var(--gutter-desktop); }
+  .ar-nav__links { display: flex; }
+  .ar-nav__tools .ar-nav__desk { display: inline-flex; }
+  .ar-nav__tools .ar-nav__social.ar-nav__desk { display: inline-grid; }
+  .ar-nav__tools .ar-nav__social--word.ar-nav__desk { display: inline-flex; }
+  .ar-menubtn { display: none; }
+}
+/* site: with the words in place of the search button, the bar keeps its spacing tighter until 1280 px. */
+@container frame (min-width: 1024px) and (max-width: 1279px) {
+  .ar-nav__in { gap: var(--space-5); }
+  .ar-nav__links { gap: var(--space-4); }
+  .ar-nav__tools { gap: var(--space-2); }
+}
+
+/* ---------- 9. Sheet frame and zone ticks (1024 px and up) ---------- */
+
+.ar-sheetframe { position: fixed; inset: 0; z-index: 40; pointer-events: none; display: none; }
+@container frame (min-width: 1024px) { .ar-sheetframe { display: block; } }
+.ar-sheetframe__band { position: absolute; background-color: var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); }
+.ar-sheetframe__band--t { top: 0; left: 0; right: 0; height: var(--frame-inset); }
+.ar-sheetframe__band--b { bottom: 0; left: 0; right: 0; height: var(--frame-inset); }
+.ar-sheetframe__band--l { top: 0; bottom: 0; left: 0; width: var(--frame-inset); }
+.ar-sheetframe__band--r { top: 0; bottom: 0; right: 0; width: var(--frame-inset); }
+.ar-sheetframe__border { position: absolute; inset: var(--frame-inset); border: 1px solid var(--rule); }
+.ar-sheetframe__cols, .ar-sheetframe__rows { position: absolute; display: grid; margin: 0; padding: 0; list-style: none; }
+.ar-sheetframe__cols { top: 0; left: var(--frame-inset); right: var(--frame-inset); height: var(--frame-inset); grid-auto-flow: column; grid-auto-columns: 1fr; }
+.ar-sheetframe__rows { left: 0; top: var(--frame-inset); bottom: var(--frame-inset); width: var(--frame-inset); grid-auto-rows: 1fr; }
+.ar-sheetframe__cols > li, .ar-sheetframe__rows > li {
+  position: relative; display: grid; place-items: center;
+  font-family: var(--font-mono); font-size: 13px; line-height: 1; letter-spacing: 0; color: var(--ink-mute);
+}
+.ar-sheetframe__cols > li + li::before { content: ""; position: absolute; left: 0; bottom: 0; width: 1px; height: 6px; background-color: var(--rule); }
+.ar-sheetframe__rows > li + li::before { content: ""; position: absolute; top: 0; right: 0; width: 6px; height: 1px; background-color: var(--rule); }
+/* The lit zone follows scroll in Phase 5; nothing sets it yet. */
+.ar-sheetframe__rows > li.is-lit { color: var(--line); font-weight: 700; }
+.ar-sheetframe__rows > li.is-lit::after { content: ""; position: absolute; top: 0; bottom: 0; right: -1px; width: 2px; background-color: var(--line); }
+
+/* ---------- 10. Placeholder ---------- */
+
+.ar-ph {
+  position: relative; display: grid; place-items: center; align-content: center; gap: var(--space-3);
+  width: 100%; height: 100%; min-height: 120px; background-color: var(--sheet);
+}
+.ar-ph__cross { color: var(--ink-mute); }
+.ar-ph__text { margin: 0; font-size: 15px; line-height: 1.4; font-weight: 500; color: var(--ink-mute); }
+.ar-ph--sm { min-height: 0; }
+.ar-ph--sm .ar-ph__text { display: none; }
+.ar-ph--error { gap: var(--space-2); }
+.ar-ph__icon { display: inline-grid; color: var(--ink-mute); }
+.ar-ph__alt { margin: 0; max-width: 40ch; padding: 0 var(--space-4); font-size: 13px; line-height: 1.45; color: var(--ink-dim); text-align: center; }
+.ar-ph__retry {
+  display: inline-flex; align-items: center; min-height: var(--touch-target); margin: 0; padding: 0 var(--space-3);
+  border: 0; background: transparent; color: var(--line); cursor: pointer;
+  font-family: var(--font-sans); font-size: 15px; line-height: 1.2; font-weight: 600; font-variation-settings: "wdth" 112;
+  text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.22em;
+}
+/* Loading: the well keeps its size; after 600 ms a 2 px line runs along its foot, transform only. */
+.ar-ph__bar { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; overflow: hidden; opacity: 0; animation: ar-ph-in 1ms linear 600ms forwards; }
+.ar-ph__bar::before { content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 30%; background-color: var(--line); transform: translateX(-100%); animation: ar-ph-run 1400ms linear 600ms infinite; }
+@keyframes ar-ph-in { to { opacity: 1; } }
+@keyframes ar-ph-run { from { transform: translateX(-100%); } to { transform: translateX(334%); } }
+@media (prefers-reduced-motion: reduce) { .ar-ph__bar { display: none; } }
+
+/* ---------- 11. Media well, dimension callouts ---------- */
+
+.ar-well, .ar-mv__well, .ar-gal__frame {
+  position: relative; overflow: hidden; background-color: var(--night);
+  background-image:
+    linear-gradient(var(--night-grid-major) 1px, transparent 1px),
+    linear-gradient(90deg, var(--night-grid-major) 1px, transparent 1px),
+    linear-gradient(var(--night-grid-minor) 1px, transparent 1px),
+    linear-gradient(90deg, var(--night-grid-minor) 1px, transparent 1px);
+  background-size: 64px 64px, 64px 64px, 8px 8px, 8px 8px;
+}
+.ar-well { aspect-ratio: var(--cover-ratio); border-radius: var(--radius); }
+.ar-well > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+/* site: a photo still loading in a night well (CoverImage) draws the placeholder's loading line
+   (section 10) in the night line color, which holds its contrast on night in both themes. */
+.ar-well__bar { z-index: 1; pointer-events: none; }
+.ar-well__bar::before { background-color: var(--night-line); }
+
+.ar-dim { position: relative; margin: 0; }
+.ar-dim__svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.ar-dim__plates { position: absolute; inset: 0; pointer-events: none; }
+.ar-dim__case { fill: none; stroke: var(--sheet); stroke-width: 4; stroke-linecap: square; }
+.ar-dim__ln { fill: none; stroke: var(--line); stroke-width: 1.5; stroke-linecap: square; }
+/* Hidden until drawn: on the project page at once, on a card while it is hovered. No draw-in
+   motion until Phase 5. */
+.ar-dim__draw { stroke-dasharray: 1; stroke-dashoffset: 1; }
+.ar-dim__arrow { fill: var(--line); stroke: var(--sheet); stroke-width: 1.5; paint-order: stroke; opacity: 0; }
+.ar-dim__plate {
+  position: absolute; display: inline-flex; align-items: baseline; gap: var(--space-2);
+  padding: 4px var(--space-2); background-color: var(--sheet); border: 1px solid var(--line); border-radius: var(--radius);
+  white-space: nowrap; opacity: 0;
+}
+.ar-dim__plate .ar-dim__label { font-size: 13px; line-height: 1.3; font-weight: 500; color: var(--ink-dim); }
+.ar-dim__plate .ar-dim__value { font-family: var(--font-mono); font-size: 15px; line-height: 1.3; color: var(--ink); }
+.ar-dim.is-drawn .ar-dim__draw, .ar-card:hover .ar-dim__draw { stroke-dashoffset: 0; }
+.ar-dim.is-drawn .ar-dim__arrow, .ar-card:hover .ar-dim__arrow,
+.ar-dim.is-drawn .ar-dim__plate, .ar-card:hover .ar-dim__plate { opacity: 1; }
+
+.ar-dim__row {
+  display: none; margin: var(--space-3) 0 0; padding: 0 0 0 var(--space-3); list-style: none;
+  border: 1px solid var(--rule); border-radius: var(--radius);
+  background-color: var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter);
+}
+.ar-dim__row > li { display: flex; flex: 0 1 auto; flex-direction: column; gap: 2px; padding: var(--space-3) var(--space-3) var(--space-3) 0; min-width: 0; }
+.ar-dim__row > li:last-child { flex: 1 1 0; }
+.ar-dim__row > li + li { padding-left: var(--space-3); border-left: 1px solid var(--rule); }
+.ar-dim__row .ar-dim__value { font-family: var(--font-mono); font-size: 21px; line-height: 1.25; color: var(--ink); }
+.ar-dim__row .ar-dim__label { font-size: 13px; line-height: 1.4; font-weight: 500; color: var(--ink-mute); }
+.ar-dim--auto .ar-dim__row { display: flex; }
+.ar-dim--auto .ar-dim__svg, .ar-dim--auto .ar-dim__plates { display: none; }
+@container frame (min-width: 768px) {
+  .ar-dim--auto .ar-dim__row { display: none; }
+  .ar-dim--auto .ar-dim__svg, .ar-dim--auto .ar-dim__plates { display: block; }
+}
+.ar-dim--row .ar-dim__row { display: flex; }
+.ar-dim--row .ar-dim__svg, .ar-dim--row .ar-dim__plates { display: none; }
+/* No photo, or a photo that did not load: nothing is drawn on the well, so the callouts read as the row at every width. */
+.ar-dim--auto.ar-dim--nophoto .ar-dim__row { display: flex; }
+/* site: the bundle lets the readouts shrink below their words and gives the last one only the room
+   the others leave, which cuts a third value off on a phone (Bronco Racing at 390 px, on the board
+   too). Each readout keeps the width of its longest word, a word breaks inside its cell only as a
+   last resort, and on frames narrower than the 390 px boards the readouts stack. */
+.ar-dim__row > li { min-width: auto; }
+.ar-dim__row .ar-dim__value, .ar-dim__row .ar-dim__label { overflow-wrap: break-word; }
+@container frame (max-width: 389px) {
+  .ar-dim__row { flex-direction: column; padding: 0 var(--space-3); }
+  .ar-dim__row > li { padding: var(--space-3) 0; }
+  .ar-dim__row > li + li { padding-left: 0; border-left: 0; border-top: 1px solid var(--rule); }
+}
+
+/* site: on the project page the cover opens in the lightbox: a button laid over the whole well,
+   above the photo (a sibling after it), below the dimension lines (which take no pointer). */
+.ar-dim__zoom { position: absolute; inset: 0; display: block; width: 100%; height: 100%; margin: 0; padding: 0; border: 0; background: none; cursor: zoom-in; }
+.ar-dim__zoom:focus-visible { outline: none; }
+.ar-dim__zoom:focus-visible::after {
+  content: ""; position: absolute; inset: 0; z-index: 3; pointer-events: none;
+  box-shadow: inset 0 0 0 2px var(--night), inset 0 0 0 4px var(--on-night), inset 0 0 0 6px var(--night);
+}
+.ar-dim__mark {
+  position: absolute; right: var(--space-2); bottom: var(--space-2); z-index: 2;
+  display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: var(--radius);
+  border: 1px solid var(--night-rule); color: var(--on-night); background-color: color-mix(in srgb, var(--night) 82%, transparent);
+}
+
+/* ---------- 12. Maturity scale ---------- */
+
+.ar-ms { margin: 0; }
+.ar-ms__cells { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-1); margin: 0; padding: 0; list-style: none; }
+.ar-ms__box { position: relative; display: block; height: 14px; border: 1px dashed var(--ink-mute); }
+.ar-ms--compact .ar-ms__box { height: 10px; }
+.ar-ms__cell.is-filled > .ar-ms__box { border-style: solid; border-color: var(--ink-dim); }
+.ar-ms__heat {
+  position: absolute; inset: 2px;
+  background-image: var(--heat-scale); background-size: 500% 100%;
+  background-position: calc(var(--i) * 25%) 0;
+}
+.ar-ms__name { display: block; margin-top: var(--space-2); font-size: 13px; line-height: 1.3; font-weight: 500; color: var(--ink-mute); }
+.ar-ms__cell.is-current > .ar-ms__name { color: var(--ink); font-weight: 650; }
+.ar-ms__label { margin: var(--space-3) 0 0; font-size: 15px; line-height: 1.5; color: var(--ink-dim); }
+.ar-ms__caption { margin: var(--space-2) 0 0; font-size: 15px; line-height: 1.5; color: var(--ink-dim); }
+.ar-ms__step { color: var(--ink); font-weight: 650; }
+
+/* ---------- 13. Readouts ---------- */
+
+.ar-readouts {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0; padding: 0; list-style: none;
+  border: 1px solid var(--rule); border-radius: var(--radius);
+  background-color: var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter);
+}
+.ar-readouts > li { display: flex; min-width: 0; }
+.ar-readouts > li:nth-child(2n) { border-left: 1px solid var(--rule); }
+.ar-readouts > li:nth-child(n + 3) { border-top: 1px solid var(--rule); }
+@container frame (min-width: 768px) {
+  .ar-readouts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .ar-readouts > li:nth-child(2n) { border-left: 0; }
+  .ar-readouts > li:not(:nth-child(3n + 1)) { border-left: 1px solid var(--rule); }
+  .ar-readouts > li:nth-child(n + 3) { border-top: 0; }
+  .ar-readouts > li:nth-child(n + 4) { border-top: 1px solid var(--rule); }
+}
+@container frame (min-width: 1024px) {
+  .ar-readouts { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .ar-readouts > li:nth-child(n + 4) { border-top: 0; }
+  .ar-readouts > li:nth-child(n + 2) { border-left: 1px solid var(--rule); }
+}
+.ar-readout {
+  position: relative; isolation: isolate; display: flex; flex-direction: column; gap: var(--space-2);
+  width: 100%; padding: var(--space-5) var(--space-4) var(--space-5);
+  color: inherit; text-decoration: none;
+}
+.ar-readout::before { content: ""; position: absolute; inset: 0; z-index: -1; background-color: var(--sheet-2); opacity: 0; transition: opacity 150ms ease-out; }
+.ar-readout:hover::before { opacity: 1; }
+.ar-readout:focus-visible { outline-offset: -2px; }
+.ar-readout__value { display: flex; align-items: baseline; gap: 2px; margin: 0; padding-right: 20px; color: var(--ink); white-space: nowrap; }
+.ar-readout__affix { color: var(--ink-dim); font-size: 0.5em; letter-spacing: 0; }
+.ar-readout__label { margin: 0; font-size: 15px; line-height: 1.45; font-weight: 500; color: var(--ink-dim); }
+.ar-readout__go { position: absolute; top: var(--space-4); right: var(--space-3); color: var(--ink-mute); transition: transform 150ms ease-out; }
+.ar-readout:hover .ar-readout__go { color: var(--line); transform: translate(2px, -2px); }
+
+/* ---------- 14. Title block ---------- */
+
+.ar-tb {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; margin: 0;
+  border: 1px solid var(--line); border-radius: var(--radius); font-family: var(--font-mono);
+  background-color: var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter);
+}
+.ar-tb__cell { margin: 0; padding: var(--space-3) var(--space-4); border-top: 1px solid var(--rule); min-width: 0; }
+.ar-tb__cell:nth-child(-n + 2) { border-top: 0; }
+.ar-tb__cell--wide { grid-column: 1 / -1; }
+.ar-tb__cell--end { border-left: 1px solid var(--rule); }
+.ar-tb dt { font-size: 13px; line-height: 1.54; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-mute); }
+.ar-tb dd { margin: var(--space-1) 0 0; font-size: 15px; line-height: 1.6; color: var(--ink); overflow-wrap: anywhere; }
+.ar-tb__cell--project dd { font-size: 21px; line-height: 1.33; }
+.ar-tb__caps { text-transform: uppercase; letter-spacing: 0.04em; }
+.ar-tb .ar-ms { margin-top: var(--space-2); font-family: var(--font-sans); }
+.ar-tb__links { display: flex; flex-wrap: wrap; gap: 0 var(--space-4); margin: 0; padding: 0; list-style: none; font-family: var(--font-sans); }
+/* site: a link that leads nowhere public prints as plain text, at the same height. */
+.ar-tb__text { display: inline-flex; align-items: center; min-height: var(--touch-target); }
+/* site: under the nav and inside the sheet frame's inset. */
+@container frame (min-width: 1024px) { .ar-tb--rail { position: sticky; top: calc(var(--frame-inset) + var(--nav-height) + var(--space-5)); } }
+
+/* ---------- 15. Tables: spec, bill of materials, revisions ---------- */
+
+.ar-table { width: 100%; border-collapse: collapse; border-spacing: 0; }
+.ar-table caption { text-align: left; }
+.ar-th-caps {
+  padding: 0 var(--space-4) var(--space-2) 0; text-align: left; vertical-align: bottom;
+  font-family: var(--font-mono); font-size: 13px; line-height: 1.54; font-weight: 400;
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-mute);
+  border-bottom: 1px solid var(--ink-mute);
+}
+
+.ar-spec { border-top: 1px solid var(--ink-mute); border-bottom: 1px solid var(--ink-mute); }
+.ar-spec tr + tr { border-top: 1px solid var(--rule); }
+.ar-spec th { width: 34%; padding: var(--space-3) var(--space-5) var(--space-3) 0; text-align: left; vertical-align: top; font-size: 15px; line-height: 1.6; font-weight: 500; color: var(--ink-dim); }
+.ar-spec td { padding: var(--space-3) 0; vertical-align: top; font-family: var(--font-mono); font-size: 15px; line-height: 1.6; color: var(--ink); }
+@container frame (max-width: 767px) {
+  .ar-spec tr { display: block; padding: var(--space-3) 0; }
+  .ar-spec th, .ar-spec td { display: block; width: auto; padding: 0; }
+  .ar-spec td { margin-top: var(--space-1); }
+}
+
+.ar-bom { border-bottom: 1px solid var(--ink-mute); }
+.ar-bom__item-col { width: 64px; }
+.ar-bom__proof-col { width: 34%; }
+.ar-bom__tier th { padding: var(--space-6) 0 var(--space-1); text-align: left; font-size: 17px; line-height: 1.4; font-weight: 650; font-variation-settings: "wdth" 112; color: var(--ink); }
+.ar-bom__group th { padding: var(--space-2) 0 var(--space-2); text-align: left; font-size: 15px; line-height: 1.5; font-weight: 500; color: var(--ink-dim); border-bottom: 1px solid var(--rule); }
+.ar-bom__row td { padding: var(--space-3) var(--space-4) var(--space-3) 0; vertical-align: top; border-bottom: 1px solid var(--rule); }
+.ar-bom__n { font-family: var(--font-mono); font-size: 13px; line-height: 1.9; color: var(--ink-mute); }
+.ar-bom__skill { font-size: 17px; line-height: 1.5; color: var(--ink); }
+.ar-bom__proof { font-size: 15px; line-height: 1.6; }
+.ar-bom__proof .ar-link--standalone { min-height: 0; }
+/* site: drawn at its text height, the proof link still answers a 44 px target (D-67). */
+.ar-bom__proof .ar-link--standalone { position: relative; }
+.ar-bom__proof .ar-link--standalone::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: var(--touch-target); transform: translateY(-50%); }
+.ar-bom__none { color: var(--ink-mute); }
+@container frame (max-width: 767px) {
+  .ar-bom thead { display: none; }
+  .ar-bom, .ar-bom tbody, .ar-bom tr, .ar-bom th, .ar-bom td { display: block; }
+  .ar-bom tr.ar-bom__row { display: grid; grid-template-columns: 40px minmax(0, 1fr); padding: var(--space-3) 0; border-bottom: 1px solid var(--rule); }
+  .ar-bom__row td { padding: 0; border: 0; }
+  .ar-bom__row td.ar-bom__proof { grid-column: 2; margin-top: var(--space-1); }
+  .ar-bom__tier th { padding-top: var(--space-5); }
+}
+
+.ar-rev { border-bottom: 1px solid var(--ink-mute); }
+.ar-rev__rev-col { width: 64px; }
+.ar-rev__date-col { width: 136px; }
+.ar-rev__proj-col { width: 160px; }
+.ar-rev tbody tr + tr td { border-top: 1px solid var(--rule); }
+.ar-rev td { padding: var(--space-4) var(--space-4) var(--space-4) 0; vertical-align: top; }
+.ar-rev__rev, .ar-rev__date { font-family: var(--font-mono); font-size: 15px; line-height: 1.6; color: var(--ink); white-space: nowrap; }
+.ar-rev__desc { display: flex; gap: var(--space-4); align-items: flex-start; }
+/* site: the text column takes the room beside the photo. */
+.ar-rev__desc > :first-child { flex: 1 1 auto; min-width: 0; }
+.ar-rev__title { margin: 0; font-size: 17px; line-height: 1.5; font-weight: 600; color: var(--ink); }
+.ar-rev__text { margin: var(--space-1) 0 0; font-size: 17px; line-height: 1.6; color: var(--ink-dim); max-width: var(--measure); }
+/* site: the entry text is the content's Markdown, so it may hold paragraphs and lists. */
+.ar-rev__text > :first-child { margin-top: 0; }
+.ar-rev__text p, .ar-rev__text ul, .ar-rev__text ol { margin: 0; }
+.ar-rev__text p + p, .ar-rev__text p + ul, .ar-rev__text p + ol, .ar-rev__text ul + p, .ar-rev__text ol + p { margin-top: var(--space-2); }
+.ar-rev__text ul { padding-left: 1.25em; list-style: disc; }
+.ar-rev__text ol { padding-left: 1.25em; list-style: decimal; }
+.ar-rev__photo { flex: none; width: 128px; margin-left: auto; }
+.ar-rev__photo .ar-well { aspect-ratio: var(--cover-ratio); }
+/* site: an entry's photos (the lazy gallery) sit under its text. */
+.ar-rev__media { margin-top: var(--space-3); max-width: 36rem; }
+.ar-rev__proj { font-size: 15px; line-height: 1.6; }
+@container frame (max-width: 767px) {
+  .ar-rev thead { display: none; }
+  .ar-rev, .ar-rev tbody, .ar-rev tr, .ar-rev td { display: block; }
+  .ar-rev tbody tr.ar-rev__row { display: grid; grid-template-columns: auto 1fr; column-gap: var(--space-3); padding: var(--space-4) 0; }
+  .ar-rev tbody tr + tr { border-top: 1px solid var(--rule); }
+  .ar-rev tbody tr + tr td { border-top: 0; }
+  .ar-rev td { padding: 0; }
+  .ar-rev td.ar-rev__cell-desc, .ar-rev td.ar-rev__cell-proj { grid-column: 1 / -1; margin-top: var(--space-2); }
+  .ar-rev__desc { flex-direction: column; }
+  /* site: the text cell takes the entry's full width, so a short entry's photo is not narrowed to its text. */
+  .ar-rev__desc > :first-child { align-self: stretch; }
+  .ar-rev__photo { margin-left: 0; width: 100%; max-width: 280px; }
+}
+
+/* ---------- 16. Roadmap ---------- */
+
+.ar-road { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+@container frame (min-width: 768px) { .ar-road { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@container frame (min-width: 1024px) { .ar-road { grid-template-columns: repeat(8, minmax(0, 1fr)); } }
+.ar-road__stage {
+  position: relative; display: grid; grid-template-columns: 10px minmax(0, 1fr); gap: var(--space-3);
+  padding: var(--space-4); border: 1px dashed var(--ink-mute); border-radius: var(--radius);
+  background-color: var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter);
+}
+.ar-road__stage.is-current { border: 1px solid var(--line); }
+.ar-road__stage.is-done { border: 1px solid var(--ink-dim); }
+.ar-road__bar { position: relative; border: 1px dashed var(--ink-mute); }
+.ar-road__stage.is-current .ar-road__bar, .ar-road__stage.is-done .ar-road__bar { border: 1px solid var(--ink-dim); }
+.ar-road__heat {
+  position: absolute; inset: 1px;
+  background-image: var(--heat-scale-v); background-size: 100% 800%;
+  background-position: 0 calc(var(--i) * 100% / 7);
+}
+.ar-road__body { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+.ar-road__n { font-family: var(--font-mono); font-size: 13px; line-height: 1.54; letter-spacing: 0.04em; color: var(--ink-mute); }
+.ar-road__title { margin: 0; font-size: 17px; line-height: 1.35; font-weight: 600; color: var(--ink); }
+.ar-road__desc { margin: 0; font-size: 17px; line-height: 1.55; color: var(--ink-dim); }
+.ar-road__status { margin-top: var(--space-2); font-size: 13px; line-height: 1.4; font-weight: 650; color: var(--ink-mute); }
+.ar-road__stage.is-current .ar-road__status { color: var(--line); }
+@container frame (min-width: 768px) {
+  .ar-road__stage { grid-template-columns: minmax(0, 1fr); grid-template-rows: 10px auto; align-content: start; }
+  .ar-road__heat { background-image: var(--heat-scale); background-size: 800% 100%; background-position: calc(var(--i) * 100% / 7) 0; }
+  .ar-road__title { font-size: 15px; }
+  .ar-road__desc { font-size: 15px; }
+  .ar-road__status { margin-top: auto; padding-top: var(--space-2); }
+}
+
+/* ---------- 17. Project card ---------- */
+
+/* The tilt toward the pointer and the highlight along the rim arrive with Phase 5. */
+.ar-card {
+  position: relative; display: flex; flex-direction: column; min-width: 0;
+  background-color: var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter);
+  border: 1px solid var(--rule); border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+}
+.ar-card:hover { border-color: var(--line); }
+.ar-card:has(.ar-card__link:focus-visible) { outline: var(--focus-width) solid var(--line); outline-offset: var(--focus-offset); }
+.ar-card__link:focus-visible { outline: none; }
+.ar-card__cover { position: relative; }
+.ar-card__cover .ar-well { border-radius: var(--radius) var(--radius) 0 0; }
+.ar-card__body { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4) var(--space-4) var(--space-5); }
+.ar-card__title { margin: 0; font-size: 21px; line-height: 1.3; font-weight: 600; font-variation-settings: "wdth" 112; }
+.ar-card__link { color: var(--ink); text-decoration: none; }
+.ar-card__link::after { content: ""; position: absolute; inset: 0; z-index: 2; }
+.ar-card__pitch { margin: 0; font-size: 17px; line-height: 1.6; color: var(--ink-dim); }
+.ar-card__status { margin: 0; font-family: var(--font-mono); font-size: 13px; line-height: 1.5; color: var(--ink-mute); }
+.ar-card__open { display: inline-flex; align-items: center; gap: var(--space-1); margin-top: var(--space-2); font-size: 15px; font-weight: 600; font-variation-settings: "wdth" 112; color: var(--line); }
+.ar-card__open .ar-icon { transition: transform 150ms ease-out; }
+.ar-card:hover .ar-card__open .ar-icon { transform: translateX(3px); }
+@container frame (min-width: 1024px) {
+  .ar-card__body { padding: var(--space-5); }
+  .ar-card--featured { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
+  .ar-card--featured .ar-card__cover, .ar-card--featured .ar-card__cover .ar-dim { height: 100%; }
+  .ar-card--featured .ar-card__cover .ar-well { height: 100%; min-height: 360px; aspect-ratio: auto; border-radius: var(--radius) 0 0 var(--radius); }
+  .ar-card--featured .ar-card__body { justify-content: center; gap: var(--space-4); padding: var(--space-6); }
+  .ar-card--featured .ar-card__title { font-size: 28px; line-height: 1.15; font-variation-settings: "wdth" 118; }
+}
+
+@container frame (max-width: 767px) { .ar-card .ar-dim__svg, .ar-card .ar-dim__plates { display: none; } }
+
+/* ---------- 18. Gallery and lightbox ---------- */
+
+.ar-gal { position: relative; --gal-h: 440px; }
+@container frame (max-width: 767px) { .ar-gal { --gal-h: 360px; } }
+.ar-gal__track {
+  display: flex; gap: var(--space-4); margin: 0; padding: 0 0 var(--space-2); list-style: none;
+  overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; scrollbar-width: none;
+}
+.ar-gal__track::-webkit-scrollbar { display: none; }
+/* site: the track is its frames' offset parent, so a frame's offsetLeft is its place in the strip;
+   and 4 px of room on every side keeps a frame's focus ring clear of the track's clip (the frames
+   still start at the column's edge and end 8 px above the bar's 12 px, as drawn). */
+.ar-gal__track {
+  position: relative;
+  margin: calc(-1 * var(--space-1)); padding: var(--space-1) var(--space-1) var(--space-3);
+  scroll-padding-inline: var(--space-1);
+}
+.ar-gal__item { flex: none; scroll-snap-align: start; }
+.ar-gal__frame {
+  position: relative; display: block; height: var(--gal-h); aspect-ratio: var(--r, 3 / 4);
+  margin: 0; padding: 0; border: 0; border-radius: var(--radius); overflow: hidden;
+  background-color: var(--night); cursor: zoom-in;
+}
+.ar-gal__frame > img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.ar-gal__kind {
+  position: absolute; left: var(--space-2); top: var(--space-2); padding: 2px var(--space-2);
+  font-family: var(--font-mono); font-size: 13px; line-height: 1.5; color: var(--on-night);
+  background-color: color-mix(in srgb, var(--night) 82%, transparent); border: 1px solid var(--night-rule); border-radius: var(--radius);
+}
+.ar-gal__play {
+  position: absolute; left: 50%; top: 50%; display: grid; place-items: center; width: 56px; height: 56px; transform: translate(-50%, -50%);
+  border: 1px solid var(--night-rule); border-radius: var(--radius); color: var(--on-night); background-color: color-mix(in srgb, var(--night) 82%, transparent);
+}
+.ar-gal__frame:focus-visible { outline-offset: 2px; }
+.ar-gal__bar {
+  display: flex; align-items: center; gap: var(--space-2); width: fit-content; margin-top: var(--space-3); padding: var(--space-1);
+  border: 1px solid var(--rule); border-radius: var(--radius);
+  background-color: var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter);
+}
+.ar-gal__count { margin: 0 var(--space-3) 0 var(--space-2); font-family: var(--font-mono); font-size: 13px; line-height: 1.5; color: var(--ink-mute); }
+/* site: at either end the unavailable button stays focusable (aria-disabled) and turns phantom. */
+.ar-gal__bar .ar-iconbtn[aria-disabled="true"] { border-style: dashed; border-color: var(--ink-mute); color: var(--ink-mute); cursor: not-allowed; transform: none; }
+.ar-gal__bar .ar-iconbtn[aria-disabled="true"]::before { display: none; }
+/* One item: a single figure at the gallery's height and its own ratio, never wider than the column. No track, no snap, no bar. */
+.ar-gal--single .ar-gal__track { display: block; overflow: visible; padding-bottom: 0; }
+.ar-gal--single .ar-gal__track { margin: 0; padding: 0; }
+.ar-gal--single .ar-gal__frame { height: auto; width: min(100%, calc(var(--gal-h) * var(--r, 0.75))); }
+/* A frame whose file did not load: the well keeps the frame's size and holds the message and Try again. */
+.ar-gal__frame.is-error { cursor: auto; }
+/* site: the placeholder fills the frame (its own min-height would stretch a short frame). */
+.ar-gal__frame.is-error .ar-ph { min-height: 0; }
+
+.ar-lightbox {
+  position: fixed; inset: 0; z-index: 70; display: grid; grid-template-rows: auto minmax(0, 1fr) auto;
+  background-color: var(--night); color: var(--on-night);
+}
+.ar-lightbox :focus-visible { outline-color: var(--on-night); }
+.ar-lightbox__top, .ar-lightbox__bottom { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-4); }
+.ar-lightbox__top { justify-content: flex-end; }
+.ar-lightbox__bottom { justify-content: center; }
+.ar-lightbox__stage { position: relative; min-height: 0; }
+/* site: the bundle's bare photo only; the site's photo stage and players place their own pictures. */
+.ar-lightbox__stage > img { position: absolute; inset: 0 var(--space-4); width: calc(100% - 2 * var(--space-4)); height: 100%; object-fit: contain; }
+.ar-lightbox .ar-iconbtn { border-color: var(--on-night); color: var(--on-night); }
+.ar-lightbox .ar-iconbtn::before { background-color: var(--on-night); }
+.ar-lightbox .ar-iconbtn:hover::before { opacity: 0.12; }
+.ar-lightbox__count { margin: 0 var(--space-3); font-family: var(--font-mono); font-size: 13px; color: var(--on-night); }
+.ar-lightbox .ar-iconbtn:disabled { border-color: var(--on-night); color: var(--on-night); opacity: 0.45; }
+/* site: a zoom control at its limit stays focusable (aria-disabled) and looks unavailable. */
+.ar-lightbox .ar-iconbtn[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; transform: none; }
+.ar-lightbox .ar-iconbtn[aria-disabled="true"]::before { display: none; }
+.ar-lightbox--one .ar-lightbox__bottom { min-height: var(--touch-target); }
+.ar-lightbox__msg { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: var(--space-2); padding: 0 var(--space-4); text-align: center; }
+.ar-lightbox__icon { display: inline-grid; color: var(--on-night-dim); }
+.ar-lightbox__said { margin: 0; font-size: 15px; line-height: 1.4; font-weight: 500; color: var(--on-night); }
+.ar-lightbox__alt { margin: 0; max-width: 48ch; font-size: 13px; line-height: 1.45; color: var(--on-night-dim); }
+.ar-lightbox__retry {
+  display: inline-flex; align-items: center; min-height: var(--touch-target); margin: 0; padding: 0 var(--space-3);
+  border: 0; background: transparent; color: var(--on-night); cursor: pointer;
+  font-family: var(--font-sans); font-size: 15px; line-height: 1.2; font-weight: 600; font-variation-settings: "wdth" 112;
+  text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.22em;
+}
+.ar-lightbox__bar { position: absolute; left: var(--space-4); right: var(--space-4); bottom: 0; height: 2px; overflow: hidden; opacity: 0; animation: ar-ph-in 1ms linear 600ms forwards; }
+.ar-lightbox__bar::before { content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 30%; background-color: var(--on-night); transform: translateX(-100%); animation: ar-ph-run 1400ms linear 600ms infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .ar-lightbox__bar { display: none; }
+  /* site: the lightbox is a portal on <body>, outside the frame's reduced-motion rule. */
+  .ar-lightbox *, .ar-lightbox *::before, .ar-lightbox *::after { transition: none !important; animation: none !important; }
+}
+
+/* ---------- 19. Phone menu ---------- */
+
+/* The sheet is open at once; the unroll from the top arrives with Phase 5. The menu is drawn in a
+   portal on <body>, outside the page frame, so it carries its own type. */
+.ar-mmenu {
+  position: fixed; inset: 0; z-index: 60; overflow: hidden;
+  color: var(--ink); font-family: var(--font-sans); font-size: 17px; line-height: 1.65; font-variation-settings: "wdth" 100;
+  -webkit-font-smoothing: antialiased;
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.ar-mmenu :focus-visible { outline: var(--focus-width) solid var(--line); outline-offset: var(--focus-offset); }
+.ar-mmenu :focus:not(:focus-visible) { outline: none; }
+.ar-mmenu__top {
+  position: relative; display: flex; align-items: center; justify-content: space-between;
+  height: var(--nav-height); padding: 0 var(--gutter-phone); border-bottom: 1px solid var(--rule); flex: none;
+}
+.ar-mmenu__links { margin: 0; padding: var(--space-2) var(--gutter-phone) 0; list-style: none; }
+.ar-mmenu__links > li + li > .ar-mmenu__link { border-top: 1px solid var(--rule); }
+.ar-mmenu__link {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); min-height: 64px;
+  font-size: 28px; line-height: 1.1; font-weight: 600; font-variation-settings: "wdth" 112;
+  color: var(--ink); text-decoration: none;
+}
+.ar-mmenu__link[aria-current] { color: var(--line); }
+.ar-mmenu__link .ar-icon { color: var(--ink-mute); }
+.ar-mmenu__link[aria-current] .ar-icon { color: var(--line); }
+.ar-mmenu__foot { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-4); margin-top: auto; padding: var(--space-5) var(--gutter-phone) var(--space-6); border-top: 1px solid var(--rule); }
+.ar-mmenu__social { display: flex; flex-wrap: wrap; gap: 0 var(--space-5); margin: 0; padding: 0; list-style: none; }
+.ar-mmenu__roll { position: absolute; inset: 0; display: flex; flex-direction: column; overflow: hidden; }
+/* site: the sheet scrolls when a short window (a phone on its side) cannot show it all. */
+.ar-mmenu__sheet { display: flex; flex-direction: column; flex: 1; min-height: 100%; overflow-y: auto; overscroll-behavior: contain; background-color: var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); }
+
+/* ---------- 20. Footer ---------- */
+
+.ar-foot { border-top: 1px solid var(--rule); background-color: var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); }
+.ar-foot__in { display: grid; gap: var(--space-6); max-width: var(--max-content); margin: 0 auto; padding: var(--space-7) var(--gutter-phone) var(--space-5); }
+.ar-foot__tag { margin: 0; font-size: 21px; line-height: 1.33; font-weight: 600; font-variation-settings: "wdth" 112; color: var(--ink); max-width: 24ch; }
+.ar-foot__links { display: flex; flex-direction: column; align-items: flex-start; gap: 0; margin: 0; padding: 0; list-style: none; }
+/* site: an address runs past a narrow phone, so it may break. */
+.ar-foot__links .ar-link__text { overflow-wrap: anywhere; }
+.ar-foot__meta {
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-2) var(--space-5);
+  padding-top: var(--space-4); border-top: 1px solid var(--rule);
+  font-size: 13px; line-height: 1.5; color: var(--ink-mute);
+}
+.ar-foot__meta p { margin: 0; }
+.ar-foot__date { font-family: var(--font-mono); }
+.ar-foot__credits { flex-basis: 100%; margin: 0; max-width: var(--measure); }
+.ar-foot__credits .ar-link { white-space: nowrap; }
+@container frame (min-width: 1024px) {
+  .ar-foot__in { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter-desktop); padding: var(--space-8) var(--gutter-desktop) var(--space-6); }
+  .ar-foot__tag { grid-column: 1 / span 6; }
+  .ar-foot__links { grid-column: 8 / -1; }
+  .ar-foot__meta { grid-column: 1 / -1; }
+}
+
+/* ---------- 21. Content grid ---------- */
+
+.ar-cols {
+  display: grid; grid-template-columns: repeat(var(--columns), minmax(0, 1fr)); gap: var(--gutter-phone);
+  max-width: var(--max-content); margin: 0 auto; padding: 0 var(--gutter-phone);
+}
+@container frame (min-width: 1024px) { .ar-cols { gap: var(--gutter-desktop); padding: 0 var(--gutter-desktop); } }
+.ar-cols__col { position: relative; min-height: 100%; }
+.ar-cols__col::before { content: ""; position: absolute; inset: 0; background-color: var(--line); opacity: 0.1; }
+.ar-cols__n { position: relative; display: block; padding-top: var(--space-1); text-align: center; font-family: var(--font-mono); font-size: 11px; line-height: 1.4; color: var(--ink-dim); }
+
+/* ---------- 23. The page background (static: no live sky and no star image until Phase 5) ---------- */
+
+/* Blueprint: the page is the sky's horizon color, and a fixed layer the size of the window holds
+   the sky gradient (zenith to the horizon at 80 percent) and the ground with the drawing grid below
+   it. Whiteprint: drafting paper with the flat grid, and no sky. */
+.ar-page { background-color: var(--sky-low); }
+[data-theme="whiteprint"].ar-page, [data-theme="whiteprint"] .ar-page {
+  background-color: var(--sheet);
+  background-image:
+    linear-gradient(var(--grid-major) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-major) 1px, transparent 1px),
+    linear-gradient(var(--grid-minor) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-minor) 1px, transparent 1px);
+  background-size: var(--grid-step-major) var(--grid-step-major), var(--grid-step-major) var(--grid-step-major), var(--grid-step-minor) var(--grid-step-minor), var(--grid-step-minor) var(--grid-step-minor);
+  background-position: 0 0; background-repeat: repeat;
+}
+/* site */
+.ar-backdrop {
+  position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background-image: linear-gradient(180deg, var(--sky-zenith) 0%, var(--sky-mid) 45%, var(--sky-low) var(--horizon), var(--ground) var(--horizon));
+}
+.ar-backdrop::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; top: var(--horizon);
+  border-top: 1px solid var(--rule);
+  background-image:
+    linear-gradient(var(--grid-major) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-major) 1px, transparent 1px),
+    linear-gradient(var(--grid-minor) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-minor) 1px, transparent 1px);
+  background-size: var(--grid-step-major) var(--grid-step-major), var(--grid-step-major) var(--grid-step-major), var(--grid-step-minor) var(--grid-step-minor), var(--grid-step-minor) var(--grid-step-minor);
+  background-position: 50% 0;
+}
+[data-theme="whiteprint"] .ar-backdrop { display: none; }
+
+/* ---------- 24. Glass panel ---------- */
+
+.ar-glass {
+  position: relative; min-width: 0;
+  background-color: var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter);
+  border: 1px solid var(--rule); border-radius: var(--radius);
+}
+.ar-glass--pad { padding: var(--space-5); }
+@container frame (min-width: 1024px) { .ar-glass--pad { padding: var(--space-6); } }
+.ar-glass > :first-child { margin-top: 0; }
+.ar-glass > :last-child { margin-bottom: 0; }
+
+/* ---------- 25. Media viewers (one frame for every kind of attachment) ---------- */
+
+.ar-mv {
+  position: relative; display: flex; flex-direction: column; width: 100%; min-width: 0; margin: 0;
+  border: 1px solid var(--rule); border-radius: var(--radius); overflow: hidden;
+  background-color: var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter);
+}
+.ar-mv__well { width: 100%; }
+.ar-mv__cap {
+  display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); margin: 0; padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--rule);
+  font-family: var(--font-mono); font-size: 13px; line-height: 1.5; color: var(--ink-dim);
+}
+.ar-mv__kind { color: var(--ink-mute); }
+.ar-mv__bar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3);
+  border-top: 1px solid var(--rule);
+}
+/* site: the caption line's text wraps inside a long file name; the download link ends the line,
+   44 px tall but drawn into the line's own padding, so the line keeps its height. */
+.ar-mv__text { min-width: 0; overflow-wrap: anywhere; }
+.ar-mv__dls { display: flex; flex-wrap: wrap; gap: 0 var(--space-4); margin-left: auto; }
+.ar-mv__dl {
+  display: inline-flex; flex-wrap: wrap; align-items: center; column-gap: var(--space-2);
+  min-height: var(--touch-target); margin: calc(-1 * var(--space-3)) 0;
+  font-family: var(--font-sans); font-size: 15px; line-height: 1.2; font-weight: 500;
+  color: var(--line); text-decoration: none;
+}
+.ar-mv__dl-text { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.22em; text-decoration-color: var(--rule); }
+.ar-mv__dl:hover .ar-mv__dl-text { text-decoration-color: currentColor; }
+.ar-mv__dl-meta { font-family: var(--font-mono); font-size: 13px; line-height: 1.5; color: var(--ink-mute); }
+/* site: on the lightbox's night, the link takes the night's inks. */
+.ar-mv__dl--night { margin: 0; color: var(--on-night); }
+.ar-mv__dl--night .ar-mv__dl-text { text-decoration-color: var(--night-rule); }
+.ar-mv__dl--night .ar-mv__dl-meta { color: var(--on-night-dim); }
+
+/* Controls. On the glass bar they use the inks; inside the well they sit on a night plate. */
+.ar-mv__btn {
+  position: relative; display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
+  min-width: var(--touch-target); min-height: var(--touch-target); padding: 0 var(--space-2);
+  border: 1px solid transparent; border-radius: var(--radius); background: transparent; color: var(--ink-dim);
+  font-family: var(--font-sans); font-size: 15px; line-height: 1; font-weight: 500; cursor: pointer;
+}
+.ar-mv__btn--text { padding: 0 var(--space-3); }
+.ar-mv__btn:hover { color: var(--ink); border-color: var(--ink-mute); }
+.ar-mv__btn[aria-pressed="true"] { color: var(--ink); background-color: var(--sheet-3); box-shadow: inset 0 -2px 0 var(--line); }
+/* site: a control that cannot act yet (its engine has not loaded) or at its limit is drawn in
+   phantom line; at a limit it stays focusable (aria-disabled), so focus is never dropped. */
+.ar-mv__btn:disabled, .ar-mv__btn[aria-disabled="true"] { color: var(--ink-mute); border-color: var(--ink-mute); border-style: dashed; background-color: transparent; box-shadow: none; cursor: not-allowed; }
+.ar-mv__well .ar-mv__btn {
+  color: var(--on-night); border-color: var(--night-rule);
+  background-color: color-mix(in srgb, var(--night) 82%, transparent);
+}
+.ar-mv__well .ar-mv__btn:hover { border-color: var(--on-night); }
+.ar-mv__well .ar-mv__btn:disabled, .ar-mv__well .ar-mv__btn[aria-disabled="true"] { color: var(--on-night-dim); border-color: var(--on-night-dim); border-style: dashed; }
+.ar-mv__well :focus-visible { outline-color: var(--on-night); }
+.ar-mv__full { position: absolute; top: var(--space-2); right: var(--space-2); z-index: 3; }
+.ar-mv__play { position: absolute; left: 50%; top: 50%; z-index: 2; transform: translate(-50%, -50%); }
+.ar-mv__play .ar-mv__btn { min-width: 56px; min-height: 56px; }
+.ar-mv__play--left { left: var(--space-4); transform: translateY(-50%); }
+/* site: the play mark over a video's poster; the bar's Play button is the control. */
+.ar-mv__play--mark { pointer-events: none; }
+.ar-mv__hint { margin-left: auto; padding: 0 var(--space-2); font-family: var(--font-mono); font-size: 13px; line-height: 1.5; color: var(--ink-mute); }
+/* site: a group of controls on the bar, and a time readout in the data type. */
+.ar-mv__group { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); min-width: 0; }
+.ar-mv__time { flex: none; padding: 0 var(--space-2); font-family: var(--font-mono); font-size: 13px; line-height: 1.5; color: var(--ink-dim); white-space: nowrap; }
+
+/* The placeholder inside a well: the flat grid, a crosshair, and a line that says what is coming. */
+.ar-mv__ph {
+  position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: var(--space-2);
+  color: var(--on-night-dim); font-family: var(--font-sans); font-size: 15px; line-height: 1.4; font-weight: 500; text-align: center;
+}
+.ar-mv__ph > span { padding: 0 var(--space-2); background-color: var(--night); }
+
+/* site: a short line on a night plate in the well's bottom left corner: loading, a failure, the
+   thermal view's label (bundle .ar-mv__note). */
+.ar-mv__note, .ar-mv__ba-tag {
+  position: absolute; z-index: 2; padding: 2px var(--space-2);
+  font-family: var(--font-mono); font-size: 13px; line-height: 1.5; color: var(--on-night);
+  background-color: color-mix(in srgb, var(--night) 82%, transparent); border-radius: var(--radius);
+}
+.ar-mv__note { left: var(--space-3); bottom: var(--space-3); border: 1px solid var(--night-rule); }
+.ar-mv__note { max-width: calc(100% - 2 * var(--space-3)); margin: 0; }
+
+/* Document */
+.ar-mv__search {
+  display: inline-flex; align-items: center; gap: var(--space-2); flex: 1 1 200px; min-width: 160px; min-height: var(--touch-target);
+  padding: 0 var(--space-3); border: 1px solid var(--ink-mute); border-radius: var(--radius); color: var(--ink-dim);
+}
+.ar-mv__search input {
+  flex: 1; min-width: 0; padding: 0; border: 0; background: transparent; color: var(--ink); outline: none;
+  font-family: var(--font-sans); font-size: 15px; line-height: 1.2; font-weight: 500;
+}
+.ar-mv__search input::placeholder { color: var(--ink-mute); opacity: 1; }
+.ar-mv__search:focus-within { outline: var(--focus-width) solid var(--line); outline-offset: var(--focus-offset); }
+/* site: a field that cannot be used yet is drawn in phantom line. */
+.ar-mv__search:has(input:disabled) { border-style: dashed; color: var(--ink-mute); }
+
+/* 3D model. The thermal view (one of the eight places of the ramp) is drawn by the engine's
+   shader from --t0 to --t6 (components/viewers/model/palette.ts); the bundle's placeholder solid
+   is not drawn on the site, where a block with no model leaves no trace. */
+.ar-mv__views { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--ink-mute); border-radius: var(--radius); }
+.ar-mv__views .ar-mv__btn { min-height: 38px; }
+/* site: each view answers a 44 px target (D-67) while it is drawn at the bundle's 38 px. */
+.ar-mv__views .ar-mv__btn::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: var(--touch-target); transform: translateY(-50%); }
+.ar-mv__range { display: inline-flex; align-items: center; gap: var(--space-3); min-height: var(--touch-target); padding: 0 var(--space-2); font-size: 15px; font-weight: 500; color: var(--ink-dim); }
+.ar-mv__range input { width: 140px; accent-color: var(--line); }
+/* site: the slider answers a 44 px target (D-67). */
+.ar-mv__range input { height: var(--touch-target); margin: 0; cursor: pointer; }
+.ar-mv__range input:disabled { cursor: not-allowed; }
+
+/* Code */
+.ar-mv__link {
+  display: inline-flex; align-items: center; gap: var(--space-1); min-height: var(--touch-target); padding: 0 var(--space-2);
+  font-size: 15px; font-weight: 500; color: var(--line); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.22em;
+}
+
+/* Before and after */
+.ar-mv__ba-tag { top: var(--space-3); left: var(--space-3); border: 1px solid var(--night-rule); }
+.ar-mv__ba-tag--after { left: auto; right: 64px; }
+.ar-mv__ba-rule { position: absolute; top: 0; bottom: 0; left: calc(var(--at) * 100%); z-index: 2; width: 2px; margin-left: -1px; background-color: var(--night-line); cursor: ew-resize; }
+.ar-mv__ba-grip {
+  position: absolute; top: 50%; left: 50%; display: inline-flex; align-items: center; justify-content: center;
+  width: var(--touch-target); height: var(--touch-target); transform: translate(-50%, -50%);
+  border: 1px solid var(--night-line); border-radius: var(--radius); background-color: var(--night); color: var(--on-night);
+}
+
+@container frame (max-width: 767px) {
+  .ar-mv__hint { display: none; }
+  .ar-mv__range input { width: 96px; }
+}
+
+/* site: full screen, through the Fullscreen API or, where it is missing, a fixed overlay that
+   keeps focus inside and closes on Escape: the well takes the room, the bar and the caption line
+   sit on the solid panel color. */
+.ar-mv[data-fullscreen="true"] {
+  position: fixed; inset: 0; z-index: 60; width: auto; border: 0; border-radius: 0;
+  background-color: var(--night); -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+.ar-mv[data-fullscreen="true"] .ar-mv__well { flex: 1 1 auto; min-height: 0; }
+.ar-mv[data-fullscreen="true"] .ar-mv__bar, .ar-mv[data-fullscreen="true"] .ar-mv__cap { background-color: var(--sheet-2); }
+
+/* ---------- 26. Repository card (the GitHub embed) ---------- */
+
+.ar-repo {
+  position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: var(--space-3) var(--space-4);
+  width: 100%; max-width: 560px; padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--rule); border-radius: var(--radius); color: var(--ink); text-decoration: none;
+  background-color: var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter);
+}
+.ar-repo:hover { border-color: var(--line); }
+.ar-repo__icon { display: grid; place-items: center; width: var(--touch-target); height: var(--touch-target); border: 1px solid var(--ink-mute); border-radius: var(--radius); color: var(--ink); }
+.ar-repo__body { display: grid; gap: 2px; min-width: 0; }
+.ar-repo__title { font-size: 17px; line-height: 1.35; font-weight: 600; font-variation-settings: "wdth" 112; color: var(--ink); }
+.ar-repo__name { font-family: var(--font-mono); font-size: 15px; line-height: 1.5; color: var(--ink); overflow-wrap: anywhere; }
+.ar-repo__label { font-size: 13px; line-height: 1.4; font-weight: 500; color: var(--ink-dim); }
+.ar-repo__go { grid-column: 2; display: inline-flex; align-items: center; gap: var(--space-1); font-size: 15px; line-height: 1.2; font-weight: 600; color: var(--line); }
+.ar-repo__go .ar-icon { transition: transform 150ms ease-out; }
+.ar-repo:hover .ar-repo__go .ar-icon { transform: translate(2px, -2px); }
+/* site: the repository's description and its language and last update, read at build time
+   (ARCHITECTURE.md 13A). No counts. */
+.ar-repo__desc { margin-top: var(--space-1); font-size: 15px; line-height: 1.5; color: var(--ink-dim); }
+.ar-repo__meta { display: flex; flex-wrap: wrap; gap: 0 var(--space-5); margin-top: var(--space-1); font-family: var(--font-mono); font-size: 13px; line-height: 1.5; color: var(--ink-dim); }
+.ar-repo__meta > span { white-space: nowrap; }
+.ar-repo__key { margin-right: var(--space-1); font-family: var(--font-sans); color: var(--ink-mute); }
+
+/* ---------- 28. Card covers that move: video and 3D model (at rest; the motion is Phase 5) ---------- */
+
+.ar-card__motion { position: relative; }
+.ar-card__motion > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.ar-card__kind, .ar-card__badge {
+  position: absolute; z-index: 2; display: inline-flex; align-items: center; gap: var(--space-1);
+  padding: 2px var(--space-2); border-radius: var(--radius);
+  font-family: var(--font-mono); font-size: 13px; line-height: 1.5; color: var(--on-night);
+  background-color: color-mix(in srgb, var(--night) 82%, transparent);
+}
+.ar-card__kind { left: var(--space-3); top: var(--space-3); border: 1px solid var(--night-rule); }
+.ar-card__badge { right: var(--space-3); top: var(--space-3); border: 1px dashed var(--on-night-dim); }
+
+/* ---------- 29. Progress strip ---------- */
+
+/* Where a project stands, in a few steps. Not a ramp place: line only. */
+.ar-prog { width: 100%; display: grid; grid-template-columns: repeat(var(--n, 4), minmax(0, 1fr)); gap: var(--space-4) var(--space-2); margin: 0; padding: 0; list-style: none; }
+@container frame (max-width: 767px) { .ar-prog { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.ar-prog__step { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.ar-prog__bar { display: block; height: 10px; border: 1px dashed var(--ink-mute); border-radius: var(--radius); }
+.ar-prog__step.is-done .ar-prog__bar { border: 1px solid var(--line); background-color: var(--line); }
+.ar-prog__step.is-current .ar-prog__bar {
+  border: 1px solid var(--line);
+  background-image: repeating-linear-gradient(135deg, var(--line) 0 2px, transparent 2px 7px);
+}
+.ar-prog__label { font-size: 15px; line-height: 1.4; font-weight: 600; font-variation-settings: "wdth" 112; color: var(--ink); overflow-wrap: anywhere; }
+.ar-prog__step.is-todo .ar-prog__label { font-weight: 500; color: var(--ink-dim); }
+.ar-prog__state { font-family: var(--font-mono); font-size: 13px; line-height: 1.5; color: var(--ink-mute); }
+.ar-prog__step.is-current .ar-prog__state { color: var(--line); }
+
+/* ---------- 30. Callout ---------- */
+
+.ar-callout {
+  width: 100%; margin: 0; padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--rule); border-radius: var(--radius);
+  background-color: var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter);
+}
+.ar-callout--status { border: 1px dashed var(--line); }
+.ar-callout__text { margin: 0; font-size: 17px; line-height: 1.6; color: var(--ink); max-width: var(--measure); }
+/* site: the callout's text is the content's Markdown. */
+.ar-callout__text p, .ar-callout__text ul, .ar-callout__text ol { margin: 0; }
+.ar-callout__text p + p, .ar-callout__text p + ul, .ar-callout__text ul + p { margin-top: var(--space-2); }
+.ar-callout__text ul { padding-left: 1.25em; list-style: disc; }
+
+/* ---------- 31. Domain filter ---------- */
+
+.ar-filter { display: grid; gap: var(--space-3); min-width: 0; }
+.ar-filter__row { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+@container frame (max-width: 767px) {
+  /* site: 4 px of room above the buttons (taken back with the margin) so the scroller does not clip a focus ring. */
+  .ar-filter__row {
+    flex-wrap: nowrap; overflow-x: auto; margin: calc(-1 * var(--space-1)) calc(-1 * var(--gutter-phone)) 0; padding: var(--space-1) var(--gutter-phone);
+    scrollbar-width: none;
+  }
+  .ar-filter__row::-webkit-scrollbar { display: none; }
+}
+.ar-filter__btn {
+  display: inline-flex; align-items: center; gap: var(--space-2); flex: none; min-height: var(--touch-target); margin: 0; padding: 0 var(--space-3);
+  border: 1px solid var(--rule); border-radius: var(--radius); color: var(--ink-dim);
+  background-color: var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter);
+  font-family: var(--font-sans); font-size: 15px; line-height: 1.2; font-weight: 500; white-space: nowrap; cursor: pointer;
+}
+.ar-filter__btn:hover { color: var(--ink); border-color: var(--ink-mute); }
+.ar-filter__btn[aria-pressed="true"] { color: var(--ink); border-color: var(--line); background-color: var(--sheet-3); box-shadow: inset 0 -2px 0 var(--line); }
+.ar-filter__n { font-family: var(--font-mono); font-size: 13px; color: var(--ink-mute); }
+.ar-filter__btn[aria-pressed="true"] .ar-filter__n { color: var(--line); }
+/* The count sits on the open sky, so it takes ink-dim: ink-mute would fall under AA over the dawn. */
+.ar-filter__count { margin: 0; font-family: var(--font-mono); font-size: 13px; line-height: 1.5; color: var(--ink-dim); }
+
+/* ---------- 32. Experience timeline ---------- */
+
+.ar-tl { position: relative; display: grid; gap: var(--space-5); margin: 0; padding: 0; list-style: none; }
+.ar-tl::before { content: ""; position: absolute; left: 11px; top: 10px; bottom: 10px; width: 1px; background-color: var(--rule); }
+.ar-tl__item { position: relative; display: grid; grid-template-columns: 24px minmax(0, 1fr); column-gap: var(--space-4); row-gap: var(--space-2); }
+.ar-tl__dates { grid-column: 2; margin: 0; font-family: var(--font-mono); font-size: 13px; line-height: 1.5; color: var(--ink-dim); }
+.ar-tl__node {
+  grid-column: 1; grid-row: 1; justify-self: center; align-self: start; margin-top: 5px;
+  width: 11px; height: 11px; border: 1.5px solid var(--line); background-color: var(--sheet); transform: rotate(45deg);
+}
+.ar-tl__item.is-now .ar-tl__node { background-color: var(--line); }
+.ar-tl__body {
+  grid-column: 2; padding: var(--space-4) var(--space-5); border: 1px solid var(--rule); border-radius: var(--radius);
+  background-color: var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); box-shadow: var(--shadow-card);
+}
+.ar-tl__role { margin: 0; font-size: 21px; line-height: 1.3; font-weight: 600; font-variation-settings: "wdth" 112; color: var(--ink); }
+/* site: the role is a heading (h2 on /experience); it wraps as the bundle's does, not balanced. */
+.ar-tl__role { text-wrap: wrap; }
+.ar-tl__org { display: flex; flex-wrap: wrap; gap: 0 var(--space-3); margin: var(--space-1) 0 0; font-size: 15px; line-height: 1.5; font-weight: 500; color: var(--ink-dim); }
+.ar-tl__loc { color: var(--ink-mute); }
+.ar-tl__bullets { display: grid; gap: var(--space-2); margin: var(--space-3) 0 0; padding: 0; list-style: none; }
+.ar-tl__bullets li { position: relative; max-width: var(--measure); padding-left: var(--space-5); font-size: 17px; line-height: 1.6; color: var(--ink); }
+.ar-tl__bullets li::before { content: ""; position: absolute; left: 0; top: 0.8em; width: 12px; height: 1px; background-color: var(--line); }
+@container frame (min-width: 1024px) {
+  .ar-tl::before { left: 203px; }
+  .ar-tl__item { grid-template-columns: 176px 24px minmax(0, 1fr); column-gap: var(--space-4); }
+  .ar-tl__dates { grid-column: 1; grid-row: 1; padding-top: 2px; text-align: right; }
+  .ar-tl__node { grid-column: 2; }
+  .ar-tl__body { grid-column: 3; grid-row: 1; padding: var(--space-5) var(--space-6); }
+}

@@ -1,10 +1,12 @@
 /**
- * The colors the 3D views draw with, read from the page's CSS at run time, so the canvas follows
- * the theme and the design tokens without a color written in code (DESIGN_DIRECTION.md 2):
+ * The colors the 3D views draw with, read from the page's CSS variables at run time, so the canvas
+ * follows the theme and the design tokens without a color written in code (bundle ModelViewer;
+ * app/sheet.css 1 and 25):
  *
- * - `line`: the link color (the computed color of `.text-link`), for Blueprint edges and leaders;
- * - `panel`: the panel color (the background of `.viewer-frame`), for the Blueprint sheet;
- * - `ramp`: the seven thermal stops `--t0` to `--t6`, used only by the Thermal view (2.4, item 8).
+ * - `line`: the night's line color (--night-line: the line color in Blueprint, on-night in
+ *   Whiteprint, where the line color fails on night), for Blueprint edges and leaders;
+ * - `panel`: the night well's color (--night), the ground of the Blueprint view;
+ * - `ramp`: the seven thermal stops --t0 to --t6, used only by the Thermal view (2.4, item 8).
  */
 
 /** A color as sRGB channels from 0 to 1. */
@@ -79,20 +81,8 @@ export function readPalette(host: HTMLElement): ModelPalette {
       return null;
     };
 
-    probe.className = 'text-link';
-    const linkComputed = getComputedStyle(probe).color;
-    probe.className = '';
-    const link = linkComputed !== sentinel ? toRgb(linkComputed) : null;
-    const line = link?.rgb ?? resolve(['rgb(var(--accent))', 'var(--accent)', 'var(--line)']) ?? [1, 1, 1];
-
-    // The panel color is the viewer frame's own background, read from a still copy of the class.
-    probe.className = 'viewer-frame';
-    const frameBackground = toRgb(getComputedStyle(probe).backgroundColor);
-    probe.className = '';
-    const panel =
-      frameBackground && frameBackground.alpha > 0.99
-        ? frameBackground.rgb
-        : (resolve(['rgb(var(--surface))', 'var(--surface)', 'var(--sheet-2)']) ?? [0, 0, 0]);
+    const line = resolve(['var(--night-line)', 'var(--line)']) ?? [1, 1, 1];
+    const panel = resolve(['var(--night)']) ?? [0, 0, 0];
 
     const stops = Array.from({ length: 7 }, (_, i) => resolve([`var(--t${i})`]));
     const ramp = stops.every((stop): stop is Rgb => stop !== null) ? stops : grayRamp();

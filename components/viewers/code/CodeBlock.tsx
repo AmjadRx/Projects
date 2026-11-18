@@ -1,9 +1,10 @@
-import { ExternalLink } from 'lucide-react';
+import { ArrowUpRight, ExternalLink, Github } from 'lucide-react';
 import { Fragment, type CSSProperties } from 'react';
-import LinkIcon from '@/components/LinkIcon';
+import Icon from '@/components/sheet/Icon';
 import { isSiteRepository } from '@/lib/github-repo';
 import { highlightCode, type CodeToken } from '@/lib/highlight';
 import { UI } from '@/lib/strings';
+import { cn } from '@/lib/utils';
 import styles from './CodeBlock.module.css';
 import CopyButton from './CopyButton';
 
@@ -32,18 +33,21 @@ function tokenStyle(token: CodeToken): CSSProperties | undefined {
 }
 
 /**
- * A code snippet (ARCHITECTURE.md 13A, DESIGN_DIRECTION.md 11): highlighted while the page is
- * prerendered, so no highlighter reaches the browser; the only script is the copy button. Long
- * lines scroll sideways inside the well, which takes keyboard focus so arrow keys can scroll it.
- * The caption names the language; a language the highlighter lacks is shown as plain text.
+ * A code snippet (bundle CodeBlock; ARCHITECTURE.md 13A): B612 Mono 13 px on night in the media
+ * frame, highlighted while the page is prerendered, so no highlighter reaches the browser; the
+ * only script is the copy button. The highlighting uses the night's inks only (keywords in the
+ * night's line color, text in on-night, comments in on-night-dim; never the thermal ramp). The bar
+ * holds Copy and the repository link; the caption line names the kind and the language. Long
+ * lines scroll sideways and a long snippet scrolls inside the well, which takes keyboard focus so
+ * the arrow keys can scroll it. A language the highlighter lacks is shown as plain text.
  */
 export default async function CodeBlock({ language, code, repoUrl }: { language: string; code: string; repoUrl?: string }) {
   const result = await highlightCode(code, language);
   const repository = repositoryLink(repoUrl);
 
   return (
-    <figure className="viewer-frame" data-code-block="">
-      <div className={styles.well}>
+    <figure className="ar-mv" data-code-block="">
+      <div className={cn('ar-mv__well', styles.well)}>
         <pre className={styles.pre} tabIndex={0} translate="no" data-language={result.lang}>
           <code>
             {result.lines.map((line, i) => (
@@ -66,26 +70,20 @@ export default async function CodeBlock({ language, code, repoUrl }: { language:
           </code>
         </pre>
       </div>
-      <div className="viewer-toolbar">
-        <div className="viewer-toolbar__controls">
-          <CopyButton />
-        </div>
+      <div className="ar-mv__bar">
+        <CopyButton />
         {repository && (
-          <a
-            href={repository.href}
-            rel="noopener noreferrer"
-            className="inline-flex min-h-[44px] items-center gap-2 rounded-sm px-2 text-sm text-accent underline underline-offset-[3px]"
-          >
-            {repository.github ? <LinkIcon icon="github" size={16} /> : <ExternalLink size={16} aria-hidden />}
+          <a href={repository.href} rel="noopener noreferrer" className="ar-mv__link">
+            <Icon icon={repository.github ? Github : ExternalLink} size={16} />
             <span>{UI.viewers.code.repository}</span>
+            <Icon icon={ArrowUpRight} size={16} />
           </a>
         )}
       </div>
-      {result.languageName !== '' && (
-        <figcaption className="viewer-caption">
-          <span className="viewer-caption__text">{result.languageName}</span>
-        </figcaption>
-      )}
+      <figcaption className="ar-mv__cap">
+        <span className="ar-mv__kind">{UI.viewers.kind.code}</span>
+        {result.languageName !== '' && <span className="ar-mv__text">{result.languageName}</span>}
+      </figcaption>
     </figure>
   );
 }

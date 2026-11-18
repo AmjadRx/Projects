@@ -46,7 +46,7 @@ export default function HomePage() {
     <>
       <JsonLd data={personJsonLd(site)} />
       <Hero site={site} projects={projects} />
-      <Readouts stats={site.stats} resolveLink={resolveLink} />
+      <Readouts stats={site.stats} resolveLink={resolveLink} projects={projects} />
       <Thesis thesis={site.thesis} />
       <NowList now={site.now} resolveLink={resolveLink} />
       <SelectedWork projects={projects} />

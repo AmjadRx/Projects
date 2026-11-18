@@ -1,27 +1,27 @@
 'use client';
 
 import Image from 'next/image';
-import { ChevronsLeftRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import Icon from '@/components/sheet/Icon';
 import { aspectOf, objectPosition, type ResolvedMedia } from '@/lib/media';
 import { UI } from '@/lib/strings';
 import { cn } from '@/lib/utils';
 import { naturalSizeOf, stillOf } from '../image/still';
-import DownloadLink from '../shared/DownloadLink';
 import Poster, { canOptimize } from '../shared/Poster';
 import ViewerFrame from '../shared/ViewerFrame';
+import { BODY_SIZES } from '../shared/sizes';
 import { useInView } from '../shared/hooks';
 import type { CompareProps } from '../types';
 import styles from './Compare.module.css';
 
-const SIZES = '(min-width: 1280px) 1100px, 100vw';
-
 /**
- * Before and after (ARCHITECTURE.md 13A; DESIGN_DIRECTION.md 11): the two photos stacked in one
- * well with a divider between them. The server HTML already shows the divider at 50 percent.
+ * Before and after (bundle BeforeAfter; ARCHITECTURE.md 13A): the two photos stacked in one well
+ * with a divider between them in the night's line color, a 44 px grip, and Before and After tags
+ * in the data type on night plates. The server HTML already shows the divider in the middle.
  *
  * The divider is a real range input (labelled, with arrow keys, Page Up and Down, Home and End,
- * and a spoken value), laid over the photos and drawn as the handle, so keyboard and screen
+ * and a spoken value), laid over the photos and drawn as the divider, so keyboard and screen
  * reader use work as soon as the page is interactive. Dragging the divider or the photo loads a
  * small module when the viewer comes near the view (docs/V3_PLAN.md D-63).
  *
@@ -74,24 +74,19 @@ export default function Compare({ before, after }: CompareProps) {
   ].filter(Boolean);
 
   const rounded = Math.round(position);
-  const surfaceStyle = { '--compare-position': `${position}%` } as CSSProperties;
-  // No empty row: a photo that is not offered for download has no link (R-16).
-  const downloads = before.file.downloadHref || after.file.downloadHref;
+  const surfaceStyle = { '--at': String(position / 100) } as CSSProperties;
 
   return (
     <div className={styles.frame} style={maxWidth ? { maxWidth } : undefined}>
       <ViewerFrame
         label={UI.viewers.compare.label}
+        kind={UI.viewers.kind.compare}
         aspect={aspect}
         caption={captions.length > 0 ? captions.join(' ') : undefined}
-        toolbar={
-          downloads ? (
-            <div className={styles.downloads}>
-              <DownloadLink file={before.file} label={UI.viewers.compare.downloadBefore} />
-              <DownloadLink file={after.file} label={UI.viewers.compare.downloadAfter} />
-            </div>
-          ) : undefined
-        }
+        downloads={[
+          { file: before.file, label: UI.viewers.compare.downloadBefore },
+          { file: after.file, label: UI.viewers.compare.downloadAfter },
+        ]}
       >
         <div ref={surfaceRef} className={styles.surface} style={surfaceStyle}>
           <Layer media={before} still={beforeStill} side="before" />
@@ -108,9 +103,10 @@ export default function Compare({ before, after }: CompareProps) {
             aria-valuetext={UI.viewers.compare.position(rounded)}
             className={styles.range}
           />
-          <div className={styles.divider} aria-hidden>
-            <span className={styles.handle}>
-              <ChevronsLeftRight size={18} />
+          <div className={cn('ar-mv__ba-rule', styles.rule)} aria-hidden="true">
+            <span className="ar-mv__ba-grip">
+              <Icon icon={ChevronLeft} size={14} />
+              <Icon icon={ChevronRight} size={14} />
             </span>
           </div>
         </div>
@@ -119,7 +115,7 @@ export default function Compare({ before, after }: CompareProps) {
   );
 }
 
-/** One photo with its label; each is clipped to its own side of the divider. */
+/** One photo with its tag; each is clipped to its own side of the divider. */
 function Layer({
   media,
   still,
@@ -141,7 +137,7 @@ function Layer({
             src={still.src}
             alt={media.alt}
             fill
-            sizes={SIZES}
+            sizes={BODY_SIZES}
             unoptimized={!canOptimize(still.src)}
             draggable={false}
             className={styles.img}
@@ -151,7 +147,7 @@ function Layer({
           <Poster media={media} />
         )}
       </span>
-      <span className={cn(styles.tag, side === 'before' ? styles.tagBefore : styles.tagAfter)}>
+      <span className={cn('ar-mv__ba-tag', side === 'after' && 'ar-mv__ba-tag--after')}>
         {side === 'before' ? UI.viewers.compare.before : UI.viewers.compare.after}
       </span>
     </div>
