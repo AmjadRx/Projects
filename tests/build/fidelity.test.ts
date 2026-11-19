@@ -184,6 +184,23 @@ describe('every page renders the content exactly', () => {
     fs.rmSync(path.join(root, distName), { recursive: true, force: true });
   });
 
+  it('no browser chunk carries ndarray-ops, which builds functions from strings the admin policy refuses', () => {
+    // Every model upload failed on the Phase 6 preview this way; a dev server allows it, so only a
+    // production build shows it. next.config.mjs points ndarray-pixels at a stub in browser
+    // bundles (lib/admin/convert/ndarray-pixels-browser.js); this keeps it from coming back.
+    const chunks = path.join(root, distName, 'static', 'chunks');
+    const offenders: string[] = [];
+    const walk = (dir: string) => {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) walk(full);
+        else if (entry.name.endsWith('.js') && /_ndarrayops|cwise/.test(fs.readFileSync(full, 'utf8'))) offenders.push(path.relative(chunks, full));
+      }
+    };
+    walk(chunks);
+    expect(offenders).toEqual([]);
+  });
+
   it('home: hero, readouts, thesis, now, selected work, about teaser, tools, contact call', () => {
     const { personal, thesis } = site;
     const expected = [

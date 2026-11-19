@@ -1,4 +1,5 @@
 import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
 
@@ -145,6 +146,14 @@ const nextConfig = {
       config.resolve.alias = {
         ...config.resolve.alias,
         'pdfjs-dist$': require.resolve('pdfjs-dist/build/pdf.min.mjs'),
+        /**
+         * @gltf-transform/functions imports ndarray-pixels, whose browser build loads ndarray-ops,
+         * which builds functions from strings the moment it loads. The admin's policy refuses
+         * that, so every model upload failed on the Phase 6 preview (a dev server allows it, which
+         * is why only a production build shows it). The admin never reads or writes texture
+         * pixels through glTF-Transform, so browser bundles get a stub that refuses both calls.
+         */
+        'ndarray-pixels$': fileURLToPath(new URL('./lib/admin/convert/ndarray-pixels-browser.js', import.meta.url)),
       };
       /**
        * @gltf-transform/core's NodeIO imports node:fs and node:path, which the admin's browser-side

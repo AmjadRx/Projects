@@ -5,7 +5,7 @@
   "scripts": {
     "predev": "node scripts/copy-vendor.mjs",
     "dev": "next dev",
-    "prebuild": "node scripts/copy-vendor.mjs && node scripts/content-dates.mjs && npm run check:content && npm run check:sky",
+    "prebuild": "npm run check:lockfile && node scripts/copy-vendor.mjs && node scripts/content-dates.mjs && npm run check:content && npm run check:sky",
     "build": "next build",
     "postbuild": "npm run check:sky -- --build && npm run check:secrets -- --build",
     "start": "next start",
@@ -21,10 +21,11 @@
     "check:sky": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-sky.mjs",
     "screenshots": "node scripts/screenshots.mjs",
     "prepare": "simple-git-hooks",
-    "check:secrets": "node scripts/check-secrets.mjs"
+    "check:secrets": "node scripts/check-secrets.mjs",
+    "check:lockfile": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-lockfile.mjs"
   },
   "simple-git-hooks": {
-    "pre-commit": "npm run check:content"
+    "pre-commit": "npm run check:content && npm run check:lockfile"
   },
   "dependencies": {
     "@gltf-transform/core": "4.5.1",

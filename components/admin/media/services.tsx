@@ -71,15 +71,52 @@ export const realMediaApi: MediaApi = {
   mediaFileHref: api.mediaFileHref,
 };
 
+/** The step @vercel/blob 2.9.0 reports a single upload's progress in (its CHUNK_SIZE). */
+const BLOB_STEP_BYTES = 64 * 1024;
+/** How much of the file one read takes, so the reads cost little next to the upload. */
+const BLOB_READ_BYTES = 16 * BLOB_STEP_BYTES;
+
+/**
+ * A file as @vercel/blob streams a single upload to fetch: read a megabyte at a time, only when
+ * the request needs more, and handed on in steps. The library reports a step's progress when it
+ * passes the step to the request, but a piece larger than a step all at once, and a browser (or
+ * Node) hands a file's stream over in large pieces: without this, a try that broke off midway
+ * would report nearly all of its bytes sent. The queue reads the progress to tell such a try from
+ * one that sent the whole file (manager.ts, BlobWatch).
+ */
+class PacedBlob extends Blob {
+  override stream(): ReadableStream<Uint8Array<ArrayBuffer>> {
+    let at = 0;
+    return new ReadableStream<Uint8Array<ArrayBuffer>>(
+      {
+        pull: async (controller) => {
+          if (at >= this.size) {
+            controller.close();
+            return;
+          }
+          const end = Math.min(this.size, at + BLOB_READ_BYTES);
+          const bytes = new Uint8Array(await this.slice(at, end).arrayBuffer());
+          at = end;
+          for (let step = 0; step < bytes.byteLength; step += BLOB_STEP_BYTES) controller.enqueue(bytes.subarray(step, step + BLOB_STEP_BYTES));
+        },
+      },
+      { highWaterMark: 0 },
+    );
+  }
+}
+
 /** The admin's services: the real routes, and every heavy module loaded only when used. */
 export function realMediaServices(): MediaServices {
   return {
     api: realMediaApi,
     loadPrepare: () => import('@/lib/admin/convert').then((module) => module.prepareUploads),
     loadGroup: () => import('@/lib/admin/convert/group').then((module) => module.groupFiles),
+    // The options go to `put` whole, the queue's abort signal as `abortSignal` with them; the
+    // queue watches the upload for retries and silence (manager.ts, BlobWatch). A single upload's
+    // body is paced, so its progress follows what the request has taken.
     putBlob: async (pathname: string, body: Blob, options: BlobPutOptions) => {
       const { put } = await import('@vercel/blob/client');
-      const result = await put(pathname, body, options);
+      const result = await put(pathname, options.multipart ? body : new PacedBlob([body], { type: body.type }), options);
       return { url: result.url };
     },
   };

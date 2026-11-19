@@ -80,6 +80,16 @@ export function statusLine(save: SaveState, changedFiles: number): { text: strin
   return { text: 'No unsaved changes', tone: 'idle' };
 }
 
+/**
+ * The commit the deploy line names: the one the watch waits for, and, when that is not the saved
+ * commit because the draft moved on (a media upload or delete, another save), that it is the
+ * newest on the draft. Pure, for tests.
+ */
+export function watchedCommitWords(watched: string | null, saved: string | null): string {
+  const words = `commit ${shortSha(watched)}`;
+  return watched && saved && watched !== saved ? `${words}, the newest on the draft` : words;
+}
+
 function PreviewLink({ href, children }: { href: string; children: string }) {
   return (
     <a className="adm-link" href={href} target="_blank" rel="noopener noreferrer">
@@ -97,6 +107,7 @@ function PreviewLink({ href, children }: { href: string; children: string }) {
  */
 function DeployLine({ deploy }: { deploy: DeployView }) {
   const info = useAdmin((s) => s.info);
+  const saved = useAdmin((s) => s.save.commit);
   if (!info) return null;
   if (info.source === 'disk') return <p className="adm-savebar__deploy">Saves write to the content files on this computer.</p>;
   // The deployment's own address once known, else the branch's preview address from the load or the save.
@@ -113,7 +124,7 @@ function DeployLine({ deploy }: { deploy: DeployView }) {
     case 'waiting':
       line = (
         <>
-          Draft preview: waiting for the build of commit {shortSha(deploy.commit)}; until it is ready the preview shows the previous build.
+          Draft preview: waiting for the build of {watchedCommitWords(deploy.commit, saved)}; until it is ready the preview shows the previous build.
           {link('Open the draft preview')}
         </>
       );
@@ -121,7 +132,7 @@ function DeployLine({ deploy }: { deploy: DeployView }) {
     case 'building':
       line = (
         <>
-          Draft preview: building commit {shortSha(deploy.commit)}; until it is ready the preview shows the previous build.
+          Draft preview: building {watchedCommitWords(deploy.commit, saved)}; until it is ready the preview shows the previous build.
           {link('Open the draft preview')}
         </>
       );

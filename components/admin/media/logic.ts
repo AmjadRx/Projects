@@ -4,6 +4,8 @@
  * - which store each prepared part goes to (`planStorage`): the repository up to 4,000,000 bytes,
  *   Vercel Blob above that up to 500 MB, and a refusal that says how to connect Blob when it is
  *   not configured;
+ * - the message for a browser upload Vercel Blob refused, with its likely cause (`blobRefusal`),
+ *   and the refusal that means an earlier try stored the file (`isBlobAlreadyStored`);
  * - the MediaRef an upload or a library file becomes (`mediaRefFromUpload`, `mediaRefFromItem`);
  * - the names a "keep both" upload takes (`freeNames`);
  * - where the working copy refers to a file, and rewriting those references (Replace, Rename),
@@ -220,6 +222,92 @@ export function planStorage(parts: readonly PreparedPart[], options: { blobConfi
   }
   if (options.blobConfigured === false) return { ok: false, message: BLOB_NOT_CONFIGURED };
   return { ok: true, plan: { blob: main, repo: poster ? [[poster]] : [] } };
+}
+
+// ---------------------------------------------------------------------------------------------
+// A browser upload that Vercel Blob refuses
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * The likely cause of a refusal about the store's access: this site's uploads ask for public
+ * access (BLOB_WRITE_OPTIONS in lib/storage/rules.ts), and a store created as private refuses them
+ * (it answered 503 on the preview).
+ */
+const BLOB_PRIVATE_STORE =
+  'This site stores Blob files as public, and a store created as private refuses them. Check the Blob store connected to this environment.';
+
+/**
+ * Refusals @vercel/blob 2.9.0 names in its error message, with their likely cause. A store that
+ * refuses this site's public files answers 503 (the library's "currently not available", as on the
+ * preview), or with an answer the library calls an unknown error or access denied.
+ */
+const BLOB_REFUSAL_CAUSES: readonly (readonly [RegExp, string])[] = [
+  [/store has been suspended/i, 'The Blob store connected to this environment is suspended. Check it in Vercel (Storage).'],
+  [/store does not exist/i, 'The Blob store connected to this environment does not exist. Connect a Blob store to this environment in Vercel (Storage).'],
+  [/client token has expired/i, 'The permission this site gave the browser for this upload ran out before the file was stored. Try again.'],
+  [/too many requests/i, 'It is taking too many requests at the moment. Wait a minute and try again.'],
+  [/currently not available|unknown error|access denied/i, BLOB_PRIVATE_STORE],
+];
+
+/** An en dash or an em dash, built from char codes so this file holds neither. */
+const DASHES = new RegExp(`[${String.fromCharCode(0x2013, 0x2014)}]`, 'g');
+
+function messageOf(error: unknown): string {
+  const message = typeof error === 'object' && error !== null ? (error as { message?: unknown }).message : undefined;
+  return typeof message === 'string' ? message : '';
+}
+
+/** The HTTP status an error carries (400 to 599), or null. @vercel/blob 2.9.0 puts none on its errors. */
+function refusalStatus(error: unknown): number | null {
+  const status = typeof error === 'object' && error !== null ? (error as { status?: unknown }).status : undefined;
+  return typeof status === 'number' && Number.isInteger(status) && status >= 400 && status <= 599 ? status : null;
+}
+
+/**
+ * True when a browser upload to Vercel Blob failed on Vercel Blob's answer: an error with an HTTP
+ * status, or one @vercel/blob throws for an answer (each of its messages starts "Vercel Blob:").
+ * Its "request was aborted" is the request being stopped, and a TypeError is a dropped connection.
+ */
+export function isBlobRefusal(error: unknown): boolean {
+  if (refusalStatus(error) !== null) return true;
+  const text = messageOf(error);
+  return text.startsWith('Vercel Blob:') && !/request was aborted/i.test(text);
+}
+
+/**
+ * The message for a browser upload Vercel Blob refused: the status when the error carries one,
+ * then the likely cause when the refusal names one, or is one a store's access gives (refused
+ * access, or a failing service; a private store answered 503). Any other refusal keeps the
+ * library's own reason, such as a file that is too large or a pathname that is taken.
+ */
+export function blobRefusal(error: unknown): string {
+  const status = refusalStatus(error);
+  const text = messageOf(error);
+  const cause =
+    BLOB_REFUSAL_CAUSES.find(([words]) => words.test(text))?.[1] ??
+    (status !== null && (status === 401 || status === 403 || status >= 500) ? BLOB_PRIVATE_STORE : null);
+  if (cause) return `Vercel Blob refused the file${status === null ? '' : ` (${status})`}. ${cause}`;
+  // The library's own words, without its prefix, a closing period, or a dash (its message about
+  // client tokens has one).
+  const said = text
+    .replace(/^Vercel Blob:/, '')
+    .replace(DASHES, '-')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\.$/, '');
+  const reason = said.length > 200 ? `${said.slice(0, 197)}...` : said;
+  const details = [status === null ? '' : String(status), reason].filter((part) => part !== '').join(': ');
+  return `Vercel Blob refused the file${details === '' ? '' : ` (${details})`}. Try again.`;
+}
+
+/**
+ * True when @vercel/blob says the upload's pathname already holds a file. Each upload gets a new
+ * pathname that its token may not overwrite, so the file there is this upload's own: an earlier
+ * try stored it, and Vercel Blob's answer to that try was lost on the way.
+ */
+export function isBlobAlreadyStored(error: unknown): boolean {
+  const text = messageOf(error);
+  return text.startsWith('Vercel Blob:') && /already exists/i.test(text);
 }
 
 // ---------------------------------------------------------------------------------------------

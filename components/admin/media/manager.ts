@@ -13,6 +13,9 @@
  * - checking: /api/check reads the file's name, its words, and its part names; a hit refuses it.
  * - ready, storing: the parts go to the repository (one commit per request) or, above 4 MB, from
  *   the browser to Vercel Blob with a single-use token, then /api/upload/confirm checks the bytes.
+ *   A Blob upload is watched (`BlobWatch`): Cancel ends it at once, and one that Vercel Blob keeps
+ *   refusing, that does not start, or that stops moving is stopped and fails. One stopped while it
+ *   waits for Vercel Blob's answer is first looked for in the store (`settleBlob`).
  * - exists: a name already in the folder waits for Replace or Keep both.
  * - done, refused, failed, canceled: finished. Failed and canceled items can be retried.
  *
@@ -59,11 +62,14 @@ import type { MediaRef } from '@/lib/types';
 import { uploadBodySize, type CallOptions, type UploadFile, type UploadProgress } from '../state/api';
 import {
   acceptRefusal,
+  blobRefusal,
   checkBodies,
   checkItemsFor,
   extensionOfName,
   freeName,
   freeNames,
+  isBlobAlreadyStored,
+  isBlobRefusal,
   isRefusalCode,
   mediaRefFromUpload,
   planStorage,
@@ -275,6 +281,188 @@ function detailOf(error: unknown): string {
   const clean = text.replace(/\s+/g, ' ').trim();
   if (!clean) return 'no reason was given';
   return clean.length > 200 ? `${clean.slice(0, 197)}...` : clean;
+}
+
+// ---------------------------------------------------------------------------------------------
+// A browser upload to Vercel Blob, watched
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * The longest a browser upload to Vercel Blob may take to send its first bytes. A file over 100 MB
+ * first asks Vercel Blob to start a multipart upload, which a healthy store answers in a second.
+ */
+export const BLOB_START_MS = 30_000;
+
+/** The longest an upload may go without moving while its bytes are sent. */
+export const BLOB_QUIET_MS = 90_000;
+
+/**
+ * The longest Vercel Blob may take to answer once every byte is sent: the answer to a single
+ * upload, or to the request that puts a large file's parts together.
+ */
+export const BLOB_ANSWER_MS = 300_000;
+
+/**
+ * How many times @vercel/blob may send the whole file again after a try that sent all of it and
+ * ended without the file stored: one rides out an answer lost on the way, and the next one means
+ * Vercel Blob keeps refusing the file.
+ */
+export const BLOB_RETRIES_ALLOWED = 1;
+
+/**
+ * A single upload's bytes count as all sent from this share of them on: @vercel/blob reports its
+ * last bytes only with Vercel Blob's answer, and a browser without upload streams reports less
+ * often. The real `putBlob` paces the body (services.tsx, PacedBlob), so the share follows what
+ * the request has taken.
+ */
+const BLOB_SENT_SHARE = 0.95;
+
+export const BLOB_NOT_STARTED = `The upload to Vercel Blob did not start within ${BLOB_START_MS / 1000} seconds, so it was stopped. Vercel Blob may be refusing it (a store created as private refuses this site's public files), or the connection failed. Check the Blob store connected to this environment and your connection, then try again.`;
+
+export const BLOB_STALLED = `The upload to Vercel Blob made no progress for ${BLOB_QUIET_MS / 1000} seconds, so it was stopped. Check your connection and try again.`;
+
+export const BLOB_NO_ANSWER = `Vercel Blob did not answer within ${BLOB_ANSWER_MS / 60_000} minutes of the last bytes sent, so the upload was stopped. Try again.`;
+
+/** The message when the queue stopped @vercel/blob from sending the whole file again and again. */
+export function blobNotAccepted(tries: number): string {
+  return `Vercel Blob did not accept the file after ${tries} tries, so the upload was stopped. A likely cause is a store created as private, which refuses this site's public files. Check the Blob store connected to this environment, then try again.`;
+}
+
+/** Why the queue stopped an upload. */
+interface BlobStop {
+  /** The item's message. */
+  message: string;
+  /** Every byte was sent, so Vercel Blob may have stored the file without answering yet. */
+  sent: boolean;
+}
+
+/**
+ * Watches one browser upload to Vercel Blob. `put` from @vercel/blob/client (2.9.0) drops a
+ * request the moment its abort signal fires, but it retries a failed request (a dropped
+ * connection, or a 5xx answer such as the 503 a private store gave this site's public uploads)
+ * up to ten times, waiting about twice as long before each try (17 to 34 minutes in all), and it
+ * looks at the signal again only when the next try starts. No `put` option bounds the retries
+ * (only the VERCEL_BLOB_RETRIES environment variable, which the browser does not have), and its
+ * errors carry no HTTP status. A single upload reports 0, then its bytes as they go, and its last
+ * bytes only with the answer, so its progress goes back only when the library sends it again. A
+ * file over 100 MB reports nothing while Vercel Blob starts or completes its multipart upload, and
+ * in between the sum of up to six parts, which goes back whenever a part is sent again. So the
+ * queue:
+ *
+ * - stops waiting the moment the signal fires: Cancel ends the item at once, and the library's
+ *   next try fails on the aborted signal before it sends a byte;
+ * - stops a single upload, which fails as not accepted, when the library sends it again more than
+ *   BLOB_RETRIES_ALLOWED times after tries that had sent all of it (Vercel Blob refused it, or its
+ *   answer was lost); a try cut off midway lost its connection, which the library rides out;
+ * - stops an upload that sends nothing within BLOB_START_MS, stops moving for BLOB_QUIET_MS while
+ *   it sends, or has no answer BLOB_ANSWER_MS after its last bytes. After that last stop the file
+ *   may be stored all the same, so the queue asks the server before the item fails (`settleBlob`).
+ */
+class BlobWatch {
+  /** Why the queue stopped the upload, or null. */
+  stopped: BlobStop | null = null;
+  private last = 0;
+  /** Bytes are on their way (for a large file: Vercel Blob started its multipart upload). */
+  private started = false;
+  /** Every byte is sent, and the answer is awaited. */
+  private sent = false;
+  /** Tries of a single upload that sent all of it and were sent again. */
+  private refusals = 0;
+  private timer: ReturnType<typeof setTimeout> | null = null;
+  private over = false;
+
+  constructor(
+    private readonly controller: AbortController,
+    private readonly size: number,
+    private readonly multipart: boolean,
+  ) {}
+
+  /** Starts the upload: its outcome, or the signal's reason the moment it fires. A later outcome is ignored. */
+  run<T>(start: () => Promise<T>): Promise<T> {
+    const { signal } = this.controller;
+    return new Promise<T>((resolve, reject) => {
+      const aborted = () => {
+        this.end();
+        reject(signal.reason);
+      };
+      if (signal.aborted) {
+        aborted();
+        return;
+      }
+      signal.addEventListener('abort', aborted, { once: true });
+      const settled = () => {
+        signal.removeEventListener('abort', aborted);
+        this.end();
+      };
+      this.arm();
+      let upload: Promise<T>;
+      try {
+        upload = start();
+      } catch (error) {
+        upload = Promise.reject(error);
+      }
+      upload.then(
+        (value) => {
+          settled();
+          resolve(value);
+        },
+        (error: unknown) => {
+          settled();
+          reject(error);
+        },
+      );
+    });
+  }
+
+  /** Notes a progress event: false when the item should not show it (the upload is over, or this event stopped it). */
+  progress(loaded: number): boolean {
+    if (this.over || this.controller.signal.aborted) return false;
+    if (!this.multipart && loaded < this.last && this.sent) {
+      this.refusals += 1;
+      if (this.refusals > BLOB_RETRIES_ALLOWED) {
+        this.stop({ message: blobNotAccepted(this.refusals), sent: false });
+        return false;
+      }
+    }
+    const phase = this.phase();
+    const moved = loaded !== this.last;
+    this.last = loaded;
+    // A single upload reports 0 before its first bytes; a large file reports first once Vercel
+    // Blob has started its multipart upload.
+    if (this.multipart || loaded > 0) this.started = true;
+    this.sent = loaded >= (this.multipart ? this.size : this.size * BLOB_SENT_SHARE);
+    if (moved || this.phase() !== phase) this.arm();
+    return true;
+  }
+
+  /** The upload is over: no more progress is shown, and no deadline is kept. */
+  end(): void {
+    this.over = true;
+    if (this.timer !== null) clearTimeout(this.timer);
+    this.timer = null;
+  }
+
+  private phase(): 'start' | 'send' | 'answer' {
+    if (this.sent) return 'answer';
+    return this.started ? 'send' : 'start';
+  }
+
+  /** Starts the deadline of the current phase over. */
+  private arm(): void {
+    if (this.timer !== null) clearTimeout(this.timer);
+    const phase = this.phase();
+    const [ms, message] =
+      phase === 'start' ? [BLOB_START_MS, BLOB_NOT_STARTED] : phase === 'send' ? [BLOB_QUIET_MS, BLOB_STALLED] : [BLOB_ANSWER_MS, BLOB_NO_ANSWER];
+    this.timer = setTimeout(() => this.stop({ message, sent: phase === 'answer' }), ms);
+  }
+
+  private stop(why: BlobStop): void {
+    if (this.over || this.controller.signal.aborted) return;
+    this.stopped = why;
+    // Without a reason the signal's reason is an AbortError, which @vercel/blob gives up on; it
+    // would retry most other errors.
+    this.controller.abort();
+  }
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -545,7 +733,10 @@ export class UploadManager {
 
   // ---- the owner's answers
 
-  /** Stops an item. A running step is aborted; a stored Blob file stays (the library lists it as unused). */
+  /**
+   * Stops an item. A running step is aborted (an upload to Vercel Blob ends at once, even while
+   * @vercel/blob waits to retry); a stored Blob file stays (the library lists it as unused).
+   */
   cancel(id: string): void {
     const item = this.get(id);
     const work = this.work.get(id);
@@ -1018,7 +1209,7 @@ export class UploadManager {
     this.emit();
   }
 
-  /** The main file from the browser to Vercel Blob: a single-use token, the upload, then the server's check. */
+  /** The main file from the browser to Vercel Blob: a single-use token, the upload (watched), then the server's check. */
   private async storeBlob(id: string): Promise<void> {
     const item = this.get(id);
     const work = this.work.get(id);
@@ -1027,43 +1218,97 @@ export class UploadManager {
     const controller = new AbortController();
     work.controller = controller;
     const { signal } = controller;
+    let token: BlobTokenResponse | null = null;
+    let watch: BlobWatch | null = null;
     this.patch(id, { stage: 'storing', stageText: 'Uploading to Vercel Blob', fraction: 0 });
     try {
-      const token = await this.api.blobToken({ folder: item.folder, name: main.name, size: main.blob.size, contentType: main.contentType }, { signal });
+      const answer = await this.api.blobToken({ folder: item.folder, name: main.name, size: main.blob.size, contentType: main.contentType }, { signal });
       if (signal.aborted) throw signal.reason;
-      if (isApiError(token)) {
-        this.failFromApi(id, token);
+      if (isApiError(answer)) {
+        this.failFromApi(id, answer);
         return;
       }
-      const put = await this.services.putBlob(token.pathname, main.blob, {
-        access: 'public',
-        token: token.clientToken,
-        multipart: token.multipart,
-        contentType: main.contentType,
-        abortSignal: signal,
-        onUploadProgress: (event) => {
-          const fraction = event.total > 0 ? event.loaded / event.total : event.percentage / 100;
-          this.patch(id, { fraction: Math.min(1, Math.max(0, fraction)) }, true);
-        },
-      });
+      token = answer;
+      const upload = new BlobWatch(controller, main.blob.size, answer.multipart);
+      watch = upload;
+      const put = await upload.run(() =>
+        this.services.putBlob(answer.pathname, main.blob, {
+          access: 'public',
+          token: answer.clientToken,
+          multipart: answer.multipart,
+          contentType: main.contentType,
+          abortSignal: signal,
+          onUploadProgress: (event) => {
+            if (!upload.progress(event.loaded)) return;
+            const fraction = event.total > 0 ? event.loaded / event.total : event.percentage / 100;
+            this.patch(id, { fraction: Math.min(1, Math.max(0, fraction)) }, true);
+          },
+        }),
+      );
       if (signal.aborted) throw signal.reason;
       this.patch(id, { stageText: 'Checking the stored file', fraction: null });
-      const confirmed = await this.api.blobConfirm({ pathname: token.pathname, url: put.url, ticket: token.ticket }, { signal });
+      const confirmed = await this.api.blobConfirm({ pathname: answer.pathname, url: put.url, ticket: answer.ticket }, { signal });
       if (signal.aborted) throw signal.reason;
       if (isApiError(confirmed)) {
         this.failFromApi(id, confirmed);
         return;
       }
-      work.stored.main = confirmed.file;
-      this.invalidateVersion(item.folder);
-      if (work.pendingRepo.length > 0) this.patch(id, { stage: 'ready', stageText: 'Uploading the poster', fraction: null });
-      else this.finish(id);
+      this.storedInBlob(id, work, item.folder, confirmed.file);
     } catch (error) {
-      if (signal.aborted || work.canceled) this.markCanceled(id);
+      const stop = watch?.stopped ?? null;
+      if (token && !work.canceled && (stop ? stop.sent : isBlobAlreadyStored(error))) {
+        await this.settleBlob(id, work, item.folder, token, stop ? stop.message : blobRefusal(error));
+      } else if (stop) this.fail(id, stop.message);
+      else if (signal.aborted || work.canceled) this.markCanceled(id);
+      else if (isBlobRefusal(error)) this.fail(id, blobRefusal(error));
       else this.fail(id, `The upload to Vercel Blob did not finish (${detailOf(error)}). Try again.`);
+    } finally {
+      watch?.end();
+      if (work.controller === controller) work.controller = null;
+    }
+  }
+
+  /**
+   * Asks the server whether an upload that ended without Vercel Blob's answer is stored after all:
+   * the queue stopped it after every byte was sent (Vercel Blob may have kept the file without
+   * answering yet), or Vercel Blob said its pathname is taken (an earlier try stored the file, and
+   * the answer to that try was lost). The confirm route checks a file it finds at the ticket's
+   * pathname like any upload, so the item is stored, or refused and the file replaced by a
+   * placeholder; with nothing there, the item fails with `message`. So a stored file is never left
+   * unchecked, and Try again does not store a second copy.
+   */
+  private async settleBlob(id: string, work: Work, folder: string, token: BlobTokenResponse, message: string): Promise<void> {
+    const controller = new AbortController();
+    work.controller = controller;
+    const { signal } = controller;
+    this.patch(id, { stageText: 'Checking whether the file reached Vercel Blob', fraction: null });
+    try {
+      const host = (await this.storageStatus())?.storage.blob.host ?? null;
+      if (signal.aborted) throw signal.reason;
+      if (!host) {
+        this.fail(id, message);
+        return;
+      }
+      const confirmed = await this.api.blobConfirm({ pathname: token.pathname, url: `https://${host}/${token.pathname}`, ticket: token.ticket }, { signal });
+      if (signal.aborted) throw signal.reason;
+      // "bad-request": nothing is stored at the pathname (or the ticket no longer fits it).
+      if (!isApiError(confirmed)) this.storedInBlob(id, work, folder, confirmed.file);
+      else if (confirmed.code === 'bad-request') this.fail(id, message);
+      else this.failFromApi(id, confirmed);
+    } catch {
+      if (signal.aborted || work.canceled) this.markCanceled(id);
+      else this.fail(id, message);
     } finally {
       if (work.controller === controller) work.controller = null;
     }
+  }
+
+  /** The main file is in Vercel Blob and passed the server's check: on to its poster, or done. */
+  private storedInBlob(id: string, work: Work, folder: string, file: MediaItem): void {
+    work.stored.main = file;
+    this.invalidateVersion(folder);
+    if (work.pendingRepo.length > 0) this.patch(id, { stage: 'ready', stageText: 'Uploading the poster', fraction: null });
+    else this.finish(id);
   }
 
   private runApplier(applier: Applier, result: StoredUpload, item: QueueItem): ApplyOutcome {

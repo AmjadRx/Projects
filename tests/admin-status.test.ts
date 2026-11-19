@@ -1,10 +1,15 @@
 /**
  * GET /api/status and lib/admin/server/deploy.ts (ARCHITECTURE.md 7.6 and 11; docs/V3_PLAN.md
- * D-31, D-32, Q-31): names and states only, never a value; deploy state from Vercel or from
- * GitHub's deployment records; the draft's preview address. Synthetic settings only.
+ * D-31, D-32, Q-31): names and states only, never a value; write access only where GitHub's
+ * answer shows it; the draft head and its unpublished commits; deploy state from Vercel or from
+ * GitHub's deployment records, or why it cannot be read; the draft's preview address; and how the
+ * status panel shows them, claiming nothing it cannot know. Synthetic settings only.
  */
+import { createElement as h } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GET as status } from '../app/api/status/route';
+import { BLOB_ACCESS_HINT, StatusDetails } from '../components/admin/shell/StatusPanel';
 import rulesFile from '../content-rules.public.json';
 import type { StatusResponse } from '../lib/admin/contract';
 import {
@@ -16,7 +21,7 @@ import {
   vercelDeployments,
 } from '../lib/admin/server/deploy';
 import { ADMIN_VARIABLES } from '../lib/admin/server/env';
-import { adminRequest, FakeGitHub, installFakeGitHub, stubAdminEnv, TEST_ENV } from './admin-github-fake';
+import { adminRequest, FAKE_REPO, FakeGitHub, installFakeGitHub, stubAdminEnv, TEST_ENV, type FakeDeployment } from './admin-github-fake';
 
 let fake: FakeGitHub;
 
@@ -37,6 +42,26 @@ async function read(): Promise<{ body: StatusResponse; raw: string }> {
   const raw = await res.text();
   return { body: JSON.parse(raw) as StatusResponse, raw };
 }
+
+/** Text as React writes it into HTML. */
+function escaped(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
+}
+
+/** What the status panel shows in one row for an answer, as HTML. */
+function panelRow(body: StatusResponse, term: string): string {
+  const html = renderToStaticMarkup(h(StatusDetails, { status: body }));
+  const row = new RegExp(`<dt class="adm-dl__term">${term}</dt><dd class="adm-dl__desc">(.*?)</dd>`).exec(html);
+  expect(row, `the ${term} row`).not.toBeNull();
+  return row![1];
+}
+
+/** The repository as GitHub answers for it, with or without `private`, `archived`, and `permissions`. */
+function repository(fields: { private?: boolean; archived?: boolean; permissions?: Record<string, boolean> }) {
+  return { status: 200, body: { full_name: FAKE_REPO, ...fields } };
+}
+
+const NOT_KNOWN = '<span class="adm-badge adm-badge--neutral">not known</span>';
 
 describe('GET /api/status', () => {
   it('reports names and states, and no secret value anywhere', async () => {
@@ -63,13 +88,18 @@ describe('GET /api/status', () => {
       draftBranch: 'draft',
       liveExists: true,
       draftExists: false,
-      writeAccess: true,
+      draftHead: null,
+      draftCommits: null,
+      // GitHub says the account may push; a fine-grained token's own permissions are not in the answer.
+      writeAccess: null,
     });
     expect(body.storage.blob).toEqual({ configured: true, host: 'teststore123.public.blob.vercel-storage.com' });
     expect(body.storage.repo).toEqual({ target: 'github', problem: null });
     expect(body.contentCheck).toEqual({ publicRules: rulesFile.rules.length, blocklistSet: true, failClosed: false });
-    expect(body.deploy).toMatchObject({ source: 'github', draft: null, live: null });
+    // No draft head to ask about; the published head's records cannot be read (403), and that is said, not "none".
+    expect(body.deploy).toMatchObject({ source: 'github', draft: null, live: null, draftUnknown: null });
     expect(body.deploy.detail).toContain(DEPLOY_MESSAGES.githubCannotRead);
+    expect(body.deploy.liveUnknown).toContain(DEPLOY_MESSAGES.githubCannotRead);
     expect(body.preview).toEqual({ branch: 'draft', url: null });
     expect(body.session.expiresAt).toBeGreaterThan(Date.now());
     expect(body.runtime.node).toBe(process.version);
@@ -87,6 +117,94 @@ describe('GET /api/status', () => {
       expect(body.github.tokenKind).toBe(kind);
       expect(raw).not.toContain(token);
     }
+  });
+
+  it("says whether the token can write only where GitHub's answer shows it", async () => {
+    // The preview's failure: GitHub reports the account's push permission for a fine-grained token
+    // that may only read, and every save got 403. That answer must not read as "yes".
+    fake.permissions = { admin: true, maintain: true, push: true, triage: true, pull: true };
+    let { body } = await read();
+    expect(body.github).toMatchObject({ tokenKind: 'fine-grained', ok: true, writeAccess: null });
+    expect(body.github.writeDetail).toContain("A fine-grained token's own permissions cannot be read from GitHub");
+    expect(body.github.writeDetail).toContain('The first save shows them');
+    expect(body.github.writeDetail).toContain('names the permission GitHub asked for');
+    expect(body.github.writeDetail).toContain('Contents: Read and write');
+
+    // A classic token sees a private repository only with the repo scope, and that scope writes.
+    const classic = ['ghp', 'SYNTHETIC0classic0token'].join('_');
+    vi.stubEnv('GITHUB_TOKEN', classic);
+    fake.overrides.set('GET ', repository({ private: true, permissions: { push: true, pull: true } }));
+    ({ body } = await read());
+    expect(body.github).toMatchObject({ tokenKind: 'classic', ok: true, writeAccess: true, writeDetail: null });
+
+    // On a public repository its scopes decide, and this check does not read them.
+    fake.overrides.set('GET ', repository({ private: false, permissions: { push: true, pull: true } }));
+    ({ body } = await read());
+    expect(body.github).toMatchObject({ tokenKind: 'classic', ok: true, writeAccess: null });
+    expect(body.github.writeDetail).toContain('Whether this token can write is not known here');
+    expect(body.github.writeDetail).toContain("this check does not read the token's own scopes");
+    expect(body.github.writeDetail).toContain('The first save shows it');
+    expect(body.github.writeDetail).not.toContain("GitHub's answer does not show");
+
+    // An app token, and an answer without permissions: not known either.
+    vi.stubEnv('GITHUB_TOKEN', ['ghs', 'SYNTHETIC0app0token'].join('_'));
+    fake.overrides.set('GET ', repository({ private: true, permissions: { push: true, pull: true } }));
+    ({ body } = await read());
+    expect(body.github).toMatchObject({ tokenKind: 'app', ok: true, writeAccess: null });
+    vi.stubEnv('GITHUB_TOKEN', classic);
+    fake.overrides.set('GET ', repository({ private: true }));
+    ({ body } = await read());
+    expect(body.github).toMatchObject({ ok: true, writeAccess: null });
+    expect(body.github.writeDetail).toContain('The first save shows it');
+
+    // An account that cannot push leaves every token of it read-only: that "no" is known for any kind.
+    for (const token of [TEST_ENV.GITHUB_TOKEN, classic]) {
+      vi.stubEnv('GITHUB_TOKEN', token);
+      fake.overrides.set('GET ', repository({ private: true, permissions: { push: false, pull: true } }));
+      ({ body } = await read());
+      expect(body.github).toMatchObject({ ok: false, writeAccess: false, writeDetail: null });
+    }
+
+    // GitHub refuses every write to an archived repository, whatever the account may do: "no", and the
+    // connection says why, for a classic token on a private repository as for a fine-grained one.
+    for (const token of [classic, TEST_ENV.GITHUB_TOKEN]) {
+      vi.stubEnv('GITHUB_TOKEN', token);
+      fake.overrides.set('GET ', repository({ private: true, archived: true, permissions: { push: true, pull: true } }));
+      ({ body } = await read());
+      expect(body.github).toMatchObject({ ok: false, writeAccess: false, writeDetail: null });
+      expect(body.github.detail).toBe('The repository is archived, so GitHub refuses every write to it. Unarchive it in its settings on GitHub.');
+      expect(panelRow(body, 'Write access')).toBe('<span class="adm-badge adm-badge--error">no</span>');
+      expect(panelRow(body, 'Connection')).toContain('>failing</span> The repository is archived');
+    }
+  });
+
+  it('shows "not known" and why in the panel for a fine-grained token, never "yes"', async () => {
+    const { body } = await read();
+    const row = panelRow(body, 'Write access');
+    expect(row).toContain('>not known</span>');
+    expect(row).not.toContain('>yes</span>');
+    expect(row).toContain(escaped(body.github.writeDetail!));
+
+    fake.permissions = { push: false, pull: true };
+    expect(panelRow((await read()).body, 'Write access')).toBe('<span class="adm-badge adm-badge--error">no</span>');
+  });
+
+  it("says in the Vercel Blob row that a private store refuses the site's uploads", async () => {
+    let { body } = await read();
+    let row = panelRow(body, 'Vercel Blob');
+    expect(row).toContain('>connected</span>');
+    expect(row).toContain(`<p class="adm-muted">${escaped(BLOB_ACCESS_HINT)}</p>`);
+    // The public host comes from the token, which does not say the store is public: it is given only as such.
+    expect(row).toContain(
+      '</span> If the store is public, its files are served from <span class="adm-mono">teststore123.public.blob.vercel-storage.com</span>.',
+    );
+    expect(row).not.toContain('connected</span> <span class="adm-mono">');
+
+    vi.stubEnv('BLOB_READ_WRITE_TOKEN', '');
+    ({ body } = await read());
+    row = panelRow(body, 'Vercel Blob');
+    expect(row).toContain('>not connected</span>');
+    expect(row).toContain(escaped(BLOB_ACCESS_HINT));
   });
 
   it('reports the draft, how far it is ahead, and the deploy state from GitHub records', async () => {
@@ -114,21 +232,96 @@ describe('GET /api/status', () => {
     // Without a Vercel token, deploy state comes from GitHub's records (Q-31).
     vi.stubEnv('VERCEL_TOKEN', '');
     const { body } = await read();
-    expect(body.github).toMatchObject({ draftExists: true, ahead: 1, behind: 0 });
+    expect(body.github).toMatchObject({ draftExists: true, draftHead: draft, ahead: 1, behind: 0 });
     expect(body.deploy).toMatchObject({
       source: 'github',
       detail: DEPLOY_MESSAGES.fromGitHub,
       draft: { state: 'ready', url: 'https://site-draft123.vercel.app', sha: draft },
       live: { state: 'ready', url: 'https://site-live456.vercel.app', sha: fake.refs.get('main') },
+      draftUnknown: null,
+      liveUnknown: null,
     });
     expect(body.preview).toEqual({ branch: 'draft', url: 'https://site-draft123.vercel.app' });
+    expect(panelRow(body, 'Draft')).toContain('>ready</span>');
+    expect(panelRow(body, 'Published')).toContain('>ready</span>');
+  });
+
+  it("lists the draft's unpublished commits, for the preview watch", async () => {
+    const main = fake.refs.get('main')!;
+    fake.refs.set('draft', main);
+    let { body } = await read();
+    expect(body.github).toMatchObject({ draftHead: main, ahead: 0, behind: 0, draftCommits: [] });
+
+    const first = fake.push('draft', { 'content/projects/raven.json': '{}' });
+    const second = fake.push('draft', { 'public/media/site/new.webp': new Uint8Array([1, 2, 3]) });
+    // The fake's compare leaves the list out, so the commits are not known.
+    ({ body } = await read());
+    expect(body.github).toMatchObject({ draftHead: second, ahead: 2, draftCommits: null });
+
+    // GitHub's compare lists them oldest first; anything that is not a commit id is left out.
+    fake.overrides.set(`GET /compare/${main}...${second}`, {
+      status: 200,
+      body: { status: 'ahead', ahead_by: 2, behind_by: 0, commits: [{ sha: first }, { sha: 'not-a-commit' }, {}, { sha: second }] },
+    });
+    ({ body } = await read());
+    expect(body.github).toMatchObject({ draftHead: second, ahead: 2, behind: 0, draftCommits: [first, second] });
+  });
+
+  it('shows deployments it could not read as not known, and never says the draft head has none', async () => {
+    fake.refs.set('draft', fake.refs.get('main')!);
+    const draft = fake.push('draft', { 'content/projects/raven.json': '{}' });
+    vi.stubEnv('VERCEL_TOKEN', '');
+    // fake.deployments is null: GitHub answers 403, as for a token without Deployments read.
+    let { body } = await read();
+    expect(body.deploy).toMatchObject({
+      source: 'github',
+      draft: null,
+      live: null,
+      draftUnknown: DEPLOY_MESSAGES.githubCannotRead,
+      liveUnknown: DEPLOY_MESSAGES.githubCannotRead,
+    });
+    expect(body.deploy.detail).toBe(
+      `${DEPLOY_MESSAGES.githubCannotRead} No preview address yet: the deployment of the draft head could not be read, ` +
+        'this deployment has no branch alias (VERCEL_BRANCH_URL), and DRAFT_PREVIEW_URL is not set.',
+    );
+    expect(panelRow(body, 'Draft')).toBe(NOT_KNOWN);
+    expect(panelRow(body, 'Published')).toBe(NOT_KNOWN);
+
+    // Without a draft head, the failed lookup still leaves the published head not known.
+    fake.refs.delete('draft');
+    ({ body } = await read());
+    expect(body.deploy).toMatchObject({ draftUnknown: null, liveUnknown: DEPLOY_MESSAGES.githubCannotRead });
+    expect(panelRow(body, 'Published')).toBe(NOT_KNOWN);
+
+    // Once the lookup answers, a head without a deployment has none, and the preview sentence may say so.
+    fake.refs.set('draft', draft);
+    const records: FakeDeployment[] = [];
+    fake.deployments = records;
+    ({ body } = await read());
+    expect(body.deploy).toMatchObject({ draftUnknown: null, liveUnknown: null });
+    expect(panelRow(body, 'Draft')).toBe('No deployment found.');
+    expect(panelRow(body, 'Published')).toBe('No deployment found.');
+    expect(body.deploy.detail).toBe(`${DEPLOY_MESSAGES.fromGitHub} ${DEPLOY_MESSAGES.previewMissing}`);
+
+    // A deployment still building has no address yet: it exists, so the sentence does not say it is missing.
+    records.push({ id: 1, sha: draft, environment: 'Preview', created_at: '2026-11-18T10:00:00Z', statuses: [{ state: 'in_progress', created_at: '2026-11-18T10:00:01Z' }] });
+    ({ body } = await read());
+    expect(body.deploy.draft).toMatchObject({ state: 'building', sha: draft, url: null });
+    expect(body.deploy.detail).toContain('No preview address yet: the deployment of the draft head has none so far');
+    expect(body.deploy.detail).not.toContain('the draft head has no deployment');
   });
 
   it('says plainly what is wrong with the GitHub settings, and still answers', async () => {
+    // The push permission belongs to the account behind the token: that account cannot write, so
+    // no grant on the token helps, and the sentence says what does.
     fake.permissions = { push: false, pull: true };
     let { body } = await read();
-    expect(body.github).toMatchObject({ ok: false, writeAccess: false });
-    expect(body.github.detail).toContain('Read and write');
+    expect(body.github).toMatchObject({ ok: false, writeAccess: false, writeDetail: null });
+    expect(body.github.detail).toBe(
+      'The account (or app) behind the token cannot push to this repository, so the token cannot write to it either. Give ' +
+        'that account write access, or use a token of an account that has it, with Contents: Read and write.',
+    );
+    expect(body.github.detail).not.toContain('The token can read the repository but cannot write to it');
 
     vi.stubEnv('GITHUB_DRAFT_BRANCH', 'main');
     ({ body } = await read());

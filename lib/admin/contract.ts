@@ -455,22 +455,53 @@ export interface StatusResponse {
     draftBranch: string | null;
     liveExists: boolean;
     draftExists: boolean;
+    /**
+     * The newest commit on the draft branch as this answer read it; null without a draft branch or
+     * when GitHub did not answer. The preview watch after a save follows it.
+     */
+    draftHead: string | null;
+    /**
+     * The commits on the draft that the published branch lacks, oldest first, as GitHub's compare
+     * of the two branches lists them (up to 250); empty when the draft is the published branch, and
+     * null when they were not read. The preview watch follows a newer draft head only when the
+     * commit it follows is among them.
+     */
+    draftCommits: string[] | null;
+    /**
+     * Whether the token can write to the repository, only where GitHub's answer shows it: false
+     * when the repository is archived or the account (or app) behind the token cannot push, true
+     * for a classic token on a private repository, and null otherwise, with `writeDetail` saying why.
+     */
     writeAccess: boolean | null;
+    /** A plain sentence when write access is not known from GitHub's answer; null otherwise. */
+    writeDetail: string | null;
     ahead: number | null;
     behind: number | null;
   };
   storage: {
     repo: { target: 'github' | 'disk' | 'none'; problem: string | null };
+    /**
+     * `host`: where the store serves its files if it is public (BLOB_STORE_HOST, or worked out from
+     * the token). The token does not say whether the store is public, so neither does this.
+     */
     blob: { configured: boolean; host: string | null };
     limits: { repoMaxBytes: number; blobMaxBytes: number };
   };
   contentCheck: { publicRules: number; blocklistSet: boolean; failClosed: boolean };
   deploy: {
     source: 'vercel' | 'github' | 'none';
-    /** A plain sentence: where deploy state comes from, or why it is not available. */
+    /** Plain sentences: where deploy state comes from, or why it is not available. */
     detail: string;
     draft: DeployState | null;
     live: DeployState | null;
+    /**
+     * Null when the deploy lookup answered for the draft head, so a `draft` that is null (or a
+     * deployment of another commit) means the head has no deployment yet; and when there is no
+     * draft head. Otherwise a plain sentence: why the head's build state cannot be read.
+     */
+    draftUnknown: string | null;
+    /** The same for the live head and `live`. */
+    liveUnknown: string | null;
   };
   preview: PreviewInfo | null;
   session: { expiresAt: number };

@@ -1,11 +1,14 @@
 /**
  * The admin's API client (components/admin/state/api.ts) with fetch and XMLHttpRequest stubbed,
  * the save flow against a stubbed API (components/admin/shell/saveFlow.ts), and the shell's pure
- * pieces: the deploy state, the hash route, the shortcuts, the publish blockers, and the status
- * line. No request leaves the test, and content/ is only read.
+ * pieces: the deploy state and the commit the save bar names for it, the hash route, the
+ * shortcuts, the publish blockers, and the status line. No request leaves the test, and content/
+ * is only read.
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { createElement as h } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   projectFileOf,
@@ -19,19 +22,21 @@ import {
   type StatusResponse,
 } from '../lib/admin/contract';
 import { api, interpret, isUnauthorized, NETWORK_ERROR, SessionGate, sessionGate, withReauth } from '../components/admin/state/api';
+import { AdminProvider } from '../components/admin/state/hooks';
 import { createAdminStore, isDirty, type AdminStore } from '../components/admin/state/store';
 import { firstRevealable, runSave, saveBodyOf, savedMessage } from '../components/admin/shell/saveFlow';
-import { deployViewOf } from '../components/admin/shell/deploy';
+import { DEPLOY_WATCH_MESSAGES, deployViewOf, type DeployView } from '../components/admin/shell/deploy';
 import { formatRoute, parseRoute } from '../components/admin/shell/route';
 import { shortcutOf } from '../components/admin/shell/keys';
 import { publishBlockers } from '../components/admin/shell/PublishDialog';
-import { statusLine } from '../components/admin/shell/SaveBar';
+import { SaveBar, statusLine, watchedCommitWords } from '../components/admin/shell/SaveBar';
 import { workingData } from '../components/admin/shell/RevertFile';
 import { setIn } from '../components/admin/ui/paths';
 
 const ROOT = path.resolve(__dirname, '..');
 const HEAD = 'a'.repeat(40);
 const NEXT_HEAD = 'b'.repeat(40);
+const LATER_HEAD = 'c'.repeat(40);
 
 function jsonResponse(status: number, body: unknown, headers: Record<string, string> = {}): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json', ...headers } });
@@ -536,7 +541,11 @@ describe('saving', () => {
 // The shell's pure pieces
 // ---------------------------------------------------------------------------------------------
 
-function status(draft: StatusResponse['deploy']['draft'], source: StatusResponse['deploy']['source'] = 'github'): StatusResponse {
+function status(
+  draft: StatusResponse['deploy']['draft'],
+  source: StatusResponse['deploy']['source'] = 'github',
+  draftUnknown: string | null = null,
+): StatusResponse {
   return {
     ok: true,
     runtime: { vercelEnv: 'preview', branch: 'v3', commit: HEAD, node: 'v24.0.0' },
@@ -551,13 +560,16 @@ function status(draft: StatusResponse['deploy']['draft'], source: StatusResponse
       draftBranch: 'sandbox-draft',
       liveExists: true,
       draftExists: true,
-      writeAccess: true,
+      draftHead: NEXT_HEAD,
+      draftCommits: [NEXT_HEAD],
+      writeAccess: null,
+      writeDetail: 'Not known from GitHub.',
       ahead: 1,
       behind: 0,
     },
     storage: { repo: { target: 'github', problem: null }, blob: { configured: false, host: null }, limits: { repoMaxBytes: 4_000_000, blobMaxBytes: 500_000_000 } },
     contentCheck: { publicRules: 40, blocklistSet: true, failClosed: true },
-    deploy: { source, detail: 'From GitHub deployment records.', draft, live: null },
+    deploy: { source, detail: 'From GitHub deployment records.', draft, live: null, draftUnknown, liveUnknown: draftUnknown },
     preview: { branch: 'sandbox-draft', url: 'https://draft.example.test' },
     session: { expiresAt: 0 },
     security: { loginLimit: 'runtime-cache', address: 'x-real-ip', detail: 'Counted in Vercel Runtime Cache.' },
@@ -577,6 +589,52 @@ describe('the shell', () => {
     expect(deployViewOf(status(at('error')), NEXT_HEAD)).toMatchObject({ phase: 'failed' });
     expect(deployViewOf(status(at('ready', HEAD)), NEXT_HEAD)).toMatchObject({ phase: 'waiting', url: 'https://draft.example.test' });
     expect(deployViewOf(status(null, 'none'), NEXT_HEAD)).toMatchObject({ phase: 'unknown', detail: 'From GitHub deployment records.' });
+    // The lookup answered for the head and found no deployment: its build has not started yet, and
+    // the view names the commit it waits for. Once the build state cannot be read, it says why.
+    expect(deployViewOf(status(null), NEXT_HEAD)).toEqual({ phase: 'waiting', url: 'https://draft.example.test', detail: null, commit: NEXT_HEAD });
+    const why = 'The GitHub token cannot read deployments: add Deployments read, or set VERCEL_TOKEN.';
+    expect(deployViewOf(status(null, 'github', why), NEXT_HEAD)).toEqual({ phase: 'unknown', url: 'https://draft.example.test', detail: why, commit: NEXT_HEAD });
+    expect(deployViewOf(status(at('ready', HEAD), 'vercel', 'Not among the deployments listed.'), NEXT_HEAD)).toMatchObject({
+      phase: 'unknown',
+      detail: 'Not among the deployments listed.',
+    });
+  });
+
+  it('names the commit the preview watch waits for, and says so when the draft moved past the saved one', async () => {
+    expect(watchedCommitWords(NEXT_HEAD, NEXT_HEAD)).toBe('commit bbbbbbb');
+    expect(watchedCommitWords(NEXT_HEAD, null)).toBe('commit bbbbbbb');
+    expect(watchedCommitWords(LATER_HEAD, NEXT_HEAD)).toBe('commit ccccccc, the newest on the draft');
+
+    // A save made NEXT_HEAD; a media upload then moved the draft to LATER_HEAD, whose build the watch follows.
+    const store = loaded();
+    store.editSite((site) => setIn(site, 'personal.tagline', 'A changed tagline.'));
+    await runSave({ store, save: async (body) => ok(body), reauthenticate: async () => false });
+    const noop = () => undefined;
+    const line = (deploy: DeployView) =>
+      renderToStaticMarkup(
+        h(AdminProvider, {
+          store,
+          children: h(SaveBar, { deploy, sessionEnded: false, onSave: noop, onPublish: noop, onDiscard: noop, onSignIn: noop, onReload: noop }),
+        }),
+      );
+    expect(line({ phase: 'waiting', url: null, detail: null, commit: NEXT_HEAD })).toContain(
+      'Draft preview: waiting for the build of commit bbbbbbb; until it is ready the preview shows the previous build.',
+    );
+    expect(line({ phase: 'building', url: null, detail: null, commit: LATER_HEAD })).toContain(
+      'Draft preview: building commit ccccccc, the newest on the draft; until it is ready the preview shows the previous build.',
+    );
+    expect(line({ phase: 'unknown', url: null, detail: DEPLOY_WATCH_MESSAGES.timedOut(LATER_HEAD), commit: LATER_HEAD })).toContain(
+      'No finished preview build of commit ccccccc after five minutes.',
+    );
+    // The newest head whose deployment has not started yet is waited for by name.
+    expect(line({ phase: 'waiting', url: null, detail: null, commit: LATER_HEAD })).toContain(
+      'Draft preview: waiting for the build of commit ccccccc, the newest on the draft; until it is ready the preview shows the previous build.',
+    );
+    const why = 'The GitHub token cannot read deployments: add Deployments read, or set VERCEL_TOKEN.';
+    const unread = line({ phase: 'unknown', url: null, detail: DEPLOY_WATCH_MESSAGES.unreadState(LATER_HEAD, why), commit: LATER_HEAD });
+    expect(unread).toContain('The state of the preview build of commit ccccccc could not be read');
+    expect(unread).toContain(why);
+    expect(unread).not.toContain('No finished preview build');
   });
 
   it('keeps the tab and the project in the hash', () => {

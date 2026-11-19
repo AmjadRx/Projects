@@ -3,13 +3,15 @@
  * D-31, D-32). Session required.
  *
  * Names and states only, never a value: whether each variable is set, the GitHub token's kind
- * from its prefix, whether the repository and both branches answer, storage, the content check's
- * setup, and the latest deployment of the draft and the live heads with the draft's preview
- * address. A problem anywhere is reported in a plain sentence; this route does not fail for it.
+ * from its prefix, whether the repository and both branches answer, whether the token can write
+ * (only where GitHub's answer shows it), the draft head and its unpublished commits, storage, the
+ * content check's setup, and the latest deployment of the draft and the live heads, or why it
+ * cannot be read, with the draft's preview address. A problem anywhere is reported in a plain
+ * sentence; this route does not fail for it.
  */
 import type { StatusResponse } from '@/lib/admin/contract';
 import { blocklistState, publicRules } from '@/lib/admin/server/content-check';
-import { lookupDeploys, resolvePreview } from '@/lib/admin/server/deploy';
+import { DEPLOY_MESSAGES, lookupDeploys, resolvePreview, type DeployReport } from '@/lib/admin/server/deploy';
 import { ADMIN_VARIABLES, blobStoreHost, githubSettings, isReadOnlyServer, vercelEnv, type Env } from '@/lib/admin/server/env';
 import { adminRoute, ApiFailure, json } from '@/lib/admin/server/guard';
 import { loginLimitBackend } from '@/lib/admin/server/ratelimit';
@@ -36,13 +38,34 @@ const MESSAGES = {
   forbidden: 'GitHub refused the request (403): the token lacks a permission, or the rate limit was reached.',
   failed: (status: number) => `GitHub answered ${status} for the repository.`,
   unreachable: 'GitHub could not be reached.',
-  noWrite: 'The token can read the repository but cannot write to it. Grant Contents: Read and write.',
+  noWrite:
+    'The account (or app) behind the token cannot push to this repository, so the token cannot write to it either. Give ' +
+    'that account write access, or use a token of an account that has it, with Contents: Read and write.',
+  archived: 'The repository is archived, so GitHub refuses every write to it. Unarchive it in its settings on GitHub.',
+  writeFineGrained:
+    'A fine-grained token\'s own permissions cannot be read from GitHub: the permissions it reports for the repository are ' +
+    'those of the account that made the token. The first save shows them: if the token may not write, the save is refused, ' +
+    'and the message names the permission GitHub asked for. The token needs Contents: Read and write.',
+  writeUnknown:
+    'Whether this token can write is not known here: the permissions GitHub reports for the repository are those of the ' +
+    'account (or app) behind the token, and this check does not read the token\'s own scopes. The first save shows it: if ' +
+    'the token may not write, the save is refused, and the message names the call GitHub refused.',
   noLiveBranch: 'GITHUB_BRANCH is not set: there is no default branch.',
   badLiveBranch: 'GITHUB_BRANCH is not a valid branch name.',
   liveMissing: (branch: string) => `The branch "${branch}" named by GITHUB_BRANCH does not exist.`,
   connected: (repo: string, live: string, draft: string, draftExists: boolean) =>
     `Connected to ${repo}: Publish moves "${live}", saves go to "${draft}"${draftExists ? '' : ' (the first save creates it)'}.`,
+  // In place of DEPLOY_MESSAGES.previewMissing ("the draft head has no deployment") when the lookup did not find that.
+  previewUnread:
+    'No preview address yet: the deployment of the draft head could not be read, this deployment has no branch alias ' +
+    '(VERCEL_BRANCH_URL), and DRAFT_PREVIEW_URL is not set.',
+  previewNoAddress:
+    'No preview address yet: the deployment of the draft head has none so far, this deployment has no branch alias ' +
+    '(VERCEL_BRANCH_URL), and DRAFT_PREVIEW_URL is not set.',
 } as const;
+
+/** A commit id as GitHub writes it: SHA-1, or SHA-256 in a repository that uses it. */
+const COMMIT_ID = /^[0-9a-f]{40}(?:[0-9a-f]{24})?$/;
 
 /** The kind of a GitHub token, from its prefix alone. */
 function tokenKindOf(token: string): StatusResponse['github']['tokenKind'] {
@@ -56,11 +79,45 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
+/**
+ * What GitHub's answer for the repository shows about writing with this token, and the problem it
+ * shows, if any. GitHub refuses every write to an archived repository. The `permissions` belong to
+ * the account (or app) behind the token, never to the token itself: an account that cannot push
+ * leaves every token of it read-only, so "no" is known; "yes" is known only for a classic token on
+ * a private repository, which it can see only with the repo scope, and that scope writes. A
+ * fine-grained token's own permissions cannot be read from GitHub at all; a save it may not make
+ * is refused with the permission GitHub asked for (`expect` in repo.ts).
+ */
+function writeAccessOf(
+  kind: StatusResponse['github']['tokenKind'],
+  repository: unknown,
+): Pick<StatusResponse['github'], 'writeAccess' | 'writeDetail'> & { problem: string | null } {
+  if (isRecord(repository) && repository.archived === true) return { writeAccess: false, writeDetail: null, problem: MESSAGES.archived };
+  const permissions = isRecord(repository) && isRecord(repository.permissions) ? repository.permissions : null;
+  if (permissions?.push === false) return { writeAccess: false, writeDetail: null, problem: MESSAGES.noWrite };
+  if (permissions?.push === true && kind === 'classic' && isRecord(repository) && repository.private === true) {
+    return { writeAccess: true, writeDetail: null, problem: null };
+  }
+  return {
+    writeAccess: null,
+    writeDetail: kind === 'fine-grained' ? MESSAGES.writeFineGrained : MESSAGES.writeUnknown,
+    problem: null,
+  };
+}
+
 async function headOf(gh: GitHubClient, branch: string): Promise<string | null> {
   const reply = await gh.request('GET', `/git/ref/heads/${branch.split('/').map(encodeURIComponent).join('/')}`);
   if (reply.status !== 200 || !isRecord(reply.data) || !isRecord(reply.data.object)) return null;
   const sha = reply.data.object.sha;
-  return typeof sha === 'string' && /^[0-9a-f]{40}(?:[0-9a-f]{24})?$/.test(sha) ? sha : null;
+  return typeof sha === 'string' && COMMIT_ID.test(sha) ? sha : null;
+}
+
+/** The commit ids a compare lists, oldest first; null when the answer has no list. */
+function commitsOf(compared: Record<string, unknown>): string[] | null {
+  if (!Array.isArray(compared.commits)) return null;
+  return compared.commits.flatMap((commit: unknown) =>
+    isRecord(commit) && typeof commit.sha === 'string' && COMMIT_ID.test(commit.sha) ? [commit.sha] : [],
+  );
 }
 
 interface GitHubCheck {
@@ -83,7 +140,10 @@ async function checkGitHub(env: Env): Promise<GitHubCheck> {
     draftBranch: draftName || null,
     liveExists: false,
     draftExists: false,
+    draftHead: null,
+    draftCommits: null,
     writeAccess: null,
+    writeDetail: null,
     ahead: null,
     behind: null,
   };
@@ -117,6 +177,7 @@ async function checkGitHub(env: Env): Promise<GitHubCheck> {
   else if (!liveUsable) problems.push(MESSAGES.badLiveBranch);
 
   const gh = createGitHubClient(settings, undefined, { timeoutMs: 8_000 });
+  let writeProblem: string | null = null;
   try {
     const repoReply = await gh.request('GET', '');
     if (repoReply.status !== 200) {
@@ -130,8 +191,10 @@ async function checkGitHub(env: Env): Promise<GitHubCheck> {
               : MESSAGES.failed(repoReply.status);
       return { status, heads, draftBranch };
     }
-    const permissions = isRecord(repoReply.data) && isRecord(repoReply.data.permissions) ? repoReply.data.permissions : null;
-    status.writeAccess = permissions ? permissions.push === true : null;
+    const write = writeAccessOf(status.tokenKind, repoReply.data);
+    status.writeAccess = write.writeAccess;
+    status.writeDetail = write.writeDetail;
+    writeProblem = write.problem;
 
     const [live, draft] = await Promise.all([
       liveUsable ? headOf(gh, liveName) : Promise.resolve(null),
@@ -141,16 +204,19 @@ async function checkGitHub(env: Env): Promise<GitHubCheck> {
     heads.draft = draft;
     status.liveExists = live !== null;
     status.draftExists = draft !== null;
+    status.draftHead = draft;
     if (live && draft) {
       if (live === draft) {
         status.ahead = 0;
         status.behind = 0;
+        status.draftCommits = [];
       } else {
         const compared = await gh.request('GET', `/compare/${live}...${draft}`);
         if (compared.status === 200 && isRecord(compared.data)) {
           const { ahead_by: ahead, behind_by: behind } = compared.data;
           status.ahead = typeof ahead === 'number' ? ahead : null;
           status.behind = typeof behind === 'number' ? behind : null;
+          status.draftCommits = commitsOf(compared.data);
         }
       }
     }
@@ -160,12 +226,31 @@ async function checkGitHub(env: Env): Promise<GitHubCheck> {
     return { status, heads, draftBranch };
   }
 
-  if (status.writeAccess === false) problems.push(MESSAGES.noWrite);
+  if (writeProblem) problems.push(writeProblem);
   if (liveUsable && !status.liveExists) problems.push(MESSAGES.liveMissing(liveName));
   status.ok = problems.length === 0;
   status.detail =
     problems.length > 0 ? problems.join(' ') : MESSAGES.connected(settings.repo, liveName, draftBranch ?? draftName, status.draftExists);
   return { status, heads, draftBranch };
+}
+
+/**
+ * Why the live head's build state could not be read; null when the deploy lookup answered for it,
+ * and when there is no live head. Vercel's list answers for both heads at once. GitHub's lookup
+ * reads both heads together, and when it fails, its detail ends with why instead of where deploy
+ * state comes from.
+ */
+function liveUnknownOf(deploys: DeployReport, liveHead: string | null): string | null {
+  if (!liveHead || deploys.source === 'vercel') return null;
+  if (deploys.source === 'github' && deploys.detail.endsWith(DEPLOY_MESSAGES.fromGitHub)) return null;
+  return deploys.detail;
+}
+
+/** Why the draft has no preview address: the head "has no deployment" only when the lookup found none. */
+function previewReason(reason: string | null, deploys: DeployReport, draftHead: string | null): string | null {
+  if (reason !== DEPLOY_MESSAGES.previewMissing) return reason;
+  if (deploys.draftUnknown) return MESSAGES.previewUnread;
+  return draftHead && deploys.draft?.sha === draftHead ? MESSAGES.previewNoAddress : reason;
 }
 
 export const GET = adminRoute({}, async ({ env, session }) => {
@@ -184,6 +269,12 @@ export const GET = adminRoute({}, async ({ env, session }) => {
       ? resolvePreview({ env, draftBranch: github.draftBranch, draftHead: github.heads.draft, draftDeploy: deploys.draft })
       : { preview: { branch: github.draftBranch, url: null }, reason: null }
     : { preview: null, reason: null };
+  // The detail says why the draft head cannot be read when that is not already its own sentence.
+  const detail = [
+    deploys.detail,
+    deploys.draftUnknown && deploys.draftUnknown !== deploys.detail ? deploys.draftUnknown : null,
+    previewReason(preview.reason, deploys, github.heads.draft),
+  ].filter(Boolean);
 
   const body: StatusResponse = {
     ok: true,
@@ -208,9 +299,11 @@ export const GET = adminRoute({}, async ({ env, session }) => {
     contentCheck: { publicRules: publicRules().length, blocklistSet: blocklist.set, failClosed: blocklist.failClosed },
     deploy: {
       source: deploys.source,
-      detail: preview.reason ? `${deploys.detail} ${preview.reason}` : deploys.detail,
+      detail: detail.join(' '),
       draft: deploys.draft,
       live: deploys.live,
+      draftUnknown: deploys.draftUnknown,
+      liveUnknown: liveUnknownOf(deploys, github.heads.live),
     },
     preview: preview.preview,
     session: { expiresAt: session!.expiresAt },

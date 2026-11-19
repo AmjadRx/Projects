@@ -58,8 +58,9 @@ function ExternalAddress({ href, children }: { href: string; children: ReactNode
   );
 }
 
-function Deploy({ label, state }: { label: string; state: DeployState | null }) {
-  if (!state) return <Row term={label}>No deployment found.</Row>;
+/** A head's latest deployment; "not known" when the lookup could not read it (the detail above says why). */
+function Deploy({ label, state, unknown }: { label: string; state: DeployState | null; unknown: string | null }) {
+  if (!state) return <Row term={label}>{unknown ? <Badge>not known</Badge> : 'No deployment found.'}</Row>;
   return (
     <Row term={label}>
       <Badge tone={deployTone(state.state)}>{deployWords(state.state)}</Badge>{' '}
@@ -74,6 +75,15 @@ function Deploy({ label, state }: { label: string; state: DeployState | null }) 
     </Row>
   );
 }
+
+/**
+ * Under the Vercel Blob row. A Blob read-write token does not say whether its store is public or
+ * private (Blob's list answers carry the access only in the addresses of files the store already
+ * holds), so this panel cannot tell, and it says what a private store does instead. For the same
+ * reason the row gives the store's public host only as where its files are served if it is public.
+ */
+export const BLOB_ACCESS_HINT =
+  'The site stores its Blob files as public, so it needs a store with Public access: a private store refuses every upload.';
 
 function storageSentence(status: StatusResponse): string {
   const { repo } = status.storage;
@@ -121,7 +131,8 @@ export function StatusPanel() {
   );
 }
 
-function StatusDetails({ status }: { status: StatusResponse }) {
+/** What one /api/status answer shows. Exported for tests. */
+export function StatusDetails({ status }: { status: StatusResponse }) {
   const { github, storage, contentCheck, deploy, preview, runtime, session } = status;
   const missingRequired = status.env.filter((v) => v.required && !v.present);
   return (
@@ -174,6 +185,7 @@ function StatusDetails({ status }: { status: StatusResponse }) {
         {github.configured ? (
           <Row term="Write access">
             <Yes value={github.writeAccess} />
+            {github.writeDetail ? ` ${github.writeDetail}` : null}
           </Row>
         ) : null}
         {github.liveBranch ? (
@@ -200,7 +212,12 @@ function StatusDetails({ status }: { status: StatusResponse }) {
         <Row term="Vercel Blob">
           {storage.blob.configured ? (
             <>
-              <Badge tone="ok">connected</Badge> {storage.blob.host ? <span className="adm-mono">{storage.blob.host}</span> : null}
+              <Badge tone="ok">connected</Badge>{' '}
+              {storage.blob.host ? (
+                <>
+                  If the store is public, its files are served from <span className="adm-mono">{storage.blob.host}</span>.
+                </>
+              ) : null}
             </>
           ) : (
             <>
@@ -208,6 +225,7 @@ function StatusDetails({ status }: { status: StatusResponse }) {
               this environment.
             </>
           )}
+          <p className="adm-muted">{BLOB_ACCESS_HINT}</p>
         </Row>
         <Row term="Limits">
           Repository files up to {megabytes(storage.limits.repoMaxBytes)}; Blob files up to {megabytes(storage.limits.blobMaxBytes)}.
@@ -237,8 +255,8 @@ function StatusDetails({ status }: { status: StatusResponse }) {
       <h3 className="adm-subhead">Deployments</h3>
       <p className="adm-muted">{deploy.detail}</p>
       <dl className="adm-dl">
-        <Deploy label="Draft" state={deploy.draft} />
-        <Deploy label="Published" state={deploy.live} />
+        <Deploy label="Draft" state={deploy.draft} unknown={deploy.draftUnknown} />
+        <Deploy label="Published" state={deploy.live} unknown={deploy.liveUnknown} />
         <Row term="Draft preview">
           {preview?.url ? (
             <ExternalAddress href={preview.url}>{preview.url}</ExternalAddress>

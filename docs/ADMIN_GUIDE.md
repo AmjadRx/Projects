@@ -13,12 +13,12 @@ Every value lives in Vercel (Settings, Environment Variables) and, for local wor
 |---|---|---|
 | `ADMIN_PASSWORD` | yes | The admin password. Use a long one from a password manager. |
 | `SESSION_SECRET` | yes | At least 32 random characters that sign the session cookie. Generate it in your own terminal or password manager; never paste it into a chat. |
-| `GITHUB_TOKEN` | yes | A fine-grained token for this one repository: Contents read and write, plus Deployments read for the deploy state. |
+| `GITHUB_TOKEN` | yes | A fine-grained token for this one repository: Contents read and write, plus Deployments read for the deploy state. GitHub does not show a fine-grained token's own permissions, so the status panel cannot either; the first save does (section 3). |
 | `GITHUB_REPO` | yes | `owner/name` of this repository. |
 | `GITHUB_BRANCH` | yes | The published branch: `main` in Production. |
 | `GITHUB_DRAFT_BRANCH` | yes | The branch saves go to: `draft` in Production. It can never be `main`. |
 | `CONTENT_BLOCKLIST` | yes | The private terms the content check refuses (section 4). |
-| `BLOB_READ_WRITE_TOKEN` | for files over 4 MB | Set by connecting a Vercel Blob store to the environment. |
+| `BLOB_READ_WRITE_TOKEN` | for files over 4 MB | Set by connecting a Vercel Blob store to the environment. Create the store with **Public** access: a store's access is fixed when it is created, this site's Blob files are public, and a private store refuses every upload. |
 | `VERCEL_TOKEN`, `VERCEL_PROJECT_ID`, `VERCEL_TEAM_ID` | no | Deploy state from Vercel itself. Without them, deploy state comes from GitHub's deployment records. |
 | `DRAFT_PREVIEW_URL` | no | The draft branch's preview address, when the admin cannot work it out. |
 
@@ -30,11 +30,15 @@ answers 503. There is no fallback password and no default branch.
 Preview values so every preview gets them. A save on a preview then commits to `sandbox-draft`,
 and Publish on a preview fast-forwards `sandbox-main`. The code also refuses to publish into
 `main` anywhere but the production deployment, so no preview can change the live site. Use a
-separate Blob store for Preview, so a test delete can never remove a file the live site uses.
+separate Blob store for Preview, connected to Preview only, so a test delete can never remove a
+file the live site uses.
 
 **The status panel** (Settings tab) shows every variable by name with "set" or "missing", the
 GitHub connection, both branches, storage, the content check, and the latest deployment of each
-branch. It never shows a value.
+branch. It never shows a value. Write access reads "no" when GitHub's answer proves the token
+cannot write (the repository is archived, or the account behind the token cannot push), "yes"
+only for a classic token on a private repository, and otherwise "not known", with the reason:
+GitHub reports the permissions of the account behind a token, not those of a fine-grained token.
 
 ## 2. Signing in
 
@@ -119,6 +123,10 @@ and write per attempt, which is just as small.
   overwriting; reload to see the change. When files you did not touch changed meanwhile, the save
   bar says so and offers Reload.
 - A save the content check refuses changes nothing: no commit, and no preview build.
+- If GitHub refuses a save, the message names the call it refused and, when GitHub says it, the
+  permission the token lacks, for example: GitHub refused POST /git/refs (403: Resource not
+  accessible by personal access token). GitHub says the token needs "contents=write". Give the
+  token that permission (Contents: Read and write), redeploy, and save again.
 
 ## 4. The content check
 
@@ -157,6 +165,11 @@ and a link that is not a site path, an https address, an email address, or a pho
 ## 6. Publish and discard
 
 - **Preview.** After a save, the save bar shows the draft's preview address and its build state.
+  It follows the build of the draft's newest commit that holds the save (a later save, or a merge
+  of the published branch, moves it on), says so while no build of that commit exists yet, and
+  stops after five minutes without a finished build (twenty minutes in all if the draft keeps
+  changing) with a sentence that says why. A media upload or a new sign-in does not start it
+  again; the status panel always shows the newest state.
 - **Publish** opens a confirmation that lists every changed file, Blob files added or no longer
   used, and the draft's build state. Confirming fast-forwards the published branch to the draft.
   Publish is refused while the draft's build is running or has failed, when the published branch
@@ -208,7 +221,12 @@ on this site); and a file that keeps metadata that cannot be removed.
 
 Files up to 4 MB go into the repository with your next commit. Larger files go straight from your
 browser to Vercel Blob (up to 500 MB) when a Blob store is connected; without one, they are refused
-with a message that says how to connect it.
+with a message that says how to connect it. A Blob upload is watched: it stops, with a message
+that says why, when it does not start within 30 seconds, makes no progress for 90 seconds, gets no
+answer within five minutes of its last bytes, or is refused again after the whole file was sent
+(a store created as private refuses this site's public files). Cancel stops it at once. If Vercel
+Blob kept a file after you pressed Cancel, the library lists it under "Not used anywhere", where
+you can delete it.
 
 Photos need alt text, and models and documents need a short description; both are warnings, not
 blocks. Rename and Replace keep every reference working. A file still used by the draft cannot be
