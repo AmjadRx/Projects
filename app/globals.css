@@ -4,8 +4,8 @@
  * Base elements on the design tokens (app/tokens.css). The stylesheets load in this order from
  * app/layout.tsx: tokens.css, this file (Tailwind's preflight first, so it never overrides a
  * component), sheet.css (the design system's components), styles/frame.css and the page
- * stylesheets, legacy.css (interim), then utilities.css (Tailwind's
- * utilities last, so a utility class still wins over a component rule).
+ * stylesheets, then utilities.css (Tailwind's utilities last, so a utility class still wins over
+ * a component rule). The admin loads its own app/admin/admin.css.
  */
 
 html { scroll-padding-top: calc(var(--nav-height) + var(--space-4)); }

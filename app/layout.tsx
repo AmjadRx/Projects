@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
-import { Analytics } from '@vercel/analytics/next';
+import SiteAnalytics from '@/components/site/SiteAnalytics';
 import { loadSite } from '@/lib/content';
 import { hasText } from '@/lib/format';
 import { siteUrl } from '@/lib/site';
@@ -14,7 +14,6 @@ import './styles/frame.css';
 import './styles/home.css';
 import './styles/project.css';
 import './styles/site.css';
-import './legacy.css';
 import './utilities.css';
 
 /*
@@ -93,7 +92,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         {children}
-        <Analytics />
+        <SiteAnalytics />
       </body>
     </html>
   );

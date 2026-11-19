@@ -1,0 +1,606 @@
+/*
+ * The admin's media components: fields, the library grid, the picker, the upload queue, and the
+ * focal point picker. Plain and dense like the rest of the admin (app/admin/admin.css): every
+ * color is a token from app/tokens.css, layout follows the `.adm` container (never the viewport),
+ * and the only motion is the busy spinner, which stops under reduced motion.
+ */
+
+/* ---------------------------------------------------------------------------------------------
+ * Shared bits
+ * ------------------------------------------------------------------------------------------- */
+
+.note {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink-dim);
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-dim);
+}
+
+.name {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.over {
+  outline: 2px dashed var(--line);
+  outline-offset: 3px;
+  background-color: color-mix(in srgb, var(--line) 6%, transparent);
+}
+
+/* ---------------------------------------------------------------------------------------------
+ * Pictures
+ * ------------------------------------------------------------------------------------------- */
+
+.thumb {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background-color: var(--sheet-3);
+  color: var(--ink-dim);
+}
+.thumb_sm { width: 64px; }
+.thumb_md { width: 100%; }
+.thumb_lg { width: 136px; }
+@container adm (min-width: 640px) {
+  .thumb_lg { width: 176px; }
+}
+
+.thumbImg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.thumbIcon { display: inline-flex; }
+
+.wave {
+  width: 86%;
+  height: 60%;
+  fill: var(--ink-dim);
+}
+
+/* ---------------------------------------------------------------------------------------------
+ * MediaField, MediaListField, FilePickField
+ * ------------------------------------------------------------------------------------------- */
+
+.mediaField { gap: 12px; }
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+  border-radius: var(--radius);
+}
+
+.info {
+  display: flex;
+  flex: 1 1 220px;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.sub {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background-color: var(--sheet-2);
+}
+
+.captions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.posterRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.posterRow > input { flex: 1 1 auto; min-width: 0; }
+
+.listField {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.listFieldInvalid > :global(.adm-field__label) { color: var(--ink); }
+
+.listDrop {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px dashed var(--ink-mute);
+  border-radius: var(--radius);
+}
+
+.filePick {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+/* ---------------------------------------------------------------------------------------------
+ * Drop zone
+ * ------------------------------------------------------------------------------------------- */
+
+.drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 20px 16px;
+  border: 1px dashed var(--ink-mute);
+  border-radius: var(--radius);
+  background-color: var(--sheet-2);
+  text-align: center;
+}
+.dropOver {
+  border-color: var(--line);
+  border-style: solid;
+  background-color: color-mix(in srgb, var(--line) 8%, var(--sheet-2));
+}
+.dropDisabled { opacity: 0.7; }
+.dropIcon { color: var(--ink-dim); }
+.dropTitle { margin: 0; font-size: 14px; font-weight: 600; }
+.dropHint { margin: 0; max-width: 60ch; font-size: 13px; line-height: 1.45; color: var(--ink-dim); }
+
+/* ---------------------------------------------------------------------------------------------
+ * Upload queue
+ * ------------------------------------------------------------------------------------------- */
+
+.queue {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.queueHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
+}
+
+.queueCount { font-size: 13px; font-weight: 600; color: var(--ink-dim); }
+
+.queueList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.qItem {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--rule);
+  border-left-width: 3px;
+  border-left-color: var(--line);
+  border-radius: var(--radius);
+  background-color: var(--sheet-2);
+}
+.qItemError { border-left-color: var(--action); }
+
+.qHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  min-width: 0;
+}
+
+.qName {
+  flex: 1 1 160px;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.qSize { font-size: 12px; color: var(--ink-dim); }
+
+.qTools {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.qLine {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-dim);
+}
+.qLine > svg { flex: none; }
+
+.qStep { min-width: 0; overflow-wrap: anywhere; }
+
+.qAddress { font-family: var(--font-mono); font-size: 12px; }
+
+.progress {
+  flex: 1 1 auto;
+  min-width: 80px;
+  height: 6px;
+  margin: 0;
+  border: 0;
+  border-radius: var(--radius);
+  background-color: var(--sheet-3);
+  appearance: none;
+  -webkit-appearance: none;
+  overflow: hidden;
+}
+.progress::-webkit-progress-bar { background-color: var(--sheet-3); }
+.progress::-webkit-progress-value { background-color: var(--line); }
+.progress::-moz-progress-bar { background-color: var(--line); }
+
+.qNotes {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.qNote {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.qNote > svg { flex: none; margin-top: 2px; color: var(--ink-dim); }
+
+.qAsk {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 1px dashed var(--action);
+  border-radius: var(--radius);
+}
+
+.qMsg { margin: 0; font-size: 13px; line-height: 1.45; overflow-wrap: anywhere; }
+
+@media (prefers-reduced-motion: reduce) {
+  .queue :global(.adm-spin),
+  .library :global(.adm-spin) {
+    animation: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------------------------
+ * Library
+ * ------------------------------------------------------------------------------------------- */
+
+.library { min-width: 0; }
+
+/* Room above and below when a notice is scrolled into view (the sticky save bar sits at the bottom). */
+.noticeWrap { scroll-margin: 72px 0 120px; }
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+@container adm (min-width: 520px) {
+  .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@container adm (min-width: 880px) {
+  .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background-color: var(--sheet-2);
+}
+
+.cardThumb {
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+
+.cardBody {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: 8px;
+}
+
+.cardName {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.usage { margin: 0; font-size: 12px; line-height: 1.4; color: var(--ink-dim); }
+.unused { color: var(--ink); font-weight: 600; }
+.resume { margin: 0; font-size: 12px; line-height: 1.4; color: var(--ink); }
+
+.cardTools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 2px 4px;
+  border-top: 1px solid var(--rule);
+}
+
+.refs {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding-left: 1.2em;
+  font-size: 13px;
+}
+
+.refsTitle { margin: 0; font-size: 13px; font-weight: 600; }
+
+/* The other folders on the Settings tab: one row per folder, its button at the end. */
+.folders {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.folder {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.folderName {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.refButton {
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.renameForm {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* ---------------------------------------------------------------------------------------------
+ * Picker
+ * ------------------------------------------------------------------------------------------- */
+
+.embed {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.embedRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.embedRow > input { flex: 1 1 240px; min-width: 0; }
+
+.pickerTools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.pickerTools > input { flex: 1 1 200px; min-width: 0; }
+
+.pickGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+@container adm (min-width: 640px) {
+  .pickGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+.pick {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  height: 100%;
+  padding: 6px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background-color: var(--sheet);
+  cursor: pointer;
+}
+.pick:hover { border-color: var(--ink-dim); }
+.pickSelected { border-color: var(--line); box-shadow: inset 0 0 0 1px var(--line); }
+.pick:focus-within { outline: 2px solid var(--line); outline-offset: 2px; }
+
+.pickInput {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--line);
+}
+
+.pickThumb { width: 100%; }
+
+.pickName {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+/* ---------------------------------------------------------------------------------------------
+ * Focal point
+ * ------------------------------------------------------------------------------------------- */
+
+.focal {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.focalBox {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  line-height: 0;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  cursor: crosshair;
+  touch-action: none;
+  user-select: none;
+}
+
+.focalImg {
+  display: block;
+  max-width: 100%;
+  max-height: 300px;
+  width: auto;
+  height: auto;
+}
+
+.cross {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  margin: -14px 0 0 -14px;
+  pointer-events: none;
+}
+.cross::before,
+.cross::after {
+  content: "";
+  position: absolute;
+  background-color: var(--line);
+  box-shadow: 0 0 0 1px var(--sheet);
+}
+.cross::before { top: 0; left: 13px; width: 2px; height: 28px; }
+.cross::after { top: 13px; left: 0; width: 28px; height: 2px; }
+.crossUnset { opacity: 0.55; }
+
+.focalSide {
+  display: flex;
+  flex: 1 1 200px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.focalValue { margin: 0; font-size: 13px; }
+
+.crops {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.crop {
+  display: block;
+  overflow: hidden;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background-color: var(--sheet-3);
+}
+.crop > img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.crop_wide { width: 128px; aspect-ratio: 16 / 9; }
+.crop_square { width: 72px; aspect-ratio: 1; }
+.crop_tall { width: 58px; aspect-ratio: 4 / 5; }

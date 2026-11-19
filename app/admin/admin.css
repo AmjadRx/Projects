@@ -1,0 +1,472 @@
+/*
+ * The admin (ARCHITECTURE.md 7): plain and dense, a tool and not a showcase, so no sheet frame,
+ * no sky, and no motion beyond a busy spinner. Every color is a token from app/tokens.css (no
+ * literal colors here), so both themes work through <html data-theme>. Every class starts with
+ * `adm-`, so nothing here touches the public pages; the root `.adm` (rendered by AdminApp) sets
+ * the container, the type, and the colors.
+ *
+ * Layout uses container queries on `.adm` (never viewport media queries), so a classic scrollbar
+ * cannot shift a breakpoint: below 768 px of admin width the tabs are a horizontal strip under a
+ * slim top bar; from 768 px they are a left sidebar. Touch devices get 44 px targets.
+ *
+ * Contrast: text is --ink or --ink-dim on --sheet, --sheet-2, or --sheet-3, and --ink-mute only on
+ * --sheet and --sheet-2 (docs/V3_PLAN.md 5.7). Focus is the site's ring (app/globals.css).
+ */
+
+.adm {
+  container: adm / inline-size;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background-color: var(--sheet);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.5;
+  font-variation-settings: "wdth" 100;
+}
+.adm *, .adm *::before, .adm *::after { box-sizing: border-box; }
+.adm [hidden] { display: none !important; }
+.adm :where(h1, h2, h3, p, ul, ol, dl, dd, figure) { margin: 0; }
+.adm :where(button, input, select, textarea) { font: inherit; color: inherit; }
+
+/* ---------------------------------------------------------------------------------------------
+ * Helpers
+ * ------------------------------------------------------------------------------------------- */
+
+.adm-sr {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.adm-mono { font-family: var(--font-mono); font-size: 0.93em; }
+.adm-code { font-family: var(--font-mono); font-size: 0.93em; }
+.adm-break { overflow-wrap: anywhere; }
+.adm-muted { color: var(--ink-dim); font-size: 14px; }
+.adm-link { color: var(--line); text-decoration: underline; text-underline-offset: 2px; text-decoration-thickness: 1px; }
+.adm-link:hover { text-decoration-thickness: 2px; }
+.adm-link--wrap { overflow-wrap: anywhere; }
+.adm-link__icon { display: inline-block; vertical-align: -2px; margin-left: 3px; }
+.adm-plainlist { padding-left: 1.2em; display: flex; flex-direction: column; gap: 4px; }
+.adm-steps { padding-left: 1.4em; display: flex; flex-direction: column; gap: 6px; }
+.adm-changes { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+.adm-subhead { margin-top: 16px; font-size: 15px; font-weight: 700; line-height: 1.3; }
+
+.adm-spin { animation: adm-spin 0.9s linear infinite; }
+@keyframes adm-spin { to { transform: rotate(360deg); } }
+
+/* A field the admin just took the owner to (a finding, a refused save). */
+.adm-flash {
+  outline: 2px solid var(--line) !important;
+  outline-offset: 3px;
+  background-color: color-mix(in srgb, var(--line) 10%, transparent);
+}
+
+.adm-skip {
+  position: absolute; left: 8px; top: -200px; z-index: 50;
+  padding: 8px 12px; border: 1px solid var(--line); border-radius: var(--radius);
+  background-color: var(--sheet-2); color: var(--ink); text-decoration: none;
+}
+.adm-skip:focus { top: 8px; }
+
+/* ---------------------------------------------------------------------------------------------
+ * The frame: top bar and tab strip on phones, sidebar from 768 px
+ * ------------------------------------------------------------------------------------------- */
+
+.adm-shell { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
+
+.adm-side {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; flex-direction: column;
+  background-color: var(--sheet-2);
+  border-bottom: 1px solid var(--rule);
+}
+.adm-side__top { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 8px 0 16px; }
+.adm-side__brand { font-size: 15px; font-weight: 700; font-variation-settings: "wdth" 112; letter-spacing: 0.01em; }
+.adm-side__links { display: flex; align-items: center; gap: 2px; }
+.adm-sidelink {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 8px;
+  border: 0; border-radius: var(--radius); background: none; color: var(--ink-dim);
+  font-size: 14px; text-decoration: none; cursor: pointer; white-space: nowrap;
+}
+.adm-sidelink:hover { color: var(--ink); background-color: var(--sheet-3); }
+
+.adm-tabs { overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; padding: 4px 8px 6px; }
+.adm-tabs__list { display: flex; gap: 2px; list-style: none; margin: 0; padding: 2px; }
+.adm-tab {
+  display: flex; align-items: center; min-height: 36px; padding: 0 12px;
+  border-radius: var(--radius); color: var(--ink-dim); text-decoration: none; white-space: nowrap; font-size: 14px;
+}
+.adm-tab:hover { color: var(--ink); background-color: var(--sheet-3); }
+.adm-tab[aria-current="page"] { color: var(--ink); background-color: var(--sheet-3); font-weight: 700; box-shadow: inset 0 -2px 0 var(--line); }
+
+.adm-main { flex: 1 0 auto; min-width: 0; display: flex; flex-direction: column; }
+.adm-panel { flex: 1 0 auto; width: 100%; max-width: 920px; padding: 20px 16px 40px; outline: none; }
+.adm-panel__notice { margin-bottom: 16px; }
+
+@container adm (min-width: 768px) {
+  .adm-shell { display: grid; grid-template-columns: 216px minmax(0, 1fr); align-items: start; }
+  .adm-side {
+    height: 100vh; height: 100dvh; overflow-y: auto;
+    border-bottom: 0; border-right: 1px solid var(--rule);
+  }
+  .adm-side__top { display: contents; }
+  .adm-side__brand { order: 0; padding: 18px 16px 10px; }
+  .adm-tabs { order: 1; overflow: visible; padding: 0 8px; }
+  .adm-tabs__list { flex-direction: column; }
+  .adm-tab { min-height: 34px; white-space: normal; }
+  .adm-tab[aria-current="page"] { box-shadow: inset 3px 0 0 var(--line); }
+  .adm-side__links {
+    order: 2; margin-top: auto; flex-direction: column; align-items: stretch;
+    padding: 12px 8px 16px; border-top: 1px solid var(--rule);
+  }
+  .adm-sidelink { justify-content: flex-start; }
+  .adm-main { min-height: 100vh; min-height: 100dvh; }
+  .adm-panel { padding: 28px 32px 48px; }
+}
+
+/* A message while the admin starts or loads. */
+.adm-waiting { display: flex; align-items: center; gap: 10px; margin: 24px 0; color: var(--ink-dim); }
+.adm-waiting__dot { width: 8px; height: 8px; background-color: var(--line); }
+
+/* The sign-in, setup, and start-up pages: left aligned, like the rest of the site. */
+.adm-gate { min-height: 100vh; min-height: 100dvh; padding: 48px 20px; }
+.adm-gate__card {
+  display: flex; flex-direction: column; gap: 14px;
+  width: 100%; max-width: 400px; padding: 24px;
+  border: 1px solid var(--rule); border-radius: var(--radius);
+  background-color: var(--sheet-2); box-shadow: var(--shadow-card);
+}
+.adm-gate__card--wide { max-width: 640px; }
+.adm-gate__title { font-size: 24px; line-height: 1.2; font-weight: 700; font-variation-settings: "wdth" 115; letter-spacing: -0.01em; }
+.adm-gate__subtitle { margin-top: 4px; font-size: 16px; font-weight: 700; }
+.adm-gate__text { color: var(--ink-dim); }
+.adm-gate__note { font-size: 13px; color: var(--ink-dim); }
+.adm-gate__foot { font-size: 14px; }
+
+.adm-login { display: flex; flex-direction: column; gap: 12px; }
+.adm-login__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+
+/* ---------------------------------------------------------------------------------------------
+ * Panel headings and sections
+ * ------------------------------------------------------------------------------------------- */
+
+.adm-panelhead { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 8px 16px; margin-bottom: 8px; }
+.adm-panelhead__title { font-size: 24px; line-height: 1.2; font-weight: 700; font-variation-settings: "wdth" 115; letter-spacing: -0.01em; }
+.adm-panelhead__desc { margin-top: 6px; max-width: 68ch; color: var(--ink-dim); font-size: 14px; }
+.adm-panelhead__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.adm-section { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--rule); }
+.adm-section .adm-section { margin-top: 8px; padding-top: 12px; }
+.adm-section__head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 8px 16px; }
+.adm-section__titles { min-width: 0; }
+.adm-section__title { font-size: 17px; line-height: 1.3; font-weight: 700; font-variation-settings: "wdth" 112; }
+.adm-section--h3 .adm-section__title { font-size: 15px; }
+.adm-section__desc { margin-top: 4px; max-width: 68ch; color: var(--ink-dim); font-size: 13px; }
+.adm-section__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; max-width: 100%; }
+.adm-section__body { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+
+.adm-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+@container adm (min-width: 640px) {
+  .adm-grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .adm-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+.adm-subhead + .adm-tablewrap, .adm-subhead + .adm-dl { margin-top: 4px; }
+
+/* ---------------------------------------------------------------------------------------------
+ * Buttons
+ * ------------------------------------------------------------------------------------------- */
+
+.adm-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 36px; margin: 0; padding: 0 14px;
+  border: 1px solid var(--ink-mute); border-radius: var(--radius);
+  background-color: transparent; color: var(--ink);
+  font-size: 14px; font-weight: 600; line-height: 1.2; font-variation-settings: "wdth" 106;
+  white-space: nowrap; text-decoration: none; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.adm-btn:hover { background-color: var(--sheet-3); }
+.adm-btn__icon { display: inline-flex; }
+.adm-btn--sm { min-height: 32px; padding: 0 10px; font-size: 13px; }
+.adm-btn--primary { border-color: var(--action); background-color: var(--action); color: var(--on-action); }
+.adm-btn--primary:hover { background-color: var(--action); box-shadow: inset 0 0 0 1px var(--on-action); }
+.adm-btn--ghost { border-color: transparent; }
+.adm-btn--danger { border-color: var(--action); box-shadow: inset 0 0 0 1px var(--action); }
+/* Disabled: drawn in phantom line, as on the site's buttons. */
+.adm-btn:disabled, .adm-btn[aria-disabled="true"] {
+  border-style: dashed; border-color: var(--ink-mute); background: transparent; color: var(--ink-mute);
+  box-shadow: none; cursor: not-allowed;
+}
+.adm-btn[aria-busy="true"] { cursor: progress; }
+
+.adm-iconbtn {
+  display: inline-grid; place-items: center; flex: none;
+  width: 36px; height: 36px; margin: 0; padding: 0;
+  border: 1px solid transparent; border-radius: var(--radius);
+  background: transparent; color: var(--ink-dim); cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.adm-iconbtn__icon { display: inline-flex; }
+.adm-iconbtn:hover { color: var(--ink); background-color: var(--sheet-3); }
+.adm-iconbtn--secondary { border-color: var(--ink-mute); color: var(--ink); }
+.adm-iconbtn--danger { color: var(--ink); }
+.adm-iconbtn--danger:hover { box-shadow: inset 0 0 0 1px var(--action); }
+.adm-iconbtn--sm { width: 32px; height: 32px; }
+.adm-iconbtn:disabled { color: var(--ink-mute); background: transparent; cursor: not-allowed; }
+.adm-iconbtn--secondary:disabled { border-style: dashed; }
+
+@media (pointer: coarse) {
+  .adm-btn, .adm-btn--sm, .adm-sidelink, .adm-tab { min-height: 44px; }
+  .adm-iconbtn, .adm-iconbtn--sm { width: 44px; height: 44px; }
+  .adm-input { min-height: 44px; }
+}
+
+/* ---------------------------------------------------------------------------------------------
+ * Fields
+ * ------------------------------------------------------------------------------------------- */
+
+.adm-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; margin: 0; padding: 0; border: 0; }
+.adm-field--group { gap: 8px; }
+.adm-field__label { padding: 0; font-size: 14px; font-weight: 600; line-height: 1.35; color: var(--ink); }
+.adm-field__req { font-size: 13px; font-weight: 400; color: var(--ink-dim); }
+.adm-field__hint { font-size: 13px; line-height: 1.45; color: var(--ink-dim); max-width: 72ch; }
+.adm-field__row { display: flex; align-items: center; gap: 10px; }
+.adm-field--inline .adm-field__label { font-weight: 500; }
+.adm-field__msgs { display: flex; flex-direction: column; gap: 4px; }
+.adm-field__msg { display: flex; align-items: flex-start; gap: 6px; font-size: 13px; line-height: 1.45; color: var(--ink); }
+.adm-field__msg > svg { flex: none; margin-top: 2px; }
+.adm-field__msg--error > svg { color: var(--action); }
+.adm-field__msg--warning > svg { color: var(--ink-dim); }
+.adm-field__msg.is-stale { color: var(--ink-dim); }
+.adm-field__rule {
+  display: inline-block; margin-right: 4px; padding: 0 4px;
+  border: 1px solid var(--rule); border-radius: var(--radius);
+  font-family: var(--font-mono); font-size: 12px; line-height: 1.5;
+}
+
+.adm-input {
+  display: block; width: 100%; min-height: 40px; margin: 0; padding: 8px 10px;
+  border: 1px solid var(--ink-mute); border-radius: var(--radius);
+  background-color: var(--sheet); color: var(--ink);
+  font-size: 16px; line-height: 1.4;
+}
+.adm-input::placeholder { color: var(--ink-mute); opacity: 1; }
+.adm-input:hover { border-color: var(--ink-dim); }
+.adm-input:focus { border-color: var(--line); }
+.adm-input[aria-invalid="true"] { border-color: var(--action); box-shadow: inset 0 0 0 1px var(--action); }
+.adm-input:disabled { border-style: dashed; color: var(--ink-dim); cursor: not-allowed; }
+.adm-input--mono { font-family: var(--font-mono); }
+.adm-input--short { max-width: 12rem; }
+.adm-textarea { min-height: 88px; resize: vertical; overflow-y: auto; line-height: 1.5; }
+.adm-select { cursor: pointer; }
+/* A select sizes itself to its longest option; min-width: 0 lets it shrink on a phone. */
+.adm-select--compact { flex: 0 1 auto; width: auto; min-width: 0; max-width: 100%; min-height: 34px; padding: 4px 8px; }
+
+.adm-affix { display: flex; align-items: stretch; min-width: 0; }
+.adm-affix > .adm-input { flex: 1 1 auto; min-width: 0; }
+.adm-affix > .adm-input:not(:last-child) { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.adm-affix__text {
+  display: inline-flex; align-items: center; flex: none; max-width: 45%; overflow: hidden;
+  padding: 0 8px; border: 1px solid var(--ink-mute); border-right: 0; border-radius: var(--radius) 0 0 var(--radius);
+  background-color: var(--sheet-2); color: var(--ink-dim);
+  font-family: var(--font-mono); font-size: 14px; white-space: nowrap;
+}
+.adm-input--prefixed { border-top-left-radius: 0; border-bottom-left-radius: 0; }
+.adm-affix__link {
+  display: inline-grid; place-items: center; flex: none; width: 40px;
+  border: 1px solid var(--ink-mute); border-left: 0; border-radius: 0 var(--radius) var(--radius) 0;
+  color: var(--line);
+}
+.adm-affix__link:hover { background-color: var(--sheet-3); }
+
+/* A switch: a native checkbox (role="switch"), square like every control here. */
+.adm-switch {
+  appearance: none; -webkit-appearance: none; position: relative; flex: none;
+  width: 40px; height: 22px; margin: 0;
+  border: 1px solid var(--ink-mute); border-radius: var(--radius);
+  background-color: var(--sheet); cursor: pointer;
+}
+.adm-switch::before {
+  content: ""; position: absolute; top: 3px; left: 3px; width: 14px; height: 14px;
+  border-radius: 1px; background-color: var(--ink-mute);
+}
+.adm-switch:checked { border-color: var(--line); background-color: var(--line); }
+.adm-switch:checked::before { left: 21px; background-color: var(--sheet); }
+.adm-switch:disabled { border-style: dashed; cursor: not-allowed; }
+
+.adm-checks { display: flex; flex-wrap: wrap; gap: 8px 18px; }
+.adm-check { display: inline-flex; align-items: center; gap: 8px; min-height: 32px; }
+.adm-checkbox { width: 18px; height: 18px; margin: 0; accent-color: var(--line); cursor: pointer; }
+
+.adm-filter { display: flex; align-items: center; gap: 8px; min-width: 0; max-width: 100%; }
+.adm-filter__label { font-size: 13px; color: var(--ink-dim); }
+
+/* ---------------------------------------------------------------------------------------------
+ * Lists of rows
+ * ------------------------------------------------------------------------------------------- */
+
+.adm-list { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.adm-list__rows { display: flex; flex-direction: column; gap: 8px; list-style: none; margin: 0; padding: 0; }
+.adm-list__row { position: relative; min-width: 0; border: 1px solid var(--rule); border-radius: var(--radius); background-color: var(--sheet-2); }
+.adm-list__row.is-invalid { border-color: var(--action); }
+.adm-list__row.is-dragging { opacity: 0.55; }
+.adm-list__row.is-drop-before::before {
+  content: ""; position: absolute; left: -1px; right: -1px; top: -6px; height: 3px; background-color: var(--line);
+}
+.adm-list__drop-end { height: 3px; margin-top: -5px; background-color: var(--line); }
+.adm-list__head { display: flex; align-items: center; gap: 2px; padding: 4px; min-width: 0; }
+.adm-list__handle { cursor: grab; touch-action: none; }
+.adm-list.is-sorting, .adm-list.is-sorting * { cursor: grabbing; user-select: none; }
+.adm-list__title {
+  display: flex; flex: 1 1 auto; align-items: center; gap: 6px; min-width: 0; min-height: 32px; padding: 0 6px;
+  border: 0; border-radius: var(--radius); background: none; color: var(--ink);
+  font-size: 14px; font-weight: 600; text-align: left; cursor: pointer;
+}
+.adm-list__title > svg { flex: none; }
+.adm-list__title:hover { background-color: var(--sheet-3); }
+.adm-list__title--static { cursor: default; }
+.adm-list__title--static:hover { background: none; }
+.adm-list__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.adm-list__tools { display: flex; flex: none; align-items: center; gap: 2px; }
+.adm-list__msgs { display: flex; flex-direction: column; gap: 4px; padding: 0 12px 8px; }
+.adm-list__body { display: flex; flex-direction: column; gap: 12px; padding: 12px; border-top: 1px solid var(--rule); }
+.adm-list__foot { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.adm-list__count, .adm-list__empty { font-size: 13px; color: var(--ink-dim); }
+
+/* ---------------------------------------------------------------------------------------------
+ * Badges, notices, keys
+ * ------------------------------------------------------------------------------------------- */
+
+.adm-badge {
+  display: inline-flex; align-items: center; min-height: 20px; padding: 0 6px;
+  border: 1px solid var(--ink-mute); border-radius: var(--radius);
+  font-family: var(--font-mono); font-size: 12px; line-height: 1.4; color: var(--ink);
+  white-space: nowrap; vertical-align: baseline;
+}
+.adm-badge--ok { border-color: var(--line); }
+.adm-badge--info { border-color: var(--line); border-style: dashed; }
+.adm-badge--warning { border-color: var(--action); border-style: dashed; }
+.adm-badge--error { border-color: var(--action); box-shadow: inset 0 0 0 1px var(--action); }
+
+.adm-notice {
+  display: flex; gap: 10px; min-width: 0; padding: 12px 14px;
+  border: 1px solid var(--rule); border-left-width: 3px; border-radius: var(--radius);
+  background-color: var(--sheet-2); color: var(--ink);
+}
+.adm-notice--info, .adm-notice--ok { border-left-color: var(--line); }
+.adm-notice--warning { border-left-color: var(--ink-dim); }
+.adm-notice--error { border-left-color: var(--action); }
+.adm-notice__icon { display: inline-flex; flex: none; margin-top: 1px; color: var(--ink-dim); }
+.adm-notice--info .adm-notice__icon, .adm-notice--ok .adm-notice__icon { color: var(--line); }
+.adm-notice--error .adm-notice__icon { color: var(--action); }
+.adm-notice__body { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1 1 auto; }
+.adm-notice__title { font-weight: 700; }
+.adm-notice__text { display: flex; flex-direction: column; gap: 8px; font-size: 14px; overflow-wrap: anywhere; }
+.adm-notice__actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.adm-login__msg { margin: 0; }
+
+.adm-kbd {
+  display: inline-block; padding: 0 4px; border: 1px solid var(--ink-mute); border-bottom-width: 2px;
+  border-radius: var(--radius); font-family: var(--font-mono); font-size: 12px; line-height: 1.4;
+}
+
+/* ---------------------------------------------------------------------------------------------
+ * Findings and the status panel
+ * ------------------------------------------------------------------------------------------- */
+
+.adm-findings { display: flex; flex-direction: column; gap: 4px; list-style: none; margin: 0; padding: 0; }
+.adm-finding {
+  display: flex; flex-direction: column; gap: 3px; width: 100%; margin: 0; padding: 8px 10px;
+  border: 1px solid var(--rule); border-radius: var(--radius);
+  background-color: var(--sheet); color: var(--ink); text-align: left; cursor: pointer;
+}
+button.adm-finding:hover { border-color: var(--line); }
+.adm-finding--static { cursor: default; }
+.adm-finding__top { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.adm-finding__rule { font-family: var(--font-mono); font-size: 12px; font-weight: 700; }
+.adm-finding__where { display: inline-flex; flex-wrap: wrap; gap: 2px 8px; min-width: 0; font-family: var(--font-mono); font-size: 12px; color: var(--ink-dim); overflow-wrap: anywhere; }
+.adm-finding__msg { font-size: 14px; line-height: 1.45; }
+
+.adm-status-panel { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.adm-tablewrap { max-width: 100%; overflow-x: auto; }
+.adm-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.adm-table th, .adm-table td { padding: 8px 10px 8px 0; border-bottom: 1px solid var(--rule); text-align: left; vertical-align: top; }
+.adm-table thead th { font-size: 13px; font-weight: 600; color: var(--ink-dim); }
+/* Variable names wrap only after an underscore (<wbr> in StatusPanel), never inside a word. */
+.adm-table tbody th { font-weight: 600; overflow-wrap: normal; }
+.adm-dl { display: flex; flex-direction: column; margin: 0; }
+.adm-dl__row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 8px 0; border-bottom: 1px solid var(--rule); }
+.adm-dl__term { font-size: 13px; font-weight: 600; color: var(--ink-dim); }
+.adm-dl__desc { margin: 0; font-size: 14px; overflow-wrap: anywhere; }
+@container adm (min-width: 640px) {
+  .adm-dl__row { grid-template-columns: 11rem minmax(0, 1fr); gap: 12px; }
+}
+
+.adm-plan { display: flex; flex-direction: column; gap: 8px; font-size: 14px; }
+
+/* ---------------------------------------------------------------------------------------------
+ * The save bar
+ * ------------------------------------------------------------------------------------------- */
+
+.adm-savebar {
+  position: sticky; bottom: 0; z-index: 15;
+  border-top: 1px solid var(--rule);
+  background-color: var(--sheet-2);
+  box-shadow: var(--shadow-card);
+}
+.adm-savebar__main, .adm-savebar__findings, .adm-savebar__session { max-width: 920px; padding-left: 16px; padding-right: 16px; }
+.adm-savebar__main { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding-top: 10px; padding-bottom: 10px; }
+.adm-savebar__status { flex: 1 1 220px; min-width: 0; }
+.adm-savebar__deploy { margin-top: 2px; font-size: 13px; color: var(--ink-dim); overflow-wrap: anywhere; }
+.adm-savebar__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.adm-savebar__findings { padding-top: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--rule); }
+.adm-savebar__list { max-height: 38vh; max-height: 38dvh; overflow-y: auto; margin-top: 6px; }
+.adm-savebar__toggle {
+  padding: 4px 0; border: 0; background: none; color: var(--line);
+  font-size: 14px; font-weight: 600; text-align: left; text-decoration: underline; text-underline-offset: 2px; cursor: pointer;
+}
+.adm-savebar__session {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px;
+  padding-top: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--rule); font-size: 14px;
+}
+@container adm (min-width: 768px) {
+  .adm-savebar__main, .adm-savebar__findings, .adm-savebar__session { padding-left: 32px; padding-right: 32px; }
+}
+
+.adm-status { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 14px; font-weight: 600; color: var(--ink); }
+.adm-status__icon { display: inline-flex; flex: none; color: var(--ink-dim); }
+.adm-status__text { min-width: 0; overflow-wrap: anywhere; }
+.adm-status--dirty .adm-status__icon, .adm-status--error .adm-status__icon { color: var(--action); }
+.adm-status--ok .adm-status__icon { color: var(--line); }
+
+.adm-undo { display: inline-flex; gap: 4px; }
+
+/* "Revert this file to published": the button and its one-line result. */
+.adm-revert { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; min-width: 0; }
+.adm-revert__result { font-size: 13px; color: var(--ink-dim); overflow-wrap: anywhere; }
+.adm-revert__result:empty { display: none; }
+.adm-revert__result--error { color: var(--ink); }
+
+/* ---------------------------------------------------------------------------------------------
+ * Dialogs (native <dialog> in the top layer)
+ * ------------------------------------------------------------------------------------------- */
+
+.adm-dialog {
+  width: min(560px, calc(100vw - 32px)); max-width: none;
+  max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px);
+  margin: auto; padding: 0;
+  border: 1px solid var(--rule); border-radius: var(--radius);
+  background-color: var(--sheet-2); color: var(--ink);
+  box-shadow: var(--shadow-card);
+}
+.adm-dialog[open] { display: flex; flex-direction: column; overflow: hidden; }
+.adm-dialog--sm { width: min(440px, calc(100vw - 32px)); }
+.adm-dialog--lg { width: min(760px, calc(100vw - 32px)); }
+/* ::backdrop inherits custom properties from its dialog in current browsers (Chrome 122, Firefox 120, Safari 17.4). */
+.adm-dialog::backdrop { background-color: color-mix(in srgb, var(--night) 72%, transparent); }
+.adm-dialog__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 14px 12px 6px 20px; }
+.adm-dialog__title { padding-top: 6px; font-size: 18px; line-height: 1.3; font-weight: 700; font-variation-settings: "wdth" 112; }
+.adm-dialog__desc { padding: 0 20px 8px; color: var(--ink-dim); font-size: 14px; }
+.adm-dialog__body { display: flex; flex-direction: column; gap: 12px; min-height: 0; overflow-y: auto; padding: 8px 20px 16px; font-size: 14px; }
+.adm-dialog__message { display: flex; flex-direction: column; gap: 8px; }
+.adm-dialog__foot { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; padding: 12px 20px 16px; border-top: 1px solid var(--rule); }

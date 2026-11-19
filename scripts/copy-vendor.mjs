@@ -7,6 +7,9 @@
  *   public/vendor/draco/   three.js Draco decoder for compressed glTF models (glTF build)
  *   public/vendor/docx/    docx-preview and JSZip, loaded only inside the sandboxed Word frame
  *   public/vendor/pdfjs/   the pdf.js worker, matched to the pdf.js version react-pdf pins
+ *   public/vendor/occt/    occt-import-js (the Open CASCADE kernel in WebAssembly) and its two
+ *                          licences, unmodified, loaded only by the admin's STEP worker
+ *                          (public/admin-workers/occt-worker.js; docs/V3_PLAN.md D-81, Q-22)
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -27,6 +30,10 @@ const COPIES = [
   { from: 'jszip/LICENSE.markdown', to: 'docx/LICENSE-jszip.md' },
   { from: 'react-pdf/node_modules/pdfjs-dist/build/pdf.worker.min.mjs', alt: 'pdfjs-dist/build/pdf.worker.min.mjs', to: 'pdfjs/pdf.worker.min.mjs' },
   { from: 'react-pdf/node_modules/pdfjs-dist/LICENSE', alt: 'pdfjs-dist/LICENSE', to: 'pdfjs/LICENSE-pdfjs.txt' },
+  { from: 'occt-import-js/dist/occt-import-js.js', to: 'occt/occt-import-js.js' },
+  { from: 'occt-import-js/dist/occt-import-js.wasm', to: 'occt/occt-import-js.wasm' },
+  { from: 'occt-import-js/dist/license.occt-import-js.txt', to: 'occt/license.occt-import-js.txt' },
+  { from: 'occt-import-js/dist/license.occt.txt', to: 'occt/license.occt.txt' },
 ];
 
 /**
