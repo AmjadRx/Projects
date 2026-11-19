@@ -102,10 +102,10 @@ One correction to this plan's first version: the rule that the hero drawing is a
 | `tsconfig.json` | keep, adjust | Strict stays. TypeScript 6 needs no option changes; Next 16 may add its own entries. |
 | `.eslintrc.json` | remove | ESLint 10 reads only flat config. The new `eslint.config.mjs` keeps `react/no-unescaped-entities` off but drops v2's `@next/next/no-img-element` override (`.eslintrc.json:5`), so a raw `img` fails lint, as section 9 sends every image through `next/image`. |
 | `.prettierrc` | keep | Adds the Tailwind class-sorting plugin; Prettier never reformats `content/`. |
-| `.gitignore` | keep, extend | Adds `.mcp.json`, every `.env*` file except `.env.example` (v2 misses `.env.production`), test and Lighthouse output, and the pdf.js and `three` decoder files that a prebuild step copies into `public/pdfjs/` and `public/vendor/`. |
+| `.gitignore` | keep, extend | Adds `.mcp.json` and every `.env*` file except `.env.example` (v2 misses `.env.production`; both done on v3 on 2026-11-19), test and Lighthouse output, and the pdf.js and `three` decoder files that a prebuild step copies into `public/pdfjs/` and `public/vendor/`. |
 | `vercel.json` | keep | Framework setting only. |
 | `netlify.toml` | remove | Vercel is the only host; a connected Netlify build would also fail without the Motion+ token (Q-05). |
-| `.mcp.json` | remove from the branch and ignore | Local tool configuration does not belong in the repository (Q-01). |
+| `.mcp.json` | remove from the branch and ignore | Local tool configuration does not belong in the repository (Q-01). Done on v3 on 2026-11-19. |
 | `README.md` | replace | Its availability line is out of date, and it fails four public rules (DASH, IP-CLAIM, BASE-AIRFRAME, AVAIL-OLD). A short, accurate version lands in Phase 1 and the full one in Phase 7. |
 | `LICENSE` | keep, add a notice | MIT covers the code only. A notice says that `content/` and `public/media/` are all rights reserved and that `public/sky/` follows its `CREDITS.md` (Q-43). |
 | new | add | `.env.example` (names only), `.npmrc` (the Motion+ registry line, token from the environment), `.nvmrc`, `eslint.config.mjs`, `vitest.config.ts`, `playwright.config.ts`, a Lighthouse CI config, `.github/workflows/`, `content-rules.public.json`, `docs/ARCHITECTURE.md`, `docs/ADMIN_GUIDE.md`, `docs/CONTENT_RULES.md` (short public-safe summaries, never copies of the handoff), a third-party notices file, `public/sky/` with `CREDITS.md`, `tests/` with generated fixtures (5.7, sample files), and the scripts `check-content.mjs`, `migrate-v2-to-v3.mjs`, `build-sky.mjs` (catalog and texture), `render-stills.mjs`, `copy-vendor.mjs` (pdf.js and decoder files), and `build-tokens.mjs` (writes `lib/tokens.ts` from `tokens.css`). |
@@ -324,7 +324,7 @@ Each row gives the handoff's requirement, what v2 does (file and line at `0b35c7
 | D-40 | Mutating routes check the Origin and validate with zod | See the owner's Phase 0 report. | Both checks on every mutating route. |
 | D-41 | JSON-LD only from fields shown on the page | `app/page.tsx:18-33` and `app/projects/[slug]/page.tsx:53-64` use plain `JSON.stringify` and include fields the page does not show; the project's `CreativeWork` names the owner as sole author (`app/projects/[slug]/page.tsx:58`), against team credit, and the `Person`'s `sameAs` takes every web link, the scheduling link included (`app/page.tsx:26`). | A JSON-LD helper that escapes `<` and takes only shown fields: `Person` with `sameAs` from the LinkedIn and GitHub profile links only, and no telephone; `CreativeWork` naming the owner as a contributor with the seed's role, never sole author; an image only for a non-empty cover. |
 | D-42 | No secret reaches the client bundle | The modules that read secrets have no import guard (`lib/auth.ts`, `lib/github.ts`). | `server-only` in those modules and a build-output scan in CI. |
-| D-43 | Remove `.mcp.json` and ignore it | Tracked and not ignored. | Removed and ignored in Phase 1, after the cleanup in Q-01. |
+| D-43 | Remove `.mcp.json` and ignore it | Tracked and not ignored. | Removed from v3 and ignored on 2026-11-19, ahead of Phase 1, at the owner's request after Phase 6. The file stays on the owner's machine; `main` keeps it until v3 is merged. |
 | D-44 | The nav comes from the seed | An "Admin" link is hard-coded into the public nav, phone menu, and footer (`components/Nav.tsx:72-77`, `components/Nav.tsx:141-148`, `components/Footer.tsx:39-41`). | Not in the seed's nav, so it goes; `/admin` stays reachable by its address. |
 | D-45 | No tracking cookie, so no cookie banner (`ARCHITECTURE.md` 2); embeds only from YouTube and Vimeo (11) | Embeds load the YouTube or Vimeo player as soon as they render (`components/MediaView.tsx:68-82`), and players can store data on the visitor's device. Embed hosts are matched by substring and the video id is not checked (`lib/utils.ts:48-56`), and the player's title is empty when `alt` is (`components/MediaView.tsx:73-80`). | A click-to-load placeholder with a self-hosted poster; the player loads only after the click, with Vimeo's do-not-track option. An exact host allow-list builds the player address from a validated id on `www.youtube-nocookie.com` or `player.vimeo.com`, and the title falls back to the caption or a neutral label. |
 
@@ -461,7 +461,7 @@ All 15 distinct files exist in git with exact case (Vercel builds on a case-sens
 
 | id | risk | effect | mitigation |
 |---|---|---|---|
-| R-01 | Local tool configuration is tracked in this repository. | Details in the owner's Phase 0 report. | Q-01; Phase 1 removes and ignores the file. |
+| R-01 | Local tool configuration is tracked in this repository. | Details in the owner's Phase 0 report. | Q-01; removed from v3 and ignored on 2026-11-19 (`main` keeps it until v3 is merged). |
 | R-02 | Production runs Next.js 14, which no longer receives security fixes. | Known issues stay open until a patch or v3 ships (details in the owner's Phase 0 report). | Q-02. |
 | R-03 | The handoff changed twice during this survey. | A plan built on an older revision. | Hashes pinned in section 2; any later change updates this plan before the next phase. |
 | R-04 | Revision 2 adds the sky, the model hero, nine viewers, in-browser conversion, and two storage backends. | Phases 3 and 5 are large; budgets and schedule are at risk. | The size gate measures budgets from Phase 1 on (D-71); viewers load behind posters and taps. |
@@ -492,7 +492,7 @@ Each question has my default in brackets; "defaults are fine" is a valid answer.
 
 ### 8.1 Before Phase 1
 
-- **Q-01** Will you finish the cleanup in my Phase 0 report before Phase 1 starts? [Yes; Phase 1 then removes `.mcp.json` from the branch and ignores it.]
+- **Q-01** Will you finish the cleanup in my Phase 0 report before Phase 1 starts? [Yes. `.mcp.json` was removed from v3 and ignored on 2026-11-19, ahead of Phase 1.]
 - **Q-02** Should production get a patch before v3 ships? (a) A separate small branch that moves v2 to Next.js 15.5.29, the newest 15.x release and the smallest step that carries the fixes; it needs React 19 and React Three Fiber 9, a build and a smoke test, and your yes for the branch and the merge. (b) Wait for v3 on 16.4.6. [(a) if v3 is more than a few weeks away.]
 - **Q-03** Node 26.x or 24.x? And what Node version does the Vercel project show today? [26.x; upgrade your local Node from 24.19.0.]
 - **Q-04** Do you have an active Motion+ membership and token? [Set `MOTION_TOKEN` as a Vercel secret (Production and Preview), as a GitHub Actions secret, and as a Windows user environment variable; I then pin the version with an authenticated `npm view`.]
@@ -600,7 +600,7 @@ Each question has my default in brackets; "defaults are fine" is a valid answer.
 No Phase 1 work exists yet, so nothing has to be redone for revision 3.
 
 1. Compare the handoff with the pins in section 2, and update this plan first if anything changed.
-2. Confirm the cleanup in Q-01; remove `.mcp.json` and extend `.gitignore`.
+2. Confirm the cleanup in Q-01; extend `.gitignore` with the rest of section 3 (`.mcp.json` and the `.env*` rule were done on v3 on 2026-11-19).
 3. Re-read every pin in section 4 from the registry and release notes; install with `MOTION_TOKEN` set; check the lockfile for any token.
 4. Write `tokens.css`, the generated `lib/tokens.ts`, the fonts, the theme script, the sheet frame and grid, the route groups, the nav, and the footer; set `ensureStatic`.
 5. Write `next.config.ts`: Cache Components, partial prefetching, headers, image settings, and the policy in report-only mode on previews.
