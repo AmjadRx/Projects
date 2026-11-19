@@ -12,9 +12,12 @@
  * - the value of each secret variable set in this environment at build time (ADMIN_PASSWORD,
  *   SESSION_SECRET, GITHUB_TOKEN, BLOB_READ_WRITE_TOKEN, VERCEL_TOKEN, MOTION_TOKEN,
  *   VERCEL_AUTOMATION_BYPASS_SECRET), as written, JSON-escaped, and URL-encoded;
- * - in the browser code under static/ only, each CONTENT_BLOCKLIST entry of 6 characters or more
- *   (without regard to case unless it starts with "cs:"), so a private name typed into a
- *   component never ships (pages themselves are covered by the content check);
+ * - in the browser code under static/ only, each CONTENT_BLOCKLIST entry of 6 characters or more,
+ *   as a whole word (no letter, digit or underscore on either side) and without regard to case
+ *   unless it starts with "cs:", the same rule as the content check (lib/lint.ts parseBlocklist),
+ *   so a private name typed into a component never ships (pages themselves are covered by the
+ *   content check). An entry that appears only inside longer words is printed as a note, not a
+ *   failure, so a coincidence in library code is visible without stopping the build;
  * - token shapes whatever the variable: GitHub tokens, Vercel Blob read-write tokens, private keys.
  *
  * Values are never printed: a hit names the variable (or the token shape) and the file only.
@@ -99,9 +102,17 @@ export function blocklistTerms(raw) {
     .filter((entry) => entry.term.length >= MIN_TERM_LENGTH);
 }
 
+const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/** A private term as a whole word: no letter, digit or underscore on either side (lib/lint.ts). */
+function wholeWord({ term, exact }) {
+  return new RegExp(`(?<![\\p{L}\\p{N}_])${escapeRegExp(term)}(?![\\p{L}\\p{N}_])`, exact ? 'u' : 'iu');
+}
+
 /**
- * Scans a build folder. Returns { files, hits } where each hit is { label, file } with the file
- * relative to `dist`. Nothing returned holds a value.
+ * Scans a build folder. Returns { files, hits, notes } where each hit or note is { label, file }
+ * with the file relative to `dist`. A note is a private term found only inside longer words, which
+ * does not fail the build. Nothing returned holds a value.
  */
 export function scanBuild(dist, env = process.env) {
   const staticFiles = walk(path.join(dist, 'static'));
@@ -128,16 +139,21 @@ export function scanBuild(dist, env = process.env) {
     }
     for (const shape of TOKEN_SHAPES) if (shape.re.test(text)) hit(shape.name, file);
   }
+  const notes = [];
   if (terms.length > 0) {
+    const patterns = terms.map((entry) => ({ ...entry, word: wholeWord(entry) }));
     for (const file of staticFiles) {
       const text = fs.readFileSync(file, 'utf8');
       const lower = text.toLowerCase();
-      for (const { index, term, exact } of terms) {
-        if (exact ? text.includes(term) : lower.includes(term.toLowerCase())) hit(`CONTENT_BLOCKLIST entry ${index}`, file);
+      for (const { index, term, exact, word } of patterns) {
+        if (word.test(text)) hit(`CONTENT_BLOCKLIST entry ${index}`, file);
+        else if (exact ? text.includes(term) : lower.includes(term.toLowerCase())) {
+          notes.push({ label: `CONTENT_BLOCKLIST entry ${index}`, file: path.relative(dist, file).split(path.sep).join('/') });
+        }
       }
     }
   }
-  return { files: staticFiles.length + pageFiles.length, hits };
+  return { files: staticFiles.length + pageFiles.length, hits, notes };
 }
 
 /**
@@ -172,7 +188,10 @@ function main() {
     process.exit(1);
   }
   const env = scanEnvironment(ROOT);
-  const { files, hits } = scanBuild(dist, env);
+  const { files, hits, notes } = scanBuild(dist, env);
+  for (const { label, file } of notes) {
+    console.log(`NOTE    ${label}  appears only inside longer words in ${file}; a private term counts as a whole word, as in the content check.`);
+  }
   if (hits.length > 0) {
     for (const { label, file } of hits) console.error(`SECRET  ${label}  found in ${file}`);
     console.error(`check:secrets: ${hits.length} hit${hits.length === 1 ? '' : 's'} in the build output. Nothing printed holds a value.`);

@@ -91,6 +91,26 @@ describe('the build-output secret scan', () => {
     expect(JSON.stringify(result)).not.toContain('Zyxwvut');
   });
 
+  it('counts a private term as a whole word, as the content check does, and only notes it inside longer words', () => {
+    const dist = fakeBuild({
+      'static/chunks/inside.js': 'const a = "prezyxwvutpost", b = zyxwvut_id, c = "Zyxwvut9";',
+      'static/chunks/word.js': 'const s = "by Zyxwvut, 2026";',
+      'static/chunks/case.js': 'const s = "zyxwvut";',
+    });
+    const loose = scanBuild(dist, { CONTENT_BLOCKLIST: 'zyxwvut' });
+    const byFile = (x: { file: string }, y: { file: string }) => x.file.localeCompare(y.file);
+    expect([...loose.hits].sort(byFile)).toEqual([
+      { label: 'CONTENT_BLOCKLIST entry 1', file: 'static/chunks/case.js' },
+      { label: 'CONTENT_BLOCKLIST entry 1', file: 'static/chunks/word.js' },
+    ]);
+    expect(loose.notes).toEqual([{ label: 'CONTENT_BLOCKLIST entry 1', file: 'static/chunks/inside.js' }]);
+    // cs: keeps exact case: only the capitalized whole word counts, and the lower-case one is not noted.
+    const exact = scanBuild(dist, { CONTENT_BLOCKLIST: 'cs:Zyxwvut' });
+    expect(exact.hits).toEqual([{ label: 'CONTENT_BLOCKLIST entry 1', file: 'static/chunks/word.js' }]);
+    expect(exact.notes).toEqual([{ label: 'CONTENT_BLOCKLIST entry 1', file: 'static/chunks/inside.js' }]);
+    expect(JSON.stringify([loose, exact]).toLowerCase()).not.toContain('zyxwvut');
+  });
+
   it('finds a value saved with pasted quotes in the form the app uses it (review AUTH-3)', () => {
     const dist = fakeBuild({ 'static/chunks/q.js': `const p = "${PASSWORD}";` });
     const result = scanBuild(dist, { ADMIN_PASSWORD: `'${PASSWORD}'` });

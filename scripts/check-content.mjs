@@ -187,11 +187,13 @@ const docs = markdownFiles(path.join(ROOT, 'docs'));
 for (const file of docs) findings.push(...lintMarkdown(rel(file), fs.readFileSync(file, 'utf8'), { rules, blocklist }));
 
 // 5. Interface words (docs/V3_PLAN.md D-56): every string literal and every piece of JSX text in
-// the public pages and components, lib/strings.ts among them. The v2 admin and API are rebuilt
-// in Phase 6 and join the scan then.
+// the pages, components and libraries, lib/strings.ts among them, and in the first-party scripts
+// under public/. The admin and the API routes, rebuilt in Phase 6, are scanned too: the admin's
+// JavaScript is a public static file whether or not anyone signs in. Only the linter itself is
+// skipped, since it holds the rules' own patterns.
 const { checkText } = await import('../lib/lint.ts');
 const ts = (await import('typescript')).default;
-const INTERFACE_SKIP = [/^app\/admin\//, /^app\/api\//, /^components\/admin\//, /^components\/MediaView\.tsx$/, /^lib\/legacy\//, /^lib\/lint\.ts$/];
+const INTERFACE_SKIP = [/^lib\/lint\.ts$/];
 
 function sourceFiles(dir, pattern) {
   if (!fs.existsSync(dir)) return [];
@@ -203,7 +205,8 @@ function sourceFiles(dir, pattern) {
 }
 
 function interfaceText(file, text) {
-  const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, file.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
+  const kind = file.endsWith('.tsx') ? ts.ScriptKind.TSX : /\.m?js$/.test(file) ? ts.ScriptKind.JS : ts.ScriptKind.TS;
+  const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, kind);
   const out = [];
   const add = (node, value) => {
     const trimmed = value.trim();
@@ -222,9 +225,10 @@ function interfaceText(file, text) {
   return out;
 }
 
-const interfaceFiles = ['app', 'components', 'lib']
-  .flatMap((dir) => sourceFiles(path.join(ROOT, dir), /\.(ts|tsx)$/))
-  .filter((file) => !INTERFACE_SKIP.some((re) => re.test(rel(file))));
+const interfaceFiles = [
+  ...['app', 'components', 'lib'].flatMap((dir) => sourceFiles(path.join(ROOT, dir), /\.(ts|tsx)$/)),
+  ...['public/admin-workers', 'public/viewers'].flatMap((dir) => sourceFiles(path.join(ROOT, dir), /\.m?js$/)),
+].filter((file) => !INTERFACE_SKIP.some((re) => re.test(rel(file))));
 for (const file of interfaceFiles) {
   for (const { line, text } of interfaceText(file, fs.readFileSync(file, 'utf8'))) {
     for (const hit of checkText(text, rules, blocklist)) {

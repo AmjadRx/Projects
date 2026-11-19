@@ -73,4 +73,12 @@ describe('scripts/check-content.mjs', () => {
     expect(result.stdout).toContain('content/projects/fsae-bronco-racing.json');
     expect(`${result.stdout}${result.stderr}`.toLowerCase()).not.toContain('molicel');
   });
+
+  it('checks the admin source too, since its JavaScript is a public static file', () => {
+    // "Login lockout" appears only in the admin's status panel, not in content/ or docs/.
+    const result = run('Login lockout');
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain('components/admin/shell/StatusPanel.tsx');
+    expect(`${result.stdout}${result.stderr}`.toLowerCase()).not.toContain('login lockout');
+  });
 });
