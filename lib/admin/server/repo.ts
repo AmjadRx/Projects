@@ -348,6 +348,10 @@ const READ_CONCURRENCY = 6;
 export interface GitHubReply {
   status: number;
   data: unknown;
+  /** The call that was made ("POST /git/refs"), without a query string. Not secret. */
+  call?: string;
+  /** GitHub's x-accepted-github-permissions header: the token permission the call needs. Not secret. */
+  accepted?: string;
 }
 
 export interface GitHubClient {
@@ -431,14 +435,15 @@ export function createGitHubClient(
           data = null;
         }
       }
-      return { status: response.status, data };
+      const accepted = (response.headers.get('x-accepted-github-permissions') ?? '').replace(/[^\w=,; -]/g, '').slice(0, 120).trim();
+      return { status: response.status, data, call: `${method} ${path.split('?')[0]}`, accepted: accepted || undefined };
     },
 
     expect(reply, ...ok) {
       if (ok.includes(reply.status)) return reply.data;
       const message = pick(reply.data, 'message');
       const detail = typeof message === 'string' ? errorDetail(message, token) : '';
-      throw new ApiFailure(502, 'github', STORAGE_MESSAGES.githubFailed(reply.status, detail));
+      throw new ApiFailure(502, 'github', STORAGE_MESSAGES.githubFailed(reply.status, detail, reply.call, reply.accepted));
     },
   };
 }

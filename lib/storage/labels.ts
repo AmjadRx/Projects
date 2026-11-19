@@ -65,8 +65,9 @@ export const STORAGE_MESSAGES = {
   draftMissing: (branch: string) =>
     `The branch ${quoted(branch)} does not exist in the repository. Create it from the production branch, then try again.`,
   conflict: 'The draft branch changed while this was being saved. Reload and try again.',
-  githubFailed: (status: number, detail: string) =>
-    `GitHub refused the request (${status}${detail ? `: ${detail}` : ''}).`,
+  githubFailed: (status: number, detail: string, call?: string, accepted?: string) =>
+    `GitHub refused ${call || 'the request'} (${status}${detail ? `: ${detail}` : ''}).` +
+    (accepted ? ` GitHub says the token needs ${quoted(accepted)}.` : ''),
   githubUnreachable: 'GitHub could not be reached. Try again in a moment.',
   githubUnexpected: 'GitHub sent a response this site does not understand.',
   diskFailed: 'The file could not be written to the local disk.',
