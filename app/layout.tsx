@@ -10,10 +10,16 @@ import { tokenValue } from '@/lib/tokens';
 import './tokens.css';
 import './globals.css';
 import './sheet.css';
+import './motion-chrome.css';
 import './styles/frame.css';
 import './styles/home.css';
 import './styles/project.css';
 import './styles/site.css';
+import './motion-drawing.css';
+import './motion-media.css';
+import './motion-cards.css';
+import './motion-model.css';
+import './motion-home.css';
 import './utilities.css';
 
 /*

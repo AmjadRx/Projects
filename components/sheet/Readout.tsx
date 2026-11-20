@@ -5,6 +5,8 @@ import { projectSlugOf, type LinkResolver } from '@/lib/links';
 import { UI } from '@/lib/strings';
 import type { Project, Stat } from '@/lib/types';
 import Icon from './Icon';
+import { countPlan } from './readoutPlan';
+import ReadoutValue from './ReadoutValue';
 
 /**
  * One instrument readout (bundle Readout, bundle.css 13): the value in B612 Mono at 40 to 56 px
@@ -13,26 +15,36 @@ import Icon from './Icon';
  * it, when the proof resolves to a page on this site; otherwise it is plain.
  *
  * The value's digits are a bare text run between the affixes, so the composed value reads as one
- * string ("504 V") in the page text.
+ * string ("504 V") in the page text. With `index` (the home row), a value that is a plain number
+ * counts up once (ReadoutValue, motion sheet 2.3); the server draws it final all the same.
  */
 export function Readout({
   stat,
   href,
   proofTitle,
+  index,
 }: {
   stat: Pick<Stat, 'prefix' | 'value' | 'suffix' | 'label'>;
   /** The resolved proof address, internal only. */
   href?: string;
   /** The title of the project the link opens, read after the label by screen readers. */
   proofTitle?: string;
+  /** The readout's place in a row that counts up; without it the value never counts. */
+  index?: number;
 }) {
-  const body = (
-    <>
+  const value =
+    index !== undefined && countPlan(stat.value) ? (
+      <ReadoutValue prefix={stat.prefix} value={stat.value} suffix={stat.suffix} index={index} />
+    ) : (
       <span className="ar-readout__value readout ar-fluid-readout">
         {hasText(stat.prefix) ? <span className="ar-readout__affix">{stat.prefix}</span> : null}
         {stat.value}
         {hasText(stat.suffix) ? <span className="ar-readout__affix">{stat.suffix}</span> : null}
       </span>
+    );
+  const body = (
+    <>
+      {value}
       <span className="ar-readout__label">{stat.label}</span>
     </>
   );
@@ -52,16 +64,20 @@ export function Readout({
  * The stats row (bundle ReadoutRow): one glass panel, six readouts across from 1024 px, three on
  * tablets, two on phones, with rule hairlines between tiles. A stat without a value or a label
  * leaves no tile. Proofs go through the link resolver, so a proof to a hidden project is no link.
+ * `count` (the home page's row, the only numbers on the site that move: motion sheet 8.3) lets
+ * its plain numbers count up once, on first view.
  */
 export default function ReadoutRow({
   stats,
   resolveLink,
   projects,
+  count = false,
 }: {
   stats: Stat[];
   resolveLink: LinkResolver;
   /** The visible projects, to name each proof for screen readers. */
   projects: Pick<Project, 'slug' | 'title'>[];
+  count?: boolean;
 }) {
   const shown = stats.filter((s) => hasText(s.value) && hasText(s.label));
   if (shown.length === 0) return null;
@@ -74,7 +90,7 @@ export default function ReadoutRow({
         const slug = href ? projectSlugOf(href) : null;
         return (
           <li key={`${stat.label}-${i}`}>
-            <Readout stat={stat} href={href} proofTitle={slug ? titles.get(slug) : undefined} />
+            <Readout stat={stat} href={href} proofTitle={slug ? titles.get(slug) : undefined} index={count ? i : undefined} />
           </li>
         );
       })}

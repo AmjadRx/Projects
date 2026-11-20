@@ -50,6 +50,11 @@ export const UI = {
     graduation: 'Graduation',
     playVideo: 'Play video',
     pauseVideo: 'Pause video',
+    /**
+     * The hero drawing's text alternative (ARCHITECTURE.md 10), the canvas's own words for what it
+     * draws. The lens and the thermal view are decorative, so it does not describe them.
+     */
+    drawing: 'Plan view of Raven, a tri-tiltrotor eVTOL: two tilting wing rotors, one tail rotor and a V-tail.',
   },
   home: {
     readouts: 'In numbers',
@@ -60,6 +65,11 @@ export const UI = {
     allProjects: 'All projects',
     moreAbout: 'More about me',
     tools: 'Tools',
+    /**
+     * The phone's strip of featured cards (components/home/FeaturedStrip.tsx): its name, what
+     * assistive technology calls it once it is a carousel (aria-roledescription), and its buttons.
+     */
+    featuredStrip: { region: 'Featured projects', kind: 'carousel', previous: 'Previous project', next: 'Next project' },
     /** The column heads of the index of the projects that are not featured (shown from 1024 px). */
     index: { sheet: 'Sheet', project: 'Project', domain: 'Domain', status: 'Status', maturity: 'Maturity' },
   },
@@ -84,8 +94,11 @@ export const UI = {
     /** The label over a log block on a project page. */
     buildLog: 'Build log',
   },
-  /** The project card: the cue on a featured card, and the tag on a cover that is a video or a model. */
-  card: { open: 'Open project', video: 'Video', model: '3D model' },
+  /**
+   * The project card: the cue on a featured card, the tag on a cover that is a video or a model, and
+   * the line on such a cover while it runs (motion sheet 5; the Cover-Video and Cover-Model boards).
+   */
+  card: { open: 'Open project', video: 'Video', model: '3D model', playing: 'Playing, muted', turning: 'Turning' },
   maturity: {
     label: 'Maturity',
     step: (step: number, total: number) => `Step ${step} of ${total}`,
@@ -262,6 +275,8 @@ export const UI = {
       noWebgl: 'This browser cannot show 3D models.',
       failed: 'This 3D model could not load.',
       keys: 'Use the arrow keys to rotate the model, and plus or minus to zoom.',
+      /** The hero's model has no zoom, so its key hint names only the arrow keys. */
+      keysRotate: 'Use the arrow keys to rotate the model.',
       modelFallback: '3D model',
     },
     panzoom: {

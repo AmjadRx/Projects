@@ -18,9 +18,12 @@ function coverStill(media: ResolvedMedia | null): { src: string; alt: string } |
  * lines (bundle DimensionCallouts, bundle.css 11).
  *
  * - layout `auto` (project pages): drawn over the cover from 768 px, a row of readouts on glass
- *   under it on phones. `over` (cards): drawn over the cover, never a row. `row`: always the row.
- * - `drawn`: the lines show at once (the project page). Without it they show while the card is
- *   hovered. There is no draw-in motion until Phase 5.
+ *   under it on phones. `over` (cards): drawn over the cover from 768 px, a plain row of readouts
+ *   under it on phones (DESIGN_DIRECTION.md 5.2 and 7; app/motion-cards.css), never both. `row`:
+ *   always the row.
+ * - `drawn` (the project page): the lines draw once, when the photo has loaded and the cover has
+ *   landed. Without it they draw while a mouse or pen is over the card and undraw on leave (motion
+ *   sheet 5.3; DimensionFigure), and show and go at once under reduced motion.
  * - No photo (an empty cover): the "Photo to come" placeholder, nothing drawn on it, and the
  *   callouts as the row at every width; a card (`over`) shows no callouts. A photo that fails to
  *   load does the same in the browser, with Try again when `retry` is on (never on a card).

@@ -1,7 +1,8 @@
 'use client';
 
 import { useSyncExternalStore } from 'react';
-import { applyTheme, currentTheme, THEMES, type Theme } from '@/lib/theme';
+import { currentTheme, THEMES, type Theme } from '@/lib/theme';
+import { switchTheme } from './themeFade';
 
 export interface ThemeToggleLabels {
   /** The group's name ("Theme"). */
@@ -24,9 +25,11 @@ function subscribe(onChange: () => void): () => void {
  * The theme toggle (bundle ThemeToggle, bundle.css 7): two options, Blueprint and Whiteprint, each
  * a button with aria-pressed. `compact` (the desktop nav) shows two swatches drawn in each theme's
  * own sheet and line, with the words as accessible names; `full` (the phone menu) shows the words.
- * The choice is kept in the `theme` cookie that the head script reads before the first paint. No
- * cross-fade until Phase 5. The words come from the server (lib/strings.ts), so the site-wide
- * script chunk does not carry the strings module.
+ * The choice is kept in the `theme` cookie that the head script reads before the first paint. The
+ * page cross-fades to the new theme in 300 ms while the toggle's own state changes at once
+ * (./themeFade.ts, motion sheet 7.6); under reduced motion the theme changes at once. The words
+ * come from the server (lib/strings.ts), so the site-wide script chunk does not carry the strings
+ * module.
  */
 export default function ThemeToggle({
   variant,
@@ -53,7 +56,7 @@ export default function ThemeToggle({
             aria-pressed={theme === option}
             aria-label={variant === 'compact' ? compactName : undefined}
             title={variant === 'compact' ? name : undefined}
-            onClick={() => applyTheme(option)}
+            onClick={() => switchTheme(option)}
           >
             <span data-theme={option} className="ar-theme__swatch" aria-hidden="true" />
             {variant === 'full' ? <span>{name}</span> : null}

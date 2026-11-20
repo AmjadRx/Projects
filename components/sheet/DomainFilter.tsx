@@ -1,7 +1,7 @@
 import { domainKey, projectDomains } from '@/lib/format';
 import { UI } from '@/lib/strings';
 import type { Project } from '@/lib/types';
-import FilterBar, { type FilterOption } from './FilterBar';
+import type { FilterOption, FilterWords } from './FilterBar';
 
 /**
  * A domain's label in sentence case without changing its words: a spelling from the content that
@@ -40,19 +40,20 @@ export function domainOptions(projects: Pick<Project, 'domain'>[]): Omit<FilterO
     .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
 }
 
+/** A project's domain keys, as the filter matches them. */
+export function domainKeys(project: Pick<Project, 'domain'>): string[] {
+  return [...new Set(projectDomains(project).map(domainKey).filter(Boolean))];
+}
+
 /**
- * The domain filter for /projects (FilterBar with its words). The cards in `gridId` must carry
- * `data-card` and `data-domains` (ProjectCard does).
+ * The domain filter's words and options for /projects (FilterBar's props, from lib/strings.ts), for
+ * ProjectExplorer to draw above the cards.
  */
-export default function DomainFilter({ projects, gridId }: { projects: Pick<Project, 'domain'>[]; gridId: string }) {
+export function domainFilter(projects: Pick<Project, 'domain'>[]): FilterWords {
   const total = projects.length;
-  const options = domainOptions(projects).map((option) => ({ ...option, result: UI.projects.showing(option.count, total) }));
-  return (
-    <FilterBar
-      gridId={gridId}
-      label={UI.projects.filterLabel}
-      all={{ label: UI.projects.filterAll, count: total, result: UI.projects.showing(total, total) }}
-      options={options}
-    />
-  );
+  return {
+    label: UI.projects.filterLabel,
+    all: { label: UI.projects.filterAll, count: total, result: UI.projects.showing(total, total) },
+    options: domainOptions(projects).map((option) => ({ ...option, result: UI.projects.showing(option.count, total) })),
+  };
 }

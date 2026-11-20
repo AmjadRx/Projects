@@ -1,23 +1,39 @@
 'use client';
 
 /**
- * The engine of the 3D model viewer (ARCHITECTURE.md 13A "ModelViewer"; DESIGN_DIRECTION.md 6.1
- * and 11). ModelViewer.tsx loads this file with next/dynamic only once the viewer may run, so
- * three.js, React Three Fiber, and drei never reach a page's first load.
+ * The engine of the 3D model viewers (ARCHITECTURE.md 6 and 13A "ModelViewer"; DESIGN_DIRECTION.md
+ * 6.1, 6.3 and 11; motion sheets 4.3, 4.5 and 6.3). ModelViewer.tsx (the 3D block, model covers,
+ * the lightbox) and HeroModelViewer.tsx (the hero's model) load this file with next/dynamic only
+ * once the viewer may run, so three.js, React Three Fiber, and drei never reach a page's first load.
  *
- * - Realistic: the model's own physically based materials, lit by a procedural room environment
- *   (no file and no CDN), with a contact shadow.
- * - Blueprint: edge lines and silhouettes in the night's line color over the night well and its
- *   grid (bundle ModelViewer); the fill, in the night, hides hidden edges; the block's callouts
- *   are drawn as leaders to labels in the data type on night plates.
+ * - Realistic: the model's own physically based materials, with a contact shadow drawn again
+ *   whenever the model's shape changes (contactShadow.ts). A viewer lights it with a procedural
+ *   room (no file and no CDN); the hero lights it with the sky behind it (skyLight.ts, from the
+ *   page's sky colors).
+ * - Blueprint: edge lines and silhouettes in the line color. In a viewer the solid is filled with
+ *   the night over the night well and its grid, and the block's callouts are drawn as leaders; in
+ *   the hero the fill writes depth only, so the sky shows through the drawing.
  * - Thermal: an illustrative shader on the seven ramp stops. The shell shows the caption.
  *
- * Rendering is on demand: a frame is drawn only when something changes, continuously only while
- * the model turns by itself, and never while the tab is hidden or the viewer is out of view.
+ * Motion (every number from lib/motion.ts). Every viewer (sheet 6.3): the model turns 6 degrees a
+ * second until first touched; orbit and zoom ease with a damping of 0.08 a frame; pitch stays
+ * between 10 degrees below the horizon and 60 above; zoom between 0.6 and 2 times the fitted
+ * distance; reset eases home in 600 ms; a view switch copies the old view to an overlay that fades
+ * out over the new one in 200 ms. The hero (sheets 4.3 and 4.5): no zoom; 1.5 s after the last
+ * input the model eases back to its three-quarter view over 1,200 ms; in the Realistic view the
+ * lens shows the Thermal view through a circle (lensPass.ts); RotorL and RotorR tilt 0 to 90
+ * degrees with the hero's scroll; it turns only after a tap on phones (the shell's autoTurn).
+ * Without motion (useModelMotion.ts) none of that plays: a drag follows with no glide, zoom and
+ * reset step at once, views switch at once, the hero stays where it is left with its rotors at
+ * hover and no lens.
+ *
+ * Rendering is on demand: a frame is drawn only when something on the canvas changes, continuously
+ * only while the model turns or eases, and never while the tab is hidden or the viewer is out of
+ * view. Scrolling the hero draws a frame only when the rotors' tilt changes.
  */
-import { ContactShadows } from '@react-three/drei/core/ContactShadows';
 import { OrbitControls } from '@react-three/drei/core/OrbitControls';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import type { MotionValue } from 'motion/react';
 import {
   useCallback,
   useEffect,
@@ -31,7 +47,6 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type MutableRefObject,
   type PointerEvent as ReactPointerEvent,
-  type WheelEvent as ReactWheelEvent,
 } from 'react';
 import {
   Box3,
@@ -41,33 +56,65 @@ import {
   TOUCH,
   Vector3,
   type Camera,
-  type Group,
   type PerspectiveCamera,
+  type WebGLRenderTarget,
 } from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { cssEasing, hero as heroMotion, media, toMs, type Bezier } from '@/lib/motion';
 import { UI } from '@/lib/strings';
-import { useViewerFrame } from '../shared/ViewerFrame';
 import type { ModelView } from '../types';
-import { ROTATE_STEP, ZOOM_STEP, type EngineHandle, type EnginePart, type ModelEngineProps } from './engine-types';
+import {
+  ROTATE_STEP,
+  WHEEL_ZOOM_STEP,
+  ZOOM_STEP,
+  type EngineHandle,
+  type EnginePart,
+  type HeroEngineInputs,
+  type ModelEngineProps,
+} from './engine-types';
+import { ContactShadow } from './contactShadow';
+import { LensPass } from './lensPass';
 import { loadModel } from './loader';
 import styles from './ModelViewer.module.css';
+import {
+  AUTO_TURN,
+  FOV,
+  HERO_TURN,
+  HOME_PHI,
+  HOME_THETA,
+  IdleReturn,
+  POLAR_MAX,
+  POLAR_MIN,
+  blendOrbit,
+  clampZoom,
+  easing,
+  heroRotorTilt,
+  posterFitDistance,
+  sameOrbit,
+  type OrbitState,
+} from './orbit';
 import { readPalette, samePalette, type ModelPalette, type Rgb } from './palette';
 import { ModelRig } from './rig';
+import { createSkyEnvironment } from './skyLight';
 
 type Controls = ElementRef<typeof OrbitControls>;
 
-const FOV = 35;
-/** The starting view: three-quarter, from the front right and a little above. */
-const HOME = new Vector3(Math.sin(0.7) * Math.cos(0.38), Math.sin(0.38), Math.cos(0.7) * Math.cos(0.38)).normalize();
-const MIN_POLAR = Math.PI * 0.04;
-const MAX_POLAR = Math.PI * 0.8;
-const MIN_DISTANCE = 0.75;
-/** Auto-turn speed in radians per second: one turn in about 21 seconds. */
-const AUTO_TURN_SPEED = 0.3;
+/** The starting view, as a direction from the model's centre: three-quarter, from the front right and a little above. */
+const HOME = new Vector3().setFromSphericalCoords(1, HOME_PHI, HOME_THETA);
 const TOUCHES = { ONE: TOUCH.ROTATE, TWO: TOUCH.DOLLY_ROTATE };
 const GL_OPTIONS = { antialias: true, alpha: true, powerPreference: 'default', toneMapping: NeutralToneMapping } as const;
 const CAMERA = { fov: FOV, near: 0.01, far: 100, position: [0, 0, 4] as [number, number, number] };
+/**
+ * The canvas is measured when it resizes, not when the page scrolls. React Three Fiber measures it
+ * again after every scroll by default, for its own pointer events (which this engine does not use,
+ * and which read offsetX and offsetY anyway), and every new measure draws a frame.
+ */
+const RESIZE = { scroll: false } as const;
+/** A zoom within this share of its target has arrived. */
+const ZOOM_SETTLED = 1e-4;
+/** Below this opacity the lens draws nothing. */
+const LENS_HIDDEN = 0.001;
 
 /** Where callout labels sit, in order: right top, left bottom, left top, right bottom, then the middles. */
 const CALLOUT_SLOTS: { side: 'left' | 'right'; y: number }[] = [
@@ -85,21 +132,58 @@ interface CalloutNodes {
   labels: (HTMLLIElement | null)[];
 }
 
-/** Wheel zoom waits until the visitor engages the viewer, so scrolling the page past it still scrolls. */
-interface ZoomGate {
-  wanted: boolean;
-  apply: (enabled: boolean) => void;
+/** What the camera frames: the model as it stands, so an exploded model stays in view. */
+interface Framing {
+  center: Vector3;
+  radius: number;
+  floor: number;
 }
 
-/** Distance at which a sphere of radius 1 (the normalized model) fills the view. */
-function fitDistance(aspect: number): number {
-  const vertical = (FOV * Math.PI) / 180;
-  const horizontal = 2 * Math.atan(Math.tan(vertical / 2) * Math.max(aspect, 0.1));
-  return 1.02 / Math.sin(Math.min(vertical, horizontal) / 2);
+/** The camera easing home (reset, or the hero's return), from where it was. */
+interface Tween {
+  start: number;
+  duration: number;
+  ease: (t: number) => number;
+  from: OrbitState;
+}
+
+function framingOf(rig: ModelRig, amount: number): Framing {
+  const bounds = rig.currentBox(amount);
+  return {
+    center: bounds.getCenter(new Vector3()),
+    radius: Math.max(bounds.getSize(new Vector3()).length() / 2, 0.05),
+    floor: bounds.min.y - 0.002,
+  };
 }
 
 function cssColor([r, g, b]: Rgb): string {
   return `rgb(${Math.round(r * 255)} ${Math.round(g * 255)} ${Math.round(b * 255)})`;
+}
+
+/** The distance between the first two touches, or 0 with fewer than two. */
+function spanOf(points: Map<number, { x: number; y: number }>): number {
+  if (points.size < 2) return 0;
+  const [a, b] = points.values();
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+/** Copies the frame just drawn on the WebGL canvas to the overlay; false when it cannot. */
+function copyFrame(source: HTMLCanvasElement, overlay: HTMLCanvasElement): boolean {
+  if (source.width === 0 || source.height === 0) return false;
+  const context = overlay.getContext('2d');
+  if (!context) return false;
+  if (overlay.width !== source.width) overlay.width = source.width;
+  if (overlay.height !== source.height) overlay.height = source.height;
+  context.clearRect(0, 0, overlay.width, overlay.height);
+  context.drawImage(source, 0, 0);
+  return true;
+}
+
+/** Fades the overlay (resting at opacity 0) out from full over the new view. */
+function fadeOut(overlay: HTMLCanvasElement, duration: number, curve: Bezier): void {
+  if (typeof overlay.animate !== 'function') return;
+  overlay.getAnimations?.().forEach((animation) => animation.cancel());
+  overlay.animate([{ opacity: 1 }, { opacity: 0 }], { duration: toMs(duration), easing: cssEasing(curve) });
 }
 
 export default function ModelEngine({
@@ -109,24 +193,35 @@ export default function ModelEngine({
   highlight,
   autoTurn,
   running,
-  reducedMotion,
+  motion,
+  fullscreen,
+  descriptionId,
   callouts,
   handleRef,
   autoFocus = false,
   onReady,
   onInteract,
   onContextLost,
+  hero,
 }: ModelEngineProps) {
-  const { isFullscreen, descriptionId } = useViewerFrame();
   const hostRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<HTMLCanvasElement>(null);
   const hintId = useId();
   const [gltf, setGltf] = useState<GLTF | null>(null);
   const [failure, setFailure] = useState<Error | null>(null);
   const [palette, setPalette] = useState<ModelPalette | null>(null);
   const [ready, setReady] = useState(false);
+  /** The visitor pressed or focused the viewer: the wheel zooms instead of scrolling the page. */
   const engaged = useRef(false);
-  const zoomGate = useRef<ZoomGate>({ wanted: false, apply: () => undefined });
+  const fullscreenRef = useRef(fullscreen);
+  fullscreenRef.current = fullscreen;
+  const onInteractRef = useRef(onInteract);
+  onInteractRef.current = onInteract;
+  const touches = useRef(new Map<number, { x: number; y: number }>());
+  const pinchSpan = useRef(0);
   const calloutNodes = useRef<CalloutNodes>({ leaders: [], dots: [], labels: [] });
+  const isHero = hero !== undefined;
+  const zoomable = !isHero;
 
   useEffect(() => {
     let live = true;
@@ -147,9 +242,10 @@ export default function ModelEngine({
   useLayoutEffect(() => {
     const host = hostRef.current;
     if (!host) return undefined;
+    const surface = isHero ? 'page' : 'night';
     const update = () =>
       setPalette((previous) => {
-        const next = readPalette(host);
+        const next = readPalette(host, surface);
         return samePalette(previous, next) ? previous : next;
       });
     update();
@@ -161,7 +257,7 @@ export default function ModelEngine({
       observer.disconnect();
       scheme.removeEventListener('change', update);
     };
-  }, []);
+  }, [isHero]);
 
   // After the load or resume button, focus moves here (the button is gone), once per mount.
   const focusOnce = useRef(autoFocus);
@@ -170,14 +266,23 @@ export default function ModelEngine({
     focusOnce.current = false;
   }, []);
 
-  const setZoom = useCallback((enabled: boolean) => {
-    zoomGate.current.wanted = enabled;
-    zoomGate.current.apply(enabled);
-  }, []);
-
+  // The wheel zooms a viewer (never the hero) once the visitor engages it, in full screen, or as a
+  // trackpad pinch (a wheel event with ctrlKey); otherwise the page scrolls past it. A native
+  // listener, because only a non-passive one may keep the page from scrolling.
   useEffect(() => {
-    setZoom(isFullscreen || engaged.current);
-  }, [isFullscreen, setZoom]);
+    const host = hostRef.current;
+    if (!host || !zoomable) return undefined;
+    const onWheel = (event: WheelEvent) => {
+      if (event.deltaY === 0 || !(engaged.current || fullscreenRef.current || event.ctrlKey)) return;
+      const api = handleRef.current;
+      if (!api) return;
+      event.preventDefault();
+      api.zoom(event.deltaY < 0 ? WHEEL_ZOOM_STEP : 1 / WHEEL_ZOOM_STEP);
+      onInteractRef.current();
+    };
+    host.addEventListener('wheel', onWheel, { passive: false });
+    return () => host.removeEventListener('wheel', onWheel);
+  }, [handleRef, zoomable]);
 
   const handleReady = useCallback(
     (parts: EnginePart[]) => {
@@ -187,29 +292,36 @@ export default function ModelEngine({
     [onReady],
   );
 
-  const onPointerDownCapture = () => {
+  const onPointerDownCapture = (event: ReactPointerEvent<HTMLDivElement>) => {
     engaged.current = true;
-    setZoom(true);
     onInteract();
+    if (zoomable && event.pointerType === 'touch') {
+      touches.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      pinchSpan.current = spanOf(touches.current);
+    }
+  };
+  // Two fingers pinch the zoom (one finger drawn sideways orbits; up or down scrolls the page).
+  const onPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!zoomable || event.pointerType !== 'touch' || !touches.current.has(event.pointerId)) return;
+    touches.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    const span = spanOf(touches.current);
+    const api = handleRef.current;
+    if (api && span > 0 && pinchSpan.current > 0) api.zoom(pinchSpan.current / span);
+    pinchSpan.current = span;
+  };
+  const onTouchEnd = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.pointerType !== 'touch') return;
+    touches.current.delete(event.pointerId);
+    pinchSpan.current = spanOf(touches.current);
   };
   const onPointerLeave = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (event.pointerType === 'touch') return;
-    engaged.current = false;
-    setZoom(isFullscreen);
-  };
-  const onWheelCapture = (event: ReactWheelEvent<HTMLDivElement>) => {
-    // A pinch on a trackpad arrives as a wheel event with ctrlKey: always a zoom.
-    setZoom(isFullscreen || engaged.current || event.ctrlKey);
+    if (event.pointerType !== 'touch') engaged.current = false;
   };
   const onFocus = (event: ReactFocusEvent<HTMLDivElement>) => {
-    if (event.target !== event.currentTarget) return;
-    engaged.current = true;
-    setZoom(true);
+    if (event.target === event.currentTarget) engaged.current = true;
   };
   const onBlur = (event: ReactFocusEvent<HTMLDivElement>) => {
-    if (event.target !== event.currentTarget) return;
-    engaged.current = false;
-    setZoom(isFullscreen);
+    if (event.target === event.currentTarget) engaged.current = false;
   };
   const onKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
     if (event.target !== event.currentTarget || event.altKey || event.ctrlKey || event.metaKey) return;
@@ -231,10 +343,12 @@ export default function ModelEngine({
         break;
       case '+':
       case '=':
+        if (!zoomable) return;
         api.zoom(1 / ZOOM_STEP);
         break;
       case '-':
       case '_':
+        if (!zoomable) return;
         api.zoom(ZOOM_STEP);
         break;
       default:
@@ -247,7 +361,7 @@ export default function ModelEngine({
   // An error thrown here reaches the shell's error boundary: poster, message, no engine.
   if (failure) throw failure;
 
-  const live = running || isFullscreen;
+  const live = running || fullscreen;
   const frameloop = live ? (autoTurn ? 'always' : 'demand') : 'never';
 
   return (
@@ -260,14 +374,16 @@ export default function ModelEngine({
         tabIndex={ready ? 0 : -1}
         className={styles.surface}
         onPointerDownCapture={onPointerDownCapture}
+        onPointerMove={onPointerMove}
+        onPointerUp={onTouchEnd}
+        onPointerCancel={onTouchEnd}
         onPointerLeave={onPointerLeave}
-        onWheelCapture={onWheelCapture}
         onFocus={onFocus}
         onBlur={onBlur}
         onKeyDown={onKeyDown}
       >
         {gltf && palette && (
-          <Canvas frameloop={frameloop} dpr={[1, 2]} gl={GL_OPTIONS} camera={CAMERA}>
+          <Canvas frameloop={frameloop} dpr={[1, 2]} gl={GL_OPTIONS} camera={CAMERA} resize={RESIZE}>
             <Scene
               gltf={gltf}
               palette={palette}
@@ -275,25 +391,28 @@ export default function ModelEngine({
               explode={explode}
               highlight={highlight}
               autoTurn={autoTurn}
-              reducedMotion={reducedMotion}
-              fullscreen={isFullscreen}
+              motion={motion}
+              fullscreen={fullscreen}
               live={live}
+              hero={hero}
               calloutCount={callouts.length}
               calloutNodes={calloutNodes}
               handleRef={handleRef}
-              zoomGate={zoomGate}
+              overlayRef={overlayRef}
               onReady={handleReady}
               onInteract={onInteract}
               onContextLost={onContextLost}
             />
           </Canvas>
         )}
+        {/* The old view during a switch: a copy of its last frame, fading out over the new one. */}
+        <canvas ref={overlayRef} className={styles.overlay} aria-hidden="true" />
       </div>
       {callouts.length > 0 && palette && (
         <CalloutLayer callouts={callouts} nodes={calloutNodes} palette={palette} visible={ready && view === 'blueprint'} />
       )}
       <p id={hintId} className="ar-sr">
-        {UI.viewers.model.keys}
+        {zoomable ? UI.viewers.model.keys : UI.viewers.model.keysRotate}
       </p>
     </>
   );
@@ -303,24 +422,25 @@ interface SceneProps {
   gltf: GLTF;
   palette: ModelPalette;
   view: ModelView;
-  explode: number;
+  explode: MotionValue<number>;
   highlight: string | null;
   autoTurn: boolean;
-  reducedMotion: boolean;
+  motion: boolean;
   fullscreen: boolean;
   live: boolean;
+  hero?: HeroEngineInputs;
   calloutCount: number;
   calloutNodes: MutableRefObject<CalloutNodes>;
   handleRef: MutableRefObject<EngineHandle | null>;
-  zoomGate: MutableRefObject<ZoomGate>;
+  overlayRef: MutableRefObject<HTMLCanvasElement | null>;
   onReady: (parts: EnginePart[]) => void;
   onInteract: () => void;
   onContextLost: () => void;
 }
 
 function Scene(props: SceneProps) {
-  const { gltf, palette, view, explode, highlight, autoTurn, reducedMotion, fullscreen, live } = props;
-  const { calloutCount, calloutNodes, handleRef, zoomGate } = props;
+  const { gltf, palette, view, explode, highlight, autoTurn, motion, fullscreen, live, hero } = props;
+  const { calloutCount, calloutNodes, handleRef, overlayRef } = props;
   const camera = useThree((state) => state.camera) as PerspectiveCamera;
   const gl = useThree((state) => state.gl);
   const scene = useThree((state) => state.scene);
@@ -330,47 +450,78 @@ function Scene(props: SceneProps) {
   // The element the controls listen on; it changes once React Three Fiber connects its events.
   const connected = useThree((state) => state.events.connected) as HTMLElement | undefined;
   const controlsRef = useRef<Controls>(null);
-  const shadowRef = useRef<Group>(null);
-  const rig = useMemo(() => new ModelRig(gltf.scene), [gltf]);
-  const fit = fitDistance(size.width / Math.max(size.height, 1));
-  const fitRef = useRef(0);
+  const isHero = hero !== undefined;
+  const posterAspect = hero?.posterAspect;
+  const rig = useMemo(() => new ModelRig(gltf.scene, { fill: isHero ? 'depth' : 'night' }), [gltf, isHero]);
+  const lensPass = useMemo(() => (isHero ? new LensPass() : null), [isHero]);
+  const shadow = useMemo(() => new ContactShadow(), []);
+  const fit = posterFitDistance(FOV, size.width / Math.max(size.height, 1), posterAspect);
   const orbit = useMemo(() => ({ spherical: new Spherical(), offset: new Vector3() }), []);
   const box = useMemo(() => new Box3(), []);
-  // What the camera frames: the model as it stands, so an exploded model stays in view.
-  const framing = useMemo(() => {
-    const bounds = rig.currentBox(explode);
-    return {
-      center: bounds.getCenter(new Vector3()),
-      radius: Math.max(bounds.getSize(new Vector3()).length() / 2, 0.05),
-      floor: bounds.min.y - 0.002,
-    };
-  }, [rig, explode]);
-  const framingRef = useRef(framing);
-  const { floor } = framing;
+  // The framing when the model arrives (the starting view below sets it again); later changes move
+  // the camera and the shadow directly.
+  const initialFraming = useMemo(() => framingOf(rig, explode.get()), [rig, explode]);
 
+  const fitRef = useRef(0);
+  const framingRef = useRef(initialFraming);
+  const explodeRef = useRef(explode.get());
+  /** The zoom the camera eases toward, as a share of the fitted distance (sheet 6.3: 0.6 to 2). */
+  const zoomRef = useRef(1);
+  const tweenRef = useRef<Tween | null>(null);
+  const drawnRef = useRef(false);
+  const shownRef = useRef<{ rig: ModelRig; view: ModelView } | null>(null);
+  const motionRef = useRef(motion);
+  motionRef.current = motion;
+  const liveRef = useRef(live);
+  liveRef.current = live;
+  const autoTurnRef = useRef(autoTurn);
+  autoTurnRef.current = autoTurn;
   // The latest callbacks, without re-running the effects that use them.
   const callbacks = useRef(props);
   callbacks.current = props;
-  const autoTurnRef = useRef(autoTurn);
-  autoTurnRef.current = autoTurn;
 
   useEffect(() => () => rig.dispose(), [rig]);
+  useEffect(() => () => lensPass?.dispose(), [lensPass]);
+  useEffect(() => () => shadow.dispose(), [shadow]);
+
+  /** Sheet 6.3: the camera stays between 0.6 and 2 times the fitted distance. */
+  const applyLimits = useCallback(() => {
+    const controls = controlsRef.current;
+    if (!controls) return;
+    const fitted = fitRef.current * framingRef.current.radius;
+    controls.minDistance = fitted * media.model.zoomMin;
+    controls.maxDistance = fitted * media.model.zoomMax;
+  }, []);
 
   // The starting view, once per model.
   useLayoutEffect(() => {
+    const amount = explode.get();
+    rig.setExplode(amount);
+    explodeRef.current = amount;
+    framingRef.current = framingOf(rig, amount);
+    shadow.setFloor(framingRef.current.floor);
+    shadow.markDirty();
+    zoomRef.current = 1;
+    tweenRef.current = null;
+    drawnRef.current = false;
     const { center, radius } = framingRef.current;
-    const distance = fitDistance(get().size.width / Math.max(get().size.height, 1));
+    const current = get().size;
+    const distance = posterFitDistance(FOV, current.width / Math.max(current.height, 1), posterAspect);
     camera.fov = FOV;
     camera.near = 0.01;
     camera.far = 100;
     camera.updateProjectionMatrix();
     camera.position.copy(HOME).multiplyScalar(distance * radius).add(center);
     camera.lookAt(center);
-    controlsRef.current?.target.copy(center);
-    controlsRef.current?.update();
     fitRef.current = distance;
+    const controls = controlsRef.current;
+    if (controls) {
+      controls.target.copy(center);
+      controls.update();
+    }
+    applyLimits();
     invalidate();
-  }, [camera, get, invalidate, rig]);
+  }, [applyLimits, camera, explode, get, invalidate, posterAspect, rig, shadow]);
 
   // On resize (full screen, rotation), keep the same framing relative to the new fit.
   useEffect(() => {
@@ -382,77 +533,110 @@ function Scene(props: SceneProps) {
       controls.update();
     }
     fitRef.current = fit;
+    applyLimits();
     rig.setResolution(size.width, size.height);
     invalidate();
-  }, [camera, fit, invalidate, orbit, rig, size.width, size.height]);
+  }, [applyLimits, camera, fit, invalidate, orbit, rig, size.width, size.height]);
 
-  // A procedural studio environment for the physically based materials (RoomEnvironment).
+  // The light for the physically based materials: the sky behind the hero, a procedural studio in
+  // a viewer (RoomEnvironment).
+  const sky = palette.sky;
   useEffect(() => {
-    const pmrem = new PMREMGenerator(gl);
-    const room = new RoomEnvironment();
-    const target = pmrem.fromScene(room, 0.04);
-    room.dispose();
-    pmrem.dispose();
+    let target: WebGLRenderTarget;
+    if (isHero && sky) {
+      target = createSkyEnvironment(gl, sky);
+    } else {
+      const pmrem = new PMREMGenerator(gl);
+      const room = new RoomEnvironment();
+      target = pmrem.fromScene(room, 0.04);
+      room.dispose();
+      pmrem.dispose();
+    }
     scene.environment = target.texture;
     invalidate();
     return () => {
       if (scene.environment === target.texture) scene.environment = null;
       target.dispose();
     };
-  }, [gl, scene, invalidate]);
+  }, [gl, scene, invalidate, isHero, sky]);
 
   useLayoutEffect(() => {
     rig.setPalette(palette);
-    rig.setView(view);
     rig.setHighlight(highlight);
-    // Every view sits on the night well and its grid (bundle ModelViewer); the Blueprint view's
-    // solid is filled with the night, so the grid shows around it and never through it.
+    // Every view sits on the night well and its grid, or on the page in the hero; the canvas
+    // itself stays clear.
     scene.background = null;
     invalidate();
-  }, [rig, palette, view, highlight, scene, invalidate]);
-
-  // Exploding moves the parts, and the camera keeps the whole model in frame at the same zoom.
-  useLayoutEffect(() => {
-    rig.setExplode(explode);
-    const controls = controlsRef.current;
-    const previous = framingRef.current;
-    if (controls && previous !== framing) {
-      const offset = orbit.offset.copy(camera.position).sub(controls.target).multiplyScalar(framing.radius / previous.radius);
-      controls.target.copy(framing.center);
-      camera.position.copy(framing.center).add(offset);
-      controls.update();
-    }
-    framingRef.current = framing;
-    invalidate();
-  }, [rig, explode, framing, camera, orbit, invalidate]);
+  }, [rig, palette, highlight, scene, invalidate]);
 
   useLayoutEffect(() => {
     rig.setEnvelope(calloutCount > 0);
     invalidate();
   }, [rig, calloutCount, invalidate]);
 
+  // Exploding moves the parts, and the camera keeps the whole model in frame at the same zoom. The
+  // slider sets the amount at once and the arrow keys ease it (ModelViewer.tsx), so this follows
+  // the motion value, never a React render.
+  const applyExplode = useCallback(
+    (amount: number) => {
+      explodeRef.current = amount;
+      rig.setExplode(amount);
+      const next = framingOf(rig, amount);
+      const previous = framingRef.current;
+      const controls = controlsRef.current;
+      if (controls && previous.radius > 0) {
+        const offset = orbit.offset.copy(camera.position).sub(controls.target).multiplyScalar(next.radius / previous.radius);
+        controls.target.copy(next.center);
+        camera.position.copy(next.center).add(offset);
+        controls.update();
+      }
+      framingRef.current = next;
+      // The parts moved: the shadow follows them to the new floor and is drawn again.
+      shadow.setFloor(next.floor);
+      shadow.markDirty();
+      applyLimits();
+      invalidate();
+    },
+    [applyLimits, camera, invalidate, orbit, rig, shadow],
+  );
+  useEffect(() => explode.on('change', applyExplode), [explode, applyExplode]);
+
+  // The hero's rotors follow its scroll (sheet 4.3). A frame only when the tilt they should show
+  // differs from the one drawn: a model without RotorL and RotorR, reduced motion or the pause
+  // control (the tilt held at hover), and a scroll that leaves the tilt as it is draw nothing.
+  const hasRotors = rig.rotors.length > 0;
+  useEffect(() => {
+    if (!hero || !hasRotors) return undefined;
+    return hero.rotor.on('change', (progress) => {
+      if (heroRotorTilt(progress, motionRef.current) !== rig.rotorAngle) invalidate();
+    });
+  }, [hasRotors, hero, invalidate, rig]);
+
+  // The lens moves with motion values: a change asks for one frame while the lens can show (the
+  // Realistic view, with motion). Its fade out after a view switch or a pause draws nothing.
+  useEffect(() => {
+    if (!hero) return undefined;
+    const { x, y, radius, opacity } = hero.lens;
+    const stops = [x, y, radius, opacity].map((value) =>
+      value.on('change', () => {
+        if (motionRef.current && rig.currentView === 'realistic') invalidate();
+      }),
+    );
+    return () => stops.forEach((stop) => stop());
+  }, [hero, invalidate, rig]);
+
   // Changing the frame loop does not restart React Three Fiber's render loop by itself.
   useEffect(() => {
     if (live) invalidate();
-  }, [live, autoTurn, invalidate]);
+  }, [live, autoTurn, motion, invalidate]);
 
   // Page scrolling wins on touch: one finger drawn sideways orbits, drawn up or down scrolls the
-  // page, two fingers pinch and turn. In full screen there is no page to scroll.
+  // page. A viewer takes two fingers for its own pinch; the hero leaves the pinch to the page.
+  // In full screen there is no page to scroll.
   useEffect(() => {
     const element = controlsRef.current?.domElement;
-    if (element) element.style.touchAction = fullscreen ? 'none' : 'pan-y';
-  }, [fullscreen, connected]);
-
-  useEffect(() => {
-    const gate = zoomGate.current;
-    gate.apply = (enabled) => {
-      if (controlsRef.current) controlsRef.current.enableZoom = enabled;
-    };
-    gate.apply(gate.wanted);
-    return () => {
-      gate.apply = () => undefined;
-    };
-  }, [zoomGate]);
+    if (element) element.style.touchAction = fullscreen ? 'none' : isHero ? 'pan-y pinch-zoom' : 'pan-y';
+  }, [fullscreen, connected, isHero]);
 
   useEffect(() => {
     const canvas = gl.domElement;
@@ -460,6 +644,87 @@ function Scene(props: SceneProps) {
     canvas.addEventListener('webglcontextlost', lost);
     return () => canvas.removeEventListener('webglcontextlost', lost);
   }, [gl]);
+
+  /** Where the camera is now, about the point it looks at. */
+  const readOrbit = useCallback((): OrbitState | null => {
+    const controls = controlsRef.current;
+    if (!controls) return null;
+    const { spherical, offset } = orbit;
+    spherical.setFromVector3(offset.copy(camera.position).sub(controls.target));
+    return {
+      theta: spherical.theta,
+      phi: spherical.phi,
+      radius: spherical.radius,
+      target: [controls.target.x, controls.target.y, controls.target.z],
+    };
+  }, [camera, orbit]);
+
+  /** The three-quarter view at the fitted distance, for the model as it stands. */
+  const homeOrbit = useCallback((): OrbitState => {
+    const { center, radius } = framingRef.current;
+    return { theta: HOME_THETA, phi: HOME_PHI, radius: fitRef.current * radius, target: [center.x, center.y, center.z] };
+  }, []);
+
+  const placeCamera = useCallback(
+    (state: OrbitState) => {
+      const controls = controlsRef.current;
+      if (!controls) return;
+      const { spherical, offset } = orbit;
+      spherical.set(state.radius, state.phi, state.theta);
+      offset.setFromSpherical(spherical);
+      controls.target.set(state.target[0], state.target[1], state.target[2]);
+      camera.position.copy(controls.target).add(offset);
+      camera.lookAt(controls.target);
+    },
+    [camera, orbit],
+  );
+
+  /** Ends any glide left from a drag, so an ease or a jump starts from rest. */
+  const stopGlide = useCallback(() => {
+    const controls = controlsRef.current;
+    if (!controls) return;
+    const damping = controls.enableDamping;
+    controls.enableDamping = false;
+    controls.update();
+    controls.enableDamping = damping;
+  }, []);
+
+  /** Eases the camera home over `duration` seconds on `curve` (reset, and the hero's return). */
+  const startTween = useCallback(
+    (duration: number, curve: Bezier) => {
+      stopGlide();
+      zoomRef.current = 1;
+      const from = readOrbit();
+      tweenRef.current = from && !sameOrbit(from, homeOrbit()) ? { start: performance.now(), duration: toMs(duration), ease: easing(curve), from } : null;
+      invalidate();
+    },
+    [homeOrbit, invalidate, readOrbit, stopGlide],
+  );
+
+  /** Without motion, reset is a jump home. */
+  const jumpHome = useCallback(() => {
+    stopGlide();
+    tweenRef.current = null;
+    zoomRef.current = 1;
+    placeCamera(homeOrbit());
+    controlsRef.current?.update();
+    invalidate();
+  }, [homeOrbit, invalidate, placeCamera, stopGlide]);
+
+  // Sheet 4.5: the hero goes back to its three-quarter view 1.5 s after the last input.
+  const startTweenRef = useRef(startTween);
+  startTweenRef.current = startTween;
+  const idleReturn = useMemo(
+    () =>
+      new IdleReturn(() => {
+        if (motionRef.current) startTweenRef.current(heroMotion.model.returnDuration, heroMotion.model.returnEase);
+      }),
+    [],
+  );
+  useEffect(() => () => idleReturn.cancel(), [idleReturn]);
+  useEffect(() => {
+    if (!motion) idleReturn.cancel();
+  }, [idleReturn, motion]);
 
   const rotateBy = useCallback(
     (azimuth: number, polar: number) => {
@@ -469,7 +734,7 @@ function Scene(props: SceneProps) {
       offset.copy(camera.position).sub(controls.target);
       spherical.setFromVector3(offset);
       spherical.theta += azimuth;
-      spherical.phi = Math.min(MAX_POLAR, Math.max(MIN_POLAR, spherical.phi + polar));
+      spherical.phi = Math.min(POLAR_MAX, Math.max(POLAR_MIN, spherical.phi + polar));
       spherical.makeSafe();
       offset.setFromSpherical(spherical);
       camera.position.copy(controls.target).add(offset);
@@ -480,45 +745,81 @@ function Scene(props: SceneProps) {
     [camera, invalidate, orbit],
   );
 
-  const zoomBy = useCallback(
-    (factor: number) => {
+  const setDistance = useCallback(
+    (distance: number) => {
       const controls = controlsRef.current;
       if (!controls) return;
-      const { offset } = orbit;
-      offset.copy(camera.position).sub(controls.target);
-      offset.setLength(Math.min(controls.maxDistance, Math.max(controls.minDistance, offset.length() * factor)));
-      camera.position.copy(controls.target).add(offset);
-      controls.update();
-      invalidate();
+      orbit.offset.copy(camera.position).sub(controls.target).setLength(distance);
+      camera.position.copy(controls.target).add(orbit.offset);
     },
-    [camera, invalidate, orbit],
+    [camera, orbit],
   );
 
-  const goHome = useCallback(() => {
-    const controls = controlsRef.current;
-    if (!controls) return;
-    const { size: current } = get();
-    const { center, radius } = framingRef.current;
-    const distance = fitDistance(current.width / Math.max(current.height, 1));
-    // Stop any leftover inertia first, so the view lands exactly home.
-    const damping = controls.enableDamping;
-    controls.enableDamping = false;
-    controls.update();
-    controls.target.copy(center);
-    camera.position.copy(HOME).multiplyScalar(distance * radius).add(center);
-    camera.lookAt(center);
-    controls.update();
-    controls.enableDamping = damping;
-    fitRef.current = distance;
-    invalidate();
-  }, [camera, get, invalidate]);
+  /** Sheet 6.3: the zoom target moves at once, the camera eases to it (each frame, below). */
+  const zoomBy = useCallback(
+    (factor: number) => {
+      if (isHero) return;
+      tweenRef.current = null;
+      zoomRef.current = clampZoom(zoomRef.current * factor);
+      if (!motionRef.current) {
+        setDistance(zoomRef.current * fitRef.current * framingRef.current.radius);
+        controlsRef.current?.update();
+      }
+      invalidate();
+    },
+    [invalidate, isHero, setDistance],
+  );
 
   useEffect(() => {
-    handleRef.current = { rotate: rotateBy, zoom: zoomBy, reset: goHome };
+    handleRef.current = {
+      rotate: (azimuth, polar) => {
+        tweenRef.current = null;
+        idleReturn.cancel();
+        rotateBy(azimuth, polar);
+        if (isHero) idleReturn.schedule(motionRef.current);
+      },
+      zoom: zoomBy,
+      reset: () => (motionRef.current ? startTween(media.model.reset.duration, media.model.reset.ease) : jumpHome()),
+    };
     return () => {
       handleRef.current = null;
     };
-  }, [handleRef, rotateBy, zoomBy, goHome]);
+  }, [handleRef, idleReturn, isHero, jumpHome, rotateBy, startTween, zoomBy]);
+
+  /**
+   * One frame: the model as the view shows it, then, in the hero's Realistic view, the lens. The
+   * view switch below draws the old view with this before it copies it.
+   */
+  const drawFrame = useCallback(() => {
+    // The contact shadow is a floor under the Realistic view: hidden from below and in the other
+    // views, and drawn again first when the model's shape has changed since it was last drawn.
+    shadow.root.visible = rig.currentView === 'realistic' && camera.position.y > framingRef.current.floor + 0.01;
+    if (shadow.root.visible) shadow.update(gl, scene);
+    gl.render(scene, camera);
+    if (!lensPass || !hero || !motionRef.current || rig.currentView !== 'realistic') return;
+    const alpha = hero.lens.opacity.get();
+    if (!(alpha > LENS_HIDDEN)) return;
+    const lens = { x: hero.lens.x.get(), y: hero.lens.y.get(), radius: hero.lens.radius.get(), alpha };
+    lensPass.render(gl, camera, lens, get().size, () => rig.withView('thermal', () => gl.render(rig.root, camera)));
+  }, [camera, get, gl, hero, lensPass, rig, scene, shadow]);
+
+  // A view switch (sheets 4.5 and 6.3): the old view's last frame is copied to an overlay that
+  // fades out over the new one; the switch itself is at once. Without motion: at once.
+  useLayoutEffect(() => {
+    const shown = shownRef.current;
+    if (shown && shown.rig === rig && shown.view === view) return;
+    const overlay = overlayRef.current;
+    if (shown && shown.rig === rig && motionRef.current && drawnRef.current && liveRef.current && overlay) {
+      drawFrame();
+      if (copyFrame(gl.domElement, overlay)) {
+        const fade = isHero ? { duration: heroMotion.model.viewFade, ease: heroMotion.model.viewEase } : media.model.viewFade;
+        fadeOut(overlay, fade.duration, fade.ease);
+      }
+    }
+    rig.setView(view);
+    shownRef.current = { rig, view };
+    invalidate();
+  }, [drawFrame, gl, invalidate, isHero, overlayRef, rig, view]);
 
   // Tell the shell once the first frame with the model is on screen.
   useEffect(() => {
@@ -533,45 +834,64 @@ function Scene(props: SceneProps) {
     };
   }, [rig, invalidate]);
 
+  // Priority 1: this callback draws the frame itself (after drei's controls update at -1).
   useFrame((state, delta) => {
-    if (autoTurnRef.current) rotateBy(Math.min(delta, 0.1) * AUTO_TURN_SPEED, 0);
-    // The contact shadow is a floor: hide it when the camera looks from below.
-    if (shadowRef.current) shadowRef.current.visible = camera.position.y > floor + 0.01;
-    if (view === 'blueprint' && calloutCount > 0) {
-      placeCallouts(calloutNodes.current, calloutCount, rig.currentBox(explode, box), state.camera, state.size.width, state.size.height);
+    const controls = controlsRef.current;
+    let again = false;
+    const tween = tweenRef.current;
+    if (tween && controls) {
+      const t = Math.min(1, (performance.now() - tween.start) / tween.duration);
+      placeCamera(blendOrbit(tween.from, homeOrbit(), tween.ease(t)));
+      if (t < 1) {
+        again = true;
+      } else {
+        tweenRef.current = null;
+        controls.update();
+      }
+    } else if (controls) {
+      if (autoTurnRef.current) rotateBy(Math.min(delta, 0.1) * (isHero ? HERO_TURN : AUTO_TURN), 0);
+      // The zoom eases toward its target by the orbit's own damping, a share of the gap a frame.
+      const desired = zoomRef.current * fitRef.current * framingRef.current.radius;
+      const current = camera.position.distanceTo(controls.target);
+      const gap = desired - current;
+      if (Math.abs(gap) > desired * ZOOM_SETTLED) {
+        setDistance(motionRef.current ? current + gap * media.model.damping : desired);
+        again = true;
+      }
     }
-  });
+    if (hero && rig.setRotorTilt(heroRotorTilt(hero.rotor.get(), motionRef.current))) shadow.markDirty();
+    if (rig.currentView === 'blueprint' && calloutCount > 0) {
+      placeCallouts(calloutNodes.current, calloutCount, rig.currentBox(explodeRef.current, box), state.camera, state.size.width, state.size.height);
+    }
+    drawFrame();
+    drawnRef.current = true;
+    if (again) invalidate();
+  }, 1);
 
   return (
     <>
       <OrbitControls
         ref={controlsRef}
         makeDefault
-        enableDamping={!reducedMotion}
-        dampingFactor={0.08}
+        enableDamping={motion}
+        dampingFactor={media.model.damping}
         enablePan={false}
+        enableZoom={false}
         rotateSpeed={0.85}
-        zoomSpeed={0.9}
-        minDistance={MIN_DISTANCE}
-        maxDistance={fit * 3 * Math.max(1, framing.radius)}
-        minPolarAngle={MIN_POLAR}
-        maxPolarAngle={MAX_POLAR}
+        minPolarAngle={POLAR_MIN}
+        maxPolarAngle={POLAR_MAX}
         touches={TOUCHES}
-        onStart={() => callbacks.current.onInteract()}
+        onStart={() => {
+          tweenRef.current = null;
+          idleReturn.cancel();
+          callbacks.current.onInteract();
+        }}
+        onEnd={() => {
+          if (isHero) idleReturn.schedule(motionRef.current);
+        }}
       />
       <primitive object={rig.root} />
-      {view === 'realistic' && (
-        <ContactShadows
-          ref={shadowRef}
-          position={[0, floor, 0]}
-          scale={4}
-          far={1.6}
-          blur={2.4}
-          opacity={0.5}
-          resolution={512}
-          frames={1}
-        />
-      )}
+      <primitive object={shadow.root} />
     </>
   );
 }

@@ -1,8 +1,9 @@
 /**
  * One loaded model, prepared for the viewer: a private copy of the scene, centered and scaled to
- * fit a sphere of radius 1, with its parts, its three views, the exploded view, and highlighting.
- * Plain three.js, no React. The parsed file stays untouched in the loader's cache, so another
- * viewer of the same file, or this one after a resume, starts clean.
+ * fit a sphere of radius 1, with its parts, its three views, the exploded view, highlighting, and
+ * the wing rotors of a model that names them. Plain three.js, no React. The parsed file stays
+ * untouched in the loader's cache, so another viewer of the same file, or this one after a resume,
+ * starts clean.
  */
 import {
   Box3,
@@ -19,6 +20,7 @@ import {
   Matrix4,
   Mesh,
   MeshBasicMaterial,
+  Quaternion,
   SRGBColorSpace,
   Vector3,
   type Material,
@@ -31,10 +33,28 @@ import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js';
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js';
 import type { ModelView } from '../types';
 import { createHullMaterial, createThermalMaterial, createThermalShared, setThermalStops, type ThermalShared } from './materials';
+import { explodeOffset } from './orbit';
 import type { ModelPalette, Rgb } from './palette';
 
-/** At full explode, each part moves this many times its own offset from the model center. */
-const EXPLODE_SCALE = 0.8;
+/**
+ * The nodes the hero tilts with scroll (ARCHITECTURE.md 6, motion sheet 4.3), by the exact names
+ * the file gives them: the left and right wing rotors.
+ */
+export const ROTOR_NAMES = ['RotorL', 'RotorR'] as const;
+export type RotorName = (typeof ROTOR_NAMES)[number];
+
+/**
+ * The axis the rotors tilt about: the model's spanwise axis, x. glTF models face +z with +y up, so
+ * a positive turn about x takes a rotor's thrust from up (hover) toward the front (cruise).
+ */
+const ROTOR_AXIS = new Vector3(1, 0, 0);
+
+/**
+ * Blueprint lines draw after every solid (three.js draws the lower render order first), so the
+ * fill's depth is always there to hide what lies behind it, also when the fill writes no color.
+ */
+const LINES_AFTER_SOLIDS = 1;
+
 /** Edges between faces that meet at more than this angle (degrees) are drawn in Blueprint. */
 const EDGE_ANGLE = 30;
 /** Blueprint edge and silhouette widths, in CSS pixels. */
@@ -56,6 +76,26 @@ export interface RigPart {
   worldOffset: Vector3;
   /** Bounds at rest, in world space. */
   box: Box3;
+}
+
+/** A wing rotor the hero tilts: turned about its own pivot (its origin) by setRotorTilt. */
+export interface RigRotor {
+  name: RotorName;
+  object: Object3D;
+  /** Its orientation at rest, in the parent's space. */
+  rest: Quaternion;
+  /** The model's spanwise axis, in the parent's space. */
+  axis: Vector3;
+}
+
+/**
+ * How the Blueprint view fills the solid so hidden edges stay hidden: with the night (a viewer,
+ * over its night well) or with nothing but depth (the hero, so the sky shows through the drawing).
+ */
+export type BlueprintFill = 'night' | 'depth';
+
+export interface RigOptions {
+  fill?: BlueprintFill;
 }
 
 interface EmissiveMaterial extends Material {
@@ -132,6 +172,8 @@ export class ModelRig {
   /** Add this to the scene. */
   readonly root = new Group();
   readonly parts: RigPart[] = [];
+  /** RotorL and RotorR, those the model names (ROTOR_NAMES order). */
+  readonly rotors: RigRotor[] = [];
   /** Model bounds at rest, after centering and scaling. */
   readonly restBox = new Box3();
 
@@ -139,9 +181,11 @@ export class ModelRig {
   private readonly frame = new Group();
   private readonly entries: MeshEntry[] = [];
   private readonly staticBox = new Box3();
+  private readonly fill: BlueprintFill;
   private view: ModelView = 'realistic';
   private highlight: string | null = null;
   private explode = 0;
+  private tilt = 0;
   private envelopeWanted = false;
   private blueprintReady = false;
   private readonly lineMaterial = new LineMaterial({ linewidth: EDGE_WIDTH, worldUnits: false, toneMapped: false });
@@ -156,7 +200,8 @@ export class ModelRig {
   /** The bounding box, dashed, that the Blueprint callouts point to. */
   private readonly envelope: LineSegments<BufferGeometry, LineDashedMaterial>;
 
-  constructor(source: Object3D) {
+  constructor(source: Object3D, options: RigOptions = {}) {
+    this.fill = options.fill ?? 'night';
     const model = source.clone(true);
     model.traverse((object) => {
       if (!isDrawable(object)) return;
@@ -177,6 +222,9 @@ export class ModelRig {
     this.root.updateMatrixWorld(true);
     this.restBox.setFromObject(model);
     const modelCenter = this.restBox.getCenter(new Vector3());
+    // The model's radius after scaling: 1 by construction, measured so the exploded view does not
+    // depend on that.
+    const modelRadius = Math.max(this.restBox.getSize(new Vector3()).length() / 2, 1e-6);
 
     // Parts: the named children of the model root, below any single wrapper nodes.
     let partRoot: Object3D = model;
@@ -190,13 +238,18 @@ export class ModelRig {
     }
     const toLocal = new Matrix3();
     const inverse = new Matrix4();
-    partRoot.children.forEach((child) => {
+    // Each named part, its bounds, and its line from the model's centre; the longest line sets
+    // how far every part moves at full explode.
+    const named = partRoot.children.flatMap((child) => {
       const name = authoredName(child);
-      if (!name) return;
+      if (!name) return [];
       const box = new Box3().setFromObject(child);
-      const worldOffset = box.isEmpty()
-        ? new Vector3()
-        : box.getCenter(new Vector3()).sub(modelCenter).multiplyScalar(EXPLODE_SCALE);
+      const toPart = box.isEmpty() ? new Vector3() : box.getCenter(new Vector3()).sub(modelCenter);
+      return [{ child, name, box, toPart }];
+    });
+    const farthest = Math.max(0, ...named.map(({ toPart }) => toPart.length()));
+    named.forEach(({ child, name, box, toPart }) => {
+      const worldOffset = new Vector3(...explodeOffset([toPart.x, toPart.y, toPart.z], farthest, modelRadius));
       inverse.copy(child.parent?.matrixWorld ?? new Matrix4()).invert();
       const localOffset = worldOffset.clone().applyMatrix3(toLocal.setFromMatrix4(inverse));
       this.parts.push({
@@ -233,6 +286,25 @@ export class ModelRig {
       if (!part) this.staticBox.union(new Box3().setFromObject(mesh));
     });
 
+    // The wing rotors, by name. Each turns about its own origin; the spanwise axis is written in
+    // its parent's space, so a rotor under a rotated parent still tilts toward the model's front.
+    for (const name of ROTOR_NAMES) {
+      let found: Object3D | null = null;
+      model.traverse((object) => {
+        if (!found && authoredName(object) === name) found = object;
+      });
+      const object = found as Object3D | null;
+      if (!object) continue;
+      const parentRotation = new Quaternion();
+      object.parent?.getWorldQuaternion(parentRotation);
+      this.rotors.push({
+        name,
+        object,
+        rest: object.quaternion.clone(),
+        axis: ROTOR_AXIS.clone().applyQuaternion(parentRotation.invert()).normalize(),
+      });
+    }
+
     const envelopeGeometry = new BufferGeometry();
     envelopeGeometry.setAttribute('position', new BufferAttribute(new Float32Array(72), 3));
     this.envelope = new LineSegments(
@@ -258,15 +330,49 @@ export class ModelRig {
 
   setView(view: ModelView): void {
     this.view = view;
-    if (view === 'blueprint') this.ensureBlueprint();
-    for (const entry of this.entries) {
-      if (view === 'realistic') entry.mesh.material = entry.realistic;
-      else if (view === 'blueprint') entry.mesh.material = entry.fill ?? entry.realistic;
-      else entry.mesh.material = this.thermalFor(entry.part);
-      if (entry.edges) entry.edges.visible = view === 'blueprint';
-      if (entry.hull) entry.hull.visible = view === 'blueprint';
+    this.applyView(view);
+  }
+
+  /** The view shown now. */
+  get currentView(): ModelView {
+    return this.view;
+  }
+
+  /**
+   * Draws one frame of another view: `draw` runs with that view's materials on the model, and the
+   * shown view comes back after it. The hero's lens draws the Thermal view this way, inside the
+   * Realistic one (lensPass.ts).
+   */
+  withView(view: ModelView, draw: () => void): void {
+    if (view === this.view) {
+      draw();
+      return;
     }
-    this.envelope.visible = view === 'blueprint' && this.envelopeWanted;
+    this.applyView(view);
+    try {
+      draw();
+    } finally {
+      this.applyView(this.view);
+    }
+  }
+
+  /**
+   * Sheet 4.3: turns RotorL and RotorR about their pivots, by this many radians from their pose
+   * at rest (0 is hover, a quarter turn is cruise). A model without them is left as it is. Returns
+   * true when a rotor moved, so the engine draws a frame and the contact shadow again only then.
+   */
+  setRotorTilt(angle: number): boolean {
+    if (angle === this.tilt) return false;
+    this.tilt = angle;
+    for (const rotor of this.rotors) {
+      rotor.object.quaternion.setFromAxisAngle(rotor.axis, angle).multiply(rotor.rest);
+    }
+    return this.rotors.length > 0;
+  }
+
+  /** The tilt the rotors show now, in radians (0 is hover). */
+  get rotorAngle(): number {
+    return this.tilt;
   }
 
   /** Shows the dashed bounding box in the Blueprint view (when there are callouts to point at it). */
@@ -280,7 +386,11 @@ export class ModelRig {
     this.applyHighlight();
   }
 
-  /** 0 is assembled; 1 moves each part along the line from the model center to its own center. */
+  /**
+   * Sheet 6.3: 0 is assembled; 1 has moved each part out along the line from the model's centre to
+   * its own, the farthest part by 0.6 of the model's radius and the others in proportion
+   * (orbit.ts explodeOffset).
+   */
   setExplode(amount: number): void {
     this.explode = Math.min(1, Math.max(0, amount));
     for (const part of this.parts) {
@@ -332,6 +442,19 @@ export class ModelRig {
     this.envelope.computeLineDistances();
   }
 
+  /** Puts a view's materials and helpers on the model, without changing the view it shows. */
+  private applyView(view: ModelView): void {
+    if (view === 'blueprint') this.ensureBlueprint();
+    for (const entry of this.entries) {
+      if (view === 'realistic') entry.mesh.material = entry.realistic;
+      else if (view === 'blueprint') entry.mesh.material = entry.fill ?? entry.realistic;
+      else entry.mesh.material = this.thermalFor(entry.part);
+      if (entry.edges) entry.edges.visible = view === 'blueprint';
+      if (entry.hull) entry.hull.visible = view === 'blueprint';
+    }
+    this.envelope.visible = view === 'blueprint' && this.envelopeWanted;
+  }
+
   private thermalFor(part: RigPart | null): ShaderMaterial {
     let material = this.thermal.get(part);
     if (!material) {
@@ -359,9 +482,11 @@ export class ModelRig {
     this.blueprintReady = true;
     for (const entry of this.entries) {
       const { mesh } = entry;
-      // Two-sided, so the fill hides what is behind it whatever the triangle winding.
+      // Two-sided, so the fill hides what is behind it whatever the triangle winding. In the hero
+      // it writes depth only: hidden edges stay hidden and the sky shows through the solid.
       entry.fill = new MeshBasicMaterial({
         color: this.panelColor,
+        colorWrite: this.fill === 'night',
         toneMapped: false,
         side: DoubleSide,
         // Pushed back a little, so edges drawn on the surface win the depth test.
@@ -380,6 +505,7 @@ export class ModelRig {
           this.lineGeometries.push(geometry);
           const edges = new LineSegments2(geometry, this.lineMaterial);
           edges.raycast = () => undefined;
+          edges.renderOrder = LINES_AFTER_SOLIDS;
           edges.visible = false;
           mesh.add(edges);
           entry.edges = edges;
@@ -398,6 +524,7 @@ export class ModelRig {
           hull = new Mesh(mesh.geometry, this.hullMaterial);
         }
         hull.raycast = () => undefined;
+        hull.renderOrder = LINES_AFTER_SOLIDS;
         hull.visible = false;
         mesh.add(hull);
         entry.hull = hull;

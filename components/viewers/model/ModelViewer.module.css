@@ -1,7 +1,11 @@
 /*
  * The 3D model viewer inside the media frame (bundle ModelViewer, app/sheet.css 25: the views
- * group, the exploded-view range, the hint, the notes). No transitions or keyframes: nothing here
- * animates. The thermal view's ramp is drawn by the engine's shader, inside the canvas.
+ * group, the exploded-view range, the hint, the notes), and the parts the hero's model shares.
+ * Two things move here, both opacity only: the old view's copy fading out over the new one
+ * (the engine animates it), and the drag hint fading out after the first touch (its duration and
+ * curve come from lib/motion.ts through --mv-hint-fade and --mv-hint-ease). Under reduced motion
+ * the global rule (app/globals.css) takes the transition away. The thermal view's ramp is drawn by
+ * the engine's shader, inside the canvas.
  */
 
 /* The canvas region. */
@@ -9,6 +13,16 @@
   position: absolute;
   inset: 0;
   cursor: grab;
+}
+
+/* The old view during a view switch: a copy of its last frame, at rest invisible. */
+.overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .surface:active {
@@ -135,6 +149,15 @@
   font-size: 13px;
 }
 
+/* Sheet 6.3: the hint sits under the viewer until the first drag, then fades; it keeps its place,
+   so the bar never moves. Visibility follows the fade, so the gone hint is not read out. */
+.hint {
+  transition:
+    opacity var(--mv-hint-fade, 0s) var(--mv-hint-ease, linear),
+    visibility 0s linear var(--mv-hint-fade, 0s);
+}
+
 .hintHidden {
+  opacity: 0;
   visibility: hidden;
 }

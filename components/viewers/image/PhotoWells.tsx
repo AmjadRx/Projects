@@ -6,9 +6,11 @@ import Placeholder from '@/components/sheet/Placeholder';
 import type { ResolvedMedia } from '@/lib/media';
 import { objectPosition } from '@/lib/media';
 import { UI } from '@/lib/strings';
+import { useMotionOk } from '@/lib/useMotionOk';
 import { cn } from '@/lib/utils';
 import Poster, { canOptimize } from '../shared/Poster';
 import type { GalleryProps } from '../types';
+import { ARRIVAL_STYLE, LoadingWell, usePhotoArrival } from './arrival';
 import styles from './image.module.css';
 import { stillOf } from './still';
 import { LazyLightbox, useLightbox } from './useLightbox';
@@ -18,7 +20,9 @@ import { LazyLightbox, useLightbox } from './useLightbox';
  * wide"): small night wells, each cropped to fill around the focal point and each a button that
  * opens the entry's photos in the lightbox, whose code loads only then. On a phone a single photo
  * takes the column's width, at most 280 px. A small well whose file does not load shows the mark
- * alone, and the words go to screen readers; reloading the page tries again.
+ * alone, and the words go to screen readers; reloading the page tries again. A photo on its way
+ * leaves the small well at its size with the loading state, and fades in once decoded (the states
+ * boards, S.4 and S.5; arrival.tsx).
  */
 export default function PhotoWells({ items }: GalleryProps) {
   const { openAt, open, close } = useLightbox();
@@ -53,6 +57,8 @@ function Well({
   const [failed, setFailed] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
   const still = stillOf(item);
+  const motionOk = useMotionOk();
+  const arrival = usePhotoArrival(imgRef, motionOk && !!still && !failed);
 
   useEffect(() => {
     const img = imgRef.current;
@@ -68,6 +74,7 @@ function Well({
   }
   return (
     <button type="button" className={styles.well} onClick={(event) => onOpen(event.currentTarget)}>
+      <LoadingWell arrival={arrival} small />
       {still ? (
         <Image
           ref={imgRef}
@@ -77,8 +84,14 @@ function Well({
           sizes={sizes}
           unoptimized={!canOptimize(still.src)}
           draggable={false}
-          style={{ objectFit: 'cover', objectPosition: objectPosition(item.focal) }}
-          onError={() => setFailed(true)}
+          className="mm-photo"
+          data-arrive={arrival.attr}
+          style={{ objectFit: 'cover', objectPosition: objectPosition(item.focal), ...ARRIVAL_STYLE }}
+          onLoad={arrival.onLoad}
+          onError={() => {
+            arrival.onError();
+            setFailed(true);
+          }}
         />
       ) : (
         <Poster media={item} showType={false} />

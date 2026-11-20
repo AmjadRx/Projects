@@ -60,16 +60,31 @@ export function slotPaths(s: Slot): { lines: string[]; arrows: string[] } {
   };
 }
 
-/** Where a slot's plate sits. */
+/** The least room a plate keeps from the well's sides, in px (the 8 px space step). */
+const PLATE_INSET = 8;
+
+/**
+ * Where a slot's plate sits: centred on a span along the top or the bottom, or to the left of the
+ * span down the side. A plate never runs out of its well, where the well's edge would cut its
+ * words: on a narrow card it slides along its line until it fits (a CSS clamp on its own width, so
+ * nothing needs measuring), and beside the side span it may cover the line rather than be cut.
+ */
 export function plateStyle(s: Slot, w: number): CSSProperties {
   if (s.kind === 'h') {
+    const centre = Math.round((s.x1 + s.x2) / 2);
+    const x = `clamp(${PLATE_INSET - centre}px, -50%, calc(${w - PLATE_INSET - centre}px - 100%))`;
     return {
-      left: `${Math.round((s.x1 + s.x2) / 2)}px`,
+      left: `${centre}px`,
       top: `${s.y}px`,
-      transform: s.above ? 'translate(-50%, calc(-100% - 8px))' : 'translate(-50%, -50%)',
+      transform: s.above ? `translate(${x}, calc(-100% - 8px))` : `translate(${x}, -50%)`,
     };
   }
-  return { right: `${w - s.x + 14}px`, top: `${Math.round((s.y1 + s.y2) / 2)}px`, transform: 'translateY(-50%)' };
+  const anchor = s.x - 14;
+  return {
+    left: `${anchor}px`,
+    top: `${Math.round((s.y1 + s.y2) / 2)}px`,
+    transform: `translate(max(-100%, ${PLATE_INSET - anchor}px), -50%)`,
+  };
 }
 
 /**

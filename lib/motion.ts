@@ -209,7 +209,12 @@ export const stored = {
 // Sheet 2: the load sequence (once a visit, on the home page)
 // ---------------------------------------------------------------------------------------------
 
-/** Sheet 2: the load sequence. Under reduced motion none of it plays (sheet 8.1). */
+/**
+ * Sheet 2: the load sequence. Under reduced motion none of it plays (sheet 8.1). lib/intro.ts
+ * decides which page view plays it and marks the hero section while it does: the headline's times
+ * count from the first mark (data-intro), set before the first paint; the drawing's from the
+ * second (data-intro-go), set once the whole drawing is in the page, usually the same moment.
+ */
 export const load = {
   /** The timed part ends by 1,600 ms. */
   end: 1.6,
@@ -225,8 +230,15 @@ export const load = {
   lens: { start: 1.1, duration: dur.quick, ease: ease.fade },
   /** Phone and tablet scan: one band, 0.22 of the drawing's width, crosses left to right once. */
   scan: { start: delay.scanStart, duration: dur.scan, width: 0.22, ease: ease.linear },
-  /** Readouts count up on first view, with 0.3 of the row visible, 40 ms apart. */
-  readouts: { inView: 0.3, duration: dur.count, step: delay.readoutStep, ease: ease.settle },
+  /**
+   * Readouts count up on first view, with 0.3 of the row visible, 40 ms apart.
+   *
+   * Not on the sheet: `near`, how close the row is, in window heights, when AnimateNumber starts
+   * to load (components/sheet/readoutCount.ts); `giveUpAfter`, how long the row may be in view
+   * with its count not started (a slow network) before the values are set at once: the
+   * headline's give-up time, since nothing in the sequence stays hidden (sheet 2.4).
+   */
+  readouts: { inView: 0.3, duration: dur.count, step: delay.readoutStep, ease: ease.settle, near: 1, giveUpAfter: 1.2 },
   /** The live sky fades in over the still once its first frame is drawn, never before 400 ms. */
   sky: { notBefore: 0.4, duration: dur.fade, ease: ease.fade },
   /** sessionStorage key: back on the home page in the same visit, everything paints final. */
@@ -516,7 +528,14 @@ export const hero = {
    * The pointer lens (desktop, mouse and pen only): radius 128 drawing units, which is `px.lens`
    * (220 px) across at a 1440 px window, with four short ticks outside the ring. It rests over the
    * battery bay, its centre stays inside the inner frame, it follows with the lens spring and goes
-   * back with the rest spring.
+   * back with the rest spring. While it follows, its ring is the Motion+ `Cursor` (DESIGN_DIRECTION.md
+   * 6.4; ARCHITECTURE.md 8).
+   *
+   * `load` (no sheet gives it; the sky's rule, SKY.liveLoad): the Cursor's code is not needed at
+   * first paint, since the lens appears only after the strokes (load.lens.start). It loads once the
+   * load sequence has ended, in the browser's next idle period (waited for at most `idleTimeout`
+   * seconds, or `noIdleDelay` seconds where there is no requestIdleCallback), or at once when a
+   * mouse or a pen first comes over the drawing.
    */
   lens: {
     radius: 128,
@@ -527,6 +546,7 @@ export const hero = {
     frame: { left: 40, right: 560, top: 40, bottom: 520 },
     follow: spring.lens,
     back: spring.rest,
+    load: { idleTimeout: SKY.liveLoad.idleTimeout, noIdleDelay: SKY.liveLoad.noIdleDelay },
   },
   /**
    * Phones and tablets: one scan band (load.scan: 0.22 of the drawing, 132 units), then press and
@@ -546,8 +566,22 @@ export const hero = {
    * Scroll-tied rotor tilt, linear and clamped, with no easing: hover (0 degrees) to cruise
    * (82 degrees), each nacelle moving 26 drawing units forward; the tail rotor never tilts. A 3D
    * model's RotorL and RotorR nodes turn 0 to 90 degrees.
+   *
+   * From the Hero boards (Hero-1440-Rest and Hero-1440-Cruise, drawn by the canvas's Main board):
+   * `podGrow`, the drawing units the front of each wing motor's pod moves forward by cruise while
+   * its back stays put, so the pod reads longer as it tips forward; and `fade`, how much a part
+   * fades by cruise (its opacity is 1 minus fade times the tilt's progress): the wing blades go
+   * (the discs read edge-on), the tail rotor's disc and blade dim by 0.6 and its heat in the
+   * thermal view by 0.55.
    */
-  rotor: { hover: 0, cruise: deg.rotorCruise, nacelleShift: 26, modelMax: 90 },
+  rotor: {
+    hover: 0,
+    cruise: deg.rotorCruise,
+    nacelleShift: 26,
+    modelMax: 90,
+    podGrow: 30,
+    fade: { blades: 1, tail: 0.6, tailHeat: 0.55 },
+  },
   /** Reduced motion: the static split at 300 drawing units, divided by a 1 px line. */
   split: { at: 300, line: 1 },
   /**
@@ -561,6 +595,33 @@ export const hero = {
     viewFade: dur.short,
     viewEase: ease.fade,
     phoneTurn: deg.autoTurn,
+    /**
+     * Sheet 1.2 (quick: "the lens fading in"): the lens over the model fades in at its rest point
+     * when it may show (the Realistic view, a mouse or a pen, motion allowed, the engine drawing)
+     * and out where it is when it may no longer, 150 ms each way. Sheet 4.5 gives it the drawing's
+     * size and springs: it follows with hero.lens.follow and goes back with hero.lens.back.
+     */
+    lensFade: { duration: dur.quick, ease: ease.fade },
+    /**
+     * The Hero-1440-Realistic board: the lens rests 56% across and 38% down the model's box, which
+     * runs from 4% to 90% of the stage's height, and the pointer leaving sends it back there. In the
+     * drawing's units, since the stage is the drawing's 600 by 560 box: 0.56 of 600 across, and
+     * 0.04 + 0.86 x 0.38 = 0.3668 of 560 down.
+     */
+    lensRest: { x: 336, y: 205.4 },
+    /**
+     * Sheet 1.2 (quick: "a poster giving way to its video"): the hero's poster, captured in the
+     * admin under a neutral light, fades out over the first frame lit by the sky, 150 ms; without
+     * motion it goes at once.
+     */
+    posterOut: { duration: dur.quick, ease: ease.fade },
+    /**
+     * Sheet 4.5: on desktop the engine loads after the page is interactive, read as the sky's rule
+     * (SKY.liveLoad): after the load event, in the browser's next idle period (waited for at most
+     * `idleTimeout` seconds), or `noIdleDelay` seconds after the load event where the browser has
+     * no requestIdleCallback; then once the stage is within media.model.loadMargin of the view.
+     */
+    afterInteractive: { idleTimeout: SKY.liveLoad.idleTimeout, noIdleDelay: SKY.liveLoad.noIdleDelay },
   },
 } as const;
 
@@ -588,6 +649,11 @@ export const cards = {
   openCue: { nudge: px.nudge, duration: dur.quick, ease: ease.fade },
   /** Phones: a video or model cover runs while its card is at least 0.6 in view, one at a time. */
   phoneInView: 0.6,
+  /**
+   * Sheet 5, Phones ("the one most in view"): the share of each card in view is reported in this
+   * many even steps from `phoneInView` to 1, so the cover most in view can be told apart.
+   */
+  phoneInViewSteps: 8,
 } as const;
 
 // ---------------------------------------------------------------------------------------------
@@ -599,21 +665,38 @@ export const media = {
   /**
    * Video plays muted while at least 0.6 of it is in view, one at a time; the poster gives way in
    * 150 ms; the file starts loading when the block is within 200 px of the view.
+   *
+   * `shareStep`: how finely "the one most in view" is told apart (sheet 6.1 gives no number). The
+   * share of each video in view is measured in tenths; two videos whose shares round to the same
+   * tenth count as equally in view, and the one already playing keeps playing
+   * (components/viewers/video/playback.ts).
    */
-  video: { inView: 0.6, posterOut: dur.quick, posterEase: ease.fade, preloadMargin: 200 },
+  video: { inView: 0.6, posterOut: dur.quick, posterEase: ease.fade, preloadMargin: 200, shareStep: 0.1 },
   /**
    * Scroll-scrubbed video: 100 px of scroll for each second of video, a run of at least one and at
    * most three screen heights, time through the scrub spring. Encode the scrub file with a
    * keyframe every 0.5 s, or every frame for clips under 20 s.
+   *
+   * `endGuard` (sheet 6.2 gives no number): the run ends this many seconds before the file does, so
+   * the last frame shows without the video ending.
    */
-  scrub: { pxPerSecond: 100, minScreens: 1, maxScreens: 3, spring: spring.scrub, keyframeEvery: 0.5, everyFrameUnder: 20 },
+  scrub: {
+    pxPerSecond: 100,
+    minScreens: 1,
+    maxScreens: 3,
+    spring: spring.scrub,
+    keyframeEvery: 0.5,
+    everyFrameUnder: 20,
+    endGuard: 0.05,
+  },
   /**
    * 3D models: the engine loads within 200 px of the view on desktop, at most two viewers render
    * at a time; the model turns 6 degrees a second until first touched; orbit and zoom ease with a
    * damping of 0.08 a frame (a glide of about 0.6 s); pitch from 10 degrees below the horizon to 60
    * above; zoom from 0.6 to 2 times the fitted distance; reset in 600 ms (move); views cross-fade
    * in 200 ms; the exploded view moves parts up to 0.6 of the model's radius, arrow keys step 0.1
-   * in 160 ms (settle); the drag hint fades in 150 ms.
+   * in 160 ms (settle); the drag hint ("Drag to orbit") sits under the viewer until the first drag,
+   * then fades out over 150 ms (removed at once under reduced motion).
    */
   model: {
     loadMargin: 200,
@@ -636,15 +719,35 @@ export const media = {
    * pointer's travel. The lightbox opens in 200 ms (fade) and closes in 150 ms (exit). A frame
    * loading holds its size; after 600 ms a 2 px line runs along its foot, 1,400 ms a pass; the
    * photo fades in over 200 ms.
+   *
+   * The strip is Motion+ Carousel (components/viewers/image/Gallery.tsx), and the numbers reach it
+   * so: `snap` is its `transition` (the snap after a release, Previous, Next, the arrow keys, a
+   * wheel swipe), and `overdrag` its `dragElastic`. `glide` has no Carousel option: with snapping
+   * on, Carousel projects the release velocity 0.3 s ahead, picks the frame there, and carries the
+   * release velocity into the snap spring, so the glide and the snap are one motion of 0.4 s.
+   * `glide` stays the sheet's record (Motion's own inertia defaults). Carousel's other spring, the
+   * bounce it plays when a wheel swipe meets an end, is not the sheets' (the snap spring has no
+   * bounce): the gallery keeps such a wheel from Carousel, so a wheel at an end does nothing.
+   *
+   * `atOnce` (sheet 8.1, reduced motion): the strip's moves, a button's or a key's included, take
+   * no time. No wheel swipe pages the strip then: a wheel moves it directly, within its ends, and
+   * it settles on the nearest frame at once, as a released drag does.
+   *
+   * `wellOut` (sheet 6.4 gives no number): once the photo has faded in over the loading well, the
+   * well fades out under it and is removed. It shows only where the photo leaves the well uncovered
+   * (a transparent photo, a contained one), which then never cuts from the well to the night
+   * behind it (components/viewers/image/arrival.tsx).
    */
   gallery: {
     glide: { power: 0.8, timeConstant: 325 },
     snap: spring.snap,
     overdrag: 0.2,
+    atOnce: { duration: 0 },
     lightboxIn: { duration: dur.short, ease: ease.fade },
     lightboxOut: { duration: dur.quick, ease: ease.exit },
     loadingLine: { wait: delay.loadingWait, duration: dur.loading, width: 2, ease: ease.linear },
     photoIn: { duration: dur.short, ease: ease.fade },
+    wellOut: { duration: dur.short, ease: ease.fade },
   },
 } as const;
 
@@ -654,9 +757,17 @@ export const media = {
 
 /** Sheet 7: what moves as the visitor reads and moves around the site. */
 export const page = {
-  /** A 2 px line under the nav whose scaleX is the page progress, linked to scroll with no lag. */
-  heatRule: { height: 2 },
-  /** The lit zone, from a 1024 px frame: the zone letter and its 2 px bar move at once. */
+  /**
+   * A 2 px line under the nav (--heat-rule-height in app/tokens.css) whose length is the page
+   * progress, linked to scroll with no lag (linear). The ramp is fixed to the page width, so the
+   * line runs cold to hot as the page is read: components/site/HeatRule.tsx draws it as a window
+   * that slides in from the left over the ramp, which counter-slides (chromeMotion.ts).
+   */
+  heatRule: { height: 2, ease: ease.linear },
+  /**
+   * The lit zone, from a 1024 px frame: the zone letter and its 2 px bar move at once, as a state,
+   * to the zone of the page progress (A for the first sixth of the page, F for the last).
+   */
   litZone: { minWidth: 1024, bar: 2 },
   /**
    * Panels coming into view after the first paint rise 16 px and fade in, once per page view,
@@ -669,6 +780,13 @@ export const page = {
     cover: { duration: dur.page, ease: ease.move },
     crossFade: { duration: dur.page, ease: ease.fade },
     callouts: { duration: dur.short, ease: ease.settle },
+    /**
+     * Sheet 7.3: the longest the old page is held, frozen, while the new page renders and its cover
+     * photo arrives (the browser shows the old page until the transition starts). After this the
+     * transition runs with whatever has arrived, so a slow network never holds a click for long.
+     * Not on the sheet: a cap, not a motion.
+     */
+    wait: 0.5,
   },
   /** Filtering projects: cards that stay move, cards that leave fade out, cards that arrive fade in after 100 ms. */
   filter: {
@@ -700,6 +818,44 @@ export const page = {
   nudge: { distance: px.nudge, duration: dur.quick, ease: ease.fade },
   /** The fill under a readout fades in on hover. */
   readoutFill: { duration: dur.quick, ease: ease.fade },
-  /** The tools ticker slides left one full copy every 80 s and loops; it pauses on hover and focus. */
-  ticker: { loop: 80, ease: ease.linear },
+  /**
+   * The tools ticker slides left one full copy every 80 s and loops; it pauses on hover and focus.
+   *
+   * From the canvas's home.css: it moves from a 768 px frame (`minWidth`); a phone, with no hover
+   * to pause it, keeps the row the thumb drags. Not on the sheet, all in window heights from the
+   * view: `load`, how close the strip is when the moving ticker's code starts to load; `near` and
+   * `far`, how close it is when the moving ticker is mounted and how far when it gives way to the
+   * still row again. A mounted Motion+ Ticker asks for every frame, even at rest, so it is mounted
+   * just before the strip comes into view (it measures itself within 100 px of the view) and taken
+   * away soon after it leaves. `key`: the arrow keys move it one item with the snap spring, as the
+   * gallery's arrow keys move it one frame (sheet 6.4).
+   */
+  ticker: { loop: 80, ease: ease.linear, minWidth: 768, load: 1, near: 0.25, far: 0.5, key: spring.snap },
+  /**
+   * The phone project strip (DESIGN_DIRECTION.md 6.4 and 7): under a 768 px frame (`maxWidth`)
+   * the featured cards are a Motion+ Carousel that moves as the gallery does (sheet 6.4): after a
+   * drag, Previous, Next or an arrow key it snaps with the snap spring, and dragged past either
+   * end it stretches at a fifth of the pointer's travel. Not on the sheet: `load`, `near` and `far`
+   * as for the ticker (a mounted Carousel asks for every frame too); `shown`, the share of a card in
+   * view that makes it the one the marks under the scrolling strip light, before the carousel takes
+   * over.
+   */
+  strip: { maxWidth: 767, snap: media.gallery.snap, overdrag: media.gallery.overdrag, load: 1, near: 0.25, far: 0.5, shown: 0.6 },
+} as const;
+
+// ---------------------------------------------------------------------------------------------
+// Sheet 8: the admin's one motion
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * Sheet 8.3 and DESIGN_DIRECTION.md 6.4: the admin is a tool, and nothing in it moves except the
+ * save bar's status text, which scrambles into its new words (Motion+ ScrambleText) and sets at
+ * once under reduced motion (components/admin/shell/StatusText.tsx). The sheets give the scramble
+ * no timing, so it takes the scale's: every character scrambles at once, and they settle left to
+ * right, the first after `settleFirst` (dur.short, 200 ms) and the last after `settleLast`
+ * (dur.line, 400 ms, as a headline line sets), so a line of any length reads whole within 400 ms.
+ * `interval` is how often a scrambling character changes: ScrambleText's own 0.05 s.
+ */
+export const admin = {
+  status: { settleFirst: dur.short, settleLast: dur.line, interval: 0.05 },
 } as const;

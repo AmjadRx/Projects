@@ -6,6 +6,7 @@ import type { NavItem } from '@/lib/site';
 import { UI } from '@/lib/strings';
 import type { Theme } from '@/lib/theme';
 import type { SocialLink } from '@/lib/types';
+import HeatRule from './HeatRule';
 import MobileMenu from './MobileMenu';
 import NavLinks from './NavLinks';
 import ThemeToggle, { type ThemeToggleLabels } from './ThemeToggle';
@@ -24,8 +25,9 @@ const SOCIAL_ICONS: Record<string, LucideIcon> = {
  * The name, the links from `nav` (already resolved by navItemsFor, so a hidden page has no item),
  * the social links with showInNav as icon and word (CONTENT_RULES.md 4: LinkedIn is shown as the
  * word "LinkedIn"), and the compact theme toggle, from 1024 px; below that, the name and the Menu
- * button. Inside the sheet frame it starts at the frame's inset. No search button and no heat
- * rule until Phase 7 and Phase 5.
+ * button. Along its foot runs the heat rule, the page progress cold to hot (HeatRule, motion sheet
+ * 7.1). The nav itself never moves or hides on scroll. Inside the sheet frame it starts at the
+ * frame's inset. No search button until Phase 7.
  */
 export default function Nav({
   name,
@@ -84,6 +86,7 @@ export default function Nav({
           />
         </div>
       </div>
+      <HeatRule />
     </header>
   );
 }

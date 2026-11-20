@@ -8,7 +8,8 @@ import { linkGlyph } from '@/components/sheet/linkGlyph';
 import ProjectCard, { CARD_SIZES } from '@/components/sheet/ProjectCard';
 import ReadoutRow from '@/components/sheet/Readout';
 import TextLink from '@/components/sheet/TextLink';
-import SwipeDots from './SwipeDots';
+import FeaturedStrip from './FeaturedStrip';
+import TickerStrip from './TickerStrip';
 import { hasText, statusText } from '@/lib/format';
 import type { LinkResolver } from '@/lib/links';
 import { resolveMedia } from '@/lib/media-server';
@@ -20,7 +21,10 @@ import { cn } from '@/lib/utils';
 /**
  * The home page sections after the hero, in the order of ARCHITECTURE.md 5 and the canvas's
  * Main board: readouts, thesis, now, selected work, about teaser, tools strip, contact call.
- * Nothing animates in this phase: readouts print their final values and the tools strip is still.
+ * Three pieces move, each a small client leaf whose Motion+ code loads on demand as it nears the
+ * view (DESIGN_DIRECTION.md 6.4): the readouts count up once (AnimateNumber), the featured cards
+ * are a Carousel on a phone, and the tools strip is a Ticker from 768 px. The server draws each one
+ * final and still, which is what stays without scripts and under reduced motion.
  * Each section names itself with its heading's id (the build tests read the ids and their order).
  */
 
@@ -41,7 +45,7 @@ export function Readouts({
         <h2 id="readouts-title" className="ar-sr">
           {UI.home.readouts}
         </h2>
-        <ReadoutRow stats={shown} resolveLink={resolveLink} projects={projects} />
+        <ReadoutRow stats={shown} resolveLink={resolveLink} projects={projects} count />
       </div>
     </section>
   );
@@ -141,16 +145,16 @@ function sheetNumber(n: number): string {
 
 /**
  * Selected work (the canvas's default, option B): the featured projects as cards, two across from
- * 768 px and a swipe strip on phones, then the other projects as an index on glass (sheet number,
- * title, pitch, domain, status, maturity label), and the link to all projects. The index draws no
- * ramp: it is not a card, and the maturity reads as the content's label (docs/V3_PLAN.md Q-12).
+ * 768 px and a swipe strip on phones (FeaturedStrip, a Motion+ Carousel once it nears the view),
+ * then the other projects as an index on glass (sheet number, title, pitch, domain, status,
+ * maturity label), and the link to all projects. The index draws no ramp: it is not a card, and
+ * the maturity reads as the content's label (docs/V3_PLAN.md Q-12).
  */
 export function SelectedWork({ projects }: { projects: Project[] }) {
   if (projects.length === 0) return null;
   const sheets = new Map(projects.map((p, i) => [p.slug, i + 1]));
   const featured = projects.filter((p) => p.featured);
   const rest = projects.filter((p) => !p.featured);
-  const stripId = 'featured-work';
   return (
     <section className="hm-sec hm-work" id="work" aria-labelledby="work-title">
       <div className="hm-wrap">
@@ -163,16 +167,13 @@ export function SelectedWork({ projects }: { projects: Project[] }) {
           </TextLink>
         </div>
         {featured.length > 0 ? (
-          <>
-            <div className="hm-feat" id={stripId}>
-              {featured.map((project) => (
-                <div key={project.slug} className="hm-feat__item">
-                  <ProjectCard project={project} headingLevel={3} sizes={CARD_SIZES.regular} />
-                </div>
-              ))}
-            </div>
-            {featured.length > 1 ? <SwipeDots stripId={stripId} count={featured.length} /> : null}
-          </>
+          <FeaturedStrip
+            id="featured-work"
+            items={featured.map((project) => (
+              <ProjectCard key={project.slug} project={project} headingLevel={3} sizes={CARD_SIZES.regular} />
+            ))}
+            labels={UI.home.featuredStrip}
+          />
         ) : null}
         {rest.length > 0 ? (
           <div className={cn('hm-more', featured.length === 0 && 'hm-more--first')}>
@@ -254,9 +255,10 @@ export function AboutTeaser({ site }: { site: Site }) {
 }
 
 /**
- * The tools strip: every skill label in content order (docs/V3_PLAN.md Q-41). Still in this phase
- * (the ticker's motion is Phase 5): one row that scrolls sideways, a labelled region that takes
- * focus so the keyboard can scroll it too.
+ * The tools strip (ARCHITECTURE.md 5: "one Ticker"): every skill label in content order
+ * (docs/V3_PLAN.md Q-41). The server draws one still row that scrolls sideways, a labelled region
+ * that takes focus so the keyboard can scroll it too; from 768 px, with motion allowed, TickerStrip
+ * puts the Motion+ Ticker in its place as the strip nears the view (motion sheet 7.7).
  */
 export function ToolsStrip({ skills }: { skills: Site['skills'] }) {
   const labels = skills.groups.flatMap((g) => g.items.map((i) => i.label)).filter(hasText);
@@ -267,15 +269,7 @@ export function ToolsStrip({ skills }: { skills: Site['skills'] }) {
         <h2 className="hm-label hm-tools__label" id="tools-title">
           {UI.home.tools}
         </h2>
-        <div className="hm-ticker ar-glassy">
-          <div className="hm-ticker__view" tabIndex={0} role="region" aria-labelledby="tools-title">
-            <ul className="hm-ticker__list">
-              {labels.map((label, i) => (
-                <li key={`${label}-${i}`}>{label}</li>
-              ))}
-            </ul>
-          </div>
-        </div>
+        <TickerStrip labels={labels} labelledBy="tools-title" />
       </div>
     </section>
   );

@@ -3,6 +3,7 @@
 import { useMotionValueEvent, useScroll, useTransform } from 'motion/react';
 import { useEffect, useRef, type CSSProperties } from 'react';
 import { SKY, skyFiles, toMs } from '@/lib/motion';
+import { motionPaused, subscribeMotionPaused } from '@/lib/motionPause';
 import { PROJECTION, projScale } from '@/lib/sky/astro';
 import { STILL_FALLBACK_STEP } from '@/lib/sky/still-steps';
 import { STILL_CLASSES, blueprintStillUrl, stillVar } from '@/lib/theme';
@@ -69,9 +70,12 @@ function cssScrollTimeline(): boolean {
   return typeof CSS !== 'undefined' && typeof CSS.supports === 'function' && CSS.supports('animation-timeline: scroll()');
 }
 
-/** The dawn's opacity on its layer; under reduced motion it holds at the top-of-page strength. */
-function setDawn(layer: HTMLElement | null, opacity: number): void {
-  if (layer) layer.style.opacity = String(motionOk() ? opacity : SKY.dawnMin);
+/**
+ * The dawn's opacity on its layer; under reduced motion, and while the visitor has paused motion
+ * (D-67), it holds at the top-of-page strength.
+ */
+export function setDawn(layer: HTMLElement | null, opacity: number): void {
+  if (layer) layer.style.opacity = String(motionOk() && !motionPaused() ? opacity : SKY.dawnMin);
 }
 
 /**
@@ -123,10 +127,12 @@ function SkyLayers() {
     dawnByScript.current = true;
     const write = () => setDawn(dawn.current, dawnOpacity.get());
     write();
-    const stop = subscribeMotionOk(write);
+    const stopReduced = subscribeMotionOk(write);
+    const stopPaused = subscribeMotionPaused(write);
     return () => {
       dawnByScript.current = false;
-      stop();
+      stopReduced();
+      stopPaused();
     };
   }, [dawnOpacity]);
 

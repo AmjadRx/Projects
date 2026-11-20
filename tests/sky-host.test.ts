@@ -451,6 +451,28 @@ describe('the host at run time', () => {
     return { env, live, stop };
   }
 
+  it("on the home page's first view, imports the live scene only once the load sequence has ended", async () => {
+    const env = makeEnv();
+    // The hero section, playing the sequence (lib/intro.ts) since about the first paint.
+    const marks = new Map<string, string>([['data-intro', String(performance.now())]]);
+    const hero = { hasAttribute: (name: string) => marks.has(name), getAttribute: (name: string) => marks.get(name) ?? null };
+    Object.assign(env.doc, { querySelector: (selector: string) => (selector === '.hm-hero' ? hero : null) });
+    const live = fakeLive();
+    const stop = startSkyHost(env.elements, { getProgress: () => 0, loadLive: live.loadLive });
+    await vi.advanceTimersByTimeAsync(IDLE + 1000);
+    expect(live.loadLive).not.toHaveBeenCalled();
+
+    // The marks go: the scene comes at the next idle moment.
+    marks.delete('data-intro');
+    FakeMutationObserver.trigger();
+    await vi.advanceTimersByTimeAsync(IDLE - 1);
+    expect(live.loadLive).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    await settle();
+    expect(live.loadLive).toHaveBeenCalledTimes(1);
+    stop();
+  });
+
   it('imports the live scene only after the load event and an idle moment, and starts it from the still', async () => {
     const env = makeEnv({ loaded: false });
     const live = fakeLive();
@@ -783,7 +805,7 @@ describe('the host at run time', () => {
   it('asks the scene whether it can draw before it fetches any data, and fetches for the page theme', async () => {
     const env = makeEnv();
     const order: string[] = [];
-    const module = (can: boolean) => ({
+    const sceneModule = (can: boolean) => ({
       canRender: vi.fn(() => {
         order.push('canRender');
         return can;
@@ -794,7 +816,7 @@ describe('the host at run time', () => {
       }),
       createSky: vi.fn(() => ({}) as LiveController),
     });
-    const able = module(true);
+    const able = sceneModule(true);
     const make = await bindLive(able)('light');
     expect(order).toEqual(['canRender', 'load light blueprint']);
     make({} as HTMLElement, {} as LiveOptions);
@@ -802,11 +824,11 @@ describe('the host at run time', () => {
     // A Whiteprint page asks for no Milky Way (the scene fetches it if the page turns Blueprint).
     env.attrs.set('data-theme', 'whiteprint');
     order.length = 0;
-    await bindLive(module(true))('full');
+    await bindLive(sceneModule(true))('full');
     expect(order).toEqual(['canRender', 'load full whiteprint']);
 
     order.length = 0;
-    const unable = module(false);
+    const unable = sceneModule(false);
     await expect(bindLive(unable)('full')).rejects.toThrow(/webgl/);
     expect(order).toEqual(['canRender']);
     expect(unable.loadSkyData).not.toHaveBeenCalled();

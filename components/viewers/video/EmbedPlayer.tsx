@@ -8,7 +8,7 @@ import { UI } from '@/lib/strings';
 import Poster from '../shared/Poster';
 import ViewerFrame from '../shared/ViewerFrame';
 import { useDocumentVisible } from '../shared/hooks';
-import { claimPlayback, registerPlayer } from './playback';
+import { holdPlayback, registerPlayer } from './playback';
 import styles from './VideoPlayer.module.css';
 
 /** The one player host per provider (docs/V3_PLAN.md D-45). */
@@ -50,8 +50,20 @@ function pauseMessage(provider: EmbedInfo['provider']): string {
  * placeholder) with a notice and a load button; the provider's player loads only after that
  * click, so nothing from the provider reaches the visitor before it. There is no download link:
  * the toolbar links to the video's page on the provider's site instead.
+ *
+ * Once loaded it holds playback (playback.ts): every other player pauses, and no video plays by
+ * itself while it is on the page, since the page cannot hear the provider's player pause. In the
+ * lightbox it sits on the lightbox's layer (`layer`).
  */
-export default function EmbedPlayer({ media, takeFocus = false }: { media: ResolvedMedia; takeFocus?: boolean }) {
+export default function EmbedPlayer({
+  media,
+  takeFocus = false,
+  layer = 0,
+}: {
+  media: ResolvedMedia;
+  takeFocus?: boolean;
+  layer?: number;
+}) {
   const embed = media.embed && isAllowedPlayer(media.embed) ? media.embed : undefined;
   const [address, setAddress] = useState<string | null>(null);
   const loadRef = useRef<HTMLButtonElement>(null);
@@ -73,10 +85,10 @@ export default function EmbedPlayer({ media, takeFocus = false }: { media: Resol
     if (!loaded || !provider) return undefined;
     iframeRef.current?.focus({ preventScroll: true });
     const pause = () => iframeRef.current?.contentWindow?.postMessage(pauseMessage(provider), PLAYER_ORIGINS[provider]);
-    const unregister = registerPlayer(id, pause);
-    claimPlayback(id);
+    const unregister = registerPlayer(id, pause, layer);
+    holdPlayback(id, 'leave');
     return unregister;
-  }, [id, loaded, provider]);
+  }, [id, layer, loaded, provider]);
 
   // A hidden tab pauses the player (docs/V3_PLAN.md D-66).
   useEffect(() => {

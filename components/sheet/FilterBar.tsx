@@ -1,9 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-
 export interface FilterOption {
-  /** Lowercase key from domainKey(), safe in a CSS attribute selector. */
+  /** Lowercase key from domainKey(). */
   key: string;
   label: string;
   count: number;
@@ -11,32 +9,38 @@ export interface FilterOption {
   result: string;
 }
 
-/**
- * The domain filter on /projects (bundle FilterBar, bundle.css 31; docs/V3_PLAN.md D-58): toggle
- * buttons with aria-pressed in a labelled group, "All" first, each with its count, never pills.
- * The result line is announced politely. The cards stay server HTML: choosing a domain writes one
- * CSS rule that hides the cards outside it, so the whole list works with no script. Phones get one
- * row that scrolls sideways. No reflow animation until Phase 5.
- *
- * Every word arrives in props (DomainFilter builds them from lib/strings.ts on the server).
- */
-export default function FilterBar({
-  gridId,
-  label,
-  all,
-  options,
-}: {
-  /** The id of the element that holds the cards (each card carries data-card and data-domains). */
-  gridId: string;
+/** The filter's words and options, built on the server (DomainFilter's domainFilter). */
+export interface FilterWords {
   /** The group's accessible name ("Filter by domain"). */
   label: string;
   all: Omit<FilterOption, 'key'>;
   options: FilterOption[];
+}
+
+/**
+ * The domain filter on /projects (bundle FilterBar, bundle.css 31; docs/V3_PLAN.md D-58): toggle
+ * buttons with aria-pressed in a labelled group, "All" first, each with its count, never pills.
+ * The result line is announced politely. The pressed state and the count change at once, and
+ * focus stays on the pressed button while the cards reflow (motion sheet 7.4; ProjectExplorer owns
+ * the choice and the cards). Phones get one row that scrolls sideways.
+ *
+ * Every word arrives in props (DomainFilter builds them from lib/strings.ts on the server).
+ */
+export default function FilterBar({
+  label,
+  all,
+  options,
+  selected,
+  onSelect,
+  controls,
+}: FilterWords & {
+  /** The chosen option's key; '' is All. */
+  selected: string;
+  onSelect: (key: string) => void;
+  /** The id of the element that holds the cards. */
+  controls?: string;
 }) {
-  const [selected, setSelected] = useState('');
   const chosen = options.find((option) => option.key === selected);
-  const safeKey = chosen ? chosen.key.replace(/[^a-z0-9-]/g, '') : '';
-  const safeGrid = gridId.replace(/[^a-zA-Z0-9_-]/g, '');
   const buttons = [{ key: '', label: all.label, count: all.count }, ...options];
 
   return (
@@ -48,7 +52,8 @@ export default function FilterBar({
             type="button"
             className="ar-filter__btn"
             aria-pressed={selected === option.key}
-            onClick={() => setSelected(option.key)}
+            aria-controls={controls}
+            onClick={() => onSelect(option.key)}
           >
             <span>{option.label}</span>
             <span className="ar-filter__n">{option.count}</span>
@@ -58,7 +63,6 @@ export default function FilterBar({
       <p className="ar-filter__count" aria-live="polite">
         {chosen ? chosen.result : all.result}
       </p>
-      {safeKey ? <style>{`#${safeGrid} [data-card]:not([data-domains~="${safeKey}"]){display:none}`}</style> : null}
     </div>
   );
 }

@@ -9,7 +9,8 @@ import Icon from './Icon';
  * - inline: inside running text; a resting 1 px underline in the rule color takes the link color
  *   on hover, so a link never depends on color alone.
  * - standalone: in lists, link rows and proof links, 44 px tall; the underline draws from the left
- *   on hover. An external standalone link carries the arrow.
+ *   on hover in 150 ms and goes back the same way (motion sheet 7.7), at once under reduced motion;
+ *   focus shows the ring, not the underline. An external standalone link carries the arrow.
  *
  * `href` must already be resolved (lib/links.ts): a link to a hidden or unknown page is plain text,
  * so callers render the words without this component when the resolver returns null.

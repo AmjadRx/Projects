@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
-import DomainFilter from '@/components/sheet/DomainFilter';
+import { domainFilter, domainKeys } from '@/components/sheet/DomainFilter';
 import ProjectCard, { CARD_SIZES } from '@/components/sheet/ProjectCard';
+import ProjectExplorer from '@/components/sheet/ProjectExplorer';
 import { pageMetadata } from '@/lib/meta';
 import { navLabel, siteData } from '@/lib/site';
 import { UI } from '@/lib/strings';
@@ -13,12 +14,18 @@ export function generateMetadata(): Metadata {
 /**
  * Every visible project in sheet order (ARCHITECTURE.md 5; the canvas's Projects board): the
  * heading and one line, the domain filter, and the cards, one column on phones, two from 768 px,
- * three from 1024 px. The cards sit straight in the grid, so a filtered-out card leaves no cell.
+ * three from 1024 px. The cards are drawn here, on the server; ProjectExplorer holds the filter's
+ * choice and moves the cards when it changes (motion sheet 7.4), and a filtered-out card leaves no
+ * cell.
  */
 export default function ProjectsPage() {
   const { site, projects } = siteData();
   const heading = navLabel(site, '/projects', 'Projects');
-  const gridId = 'project-grid';
+  const items = projects.map((project, i) => ({
+    slug: project.slug,
+    domains: domainKeys(project),
+    card: <ProjectCard project={project} headingLevel={2} priority={i < 3} sizes={CARD_SIZES.third} />,
+  }));
   return (
     <section className="hm-wrap pj-index" aria-labelledby="projects-title">
       <header className="pj-index__head">
@@ -27,12 +34,7 @@ export default function ProjectsPage() {
         </h1>
         <p className="pj-sub">{UI.projects.intro}</p>
       </header>
-      <DomainFilter projects={projects} gridId={gridId} />
-      <div id={gridId} className="pj-cards">
-        {projects.map((project, i) => (
-          <ProjectCard key={project.slug} project={project} headingLevel={2} priority={i < 3} sizes={CARD_SIZES.third} />
-        ))}
-      </div>
+      <ProjectExplorer gridId="project-grid" filter={domainFilter(projects)} items={items} />
     </section>
   );
 }

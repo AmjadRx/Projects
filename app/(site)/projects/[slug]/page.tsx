@@ -6,6 +6,7 @@ import { notFound } from 'next/navigation';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import BlockRenderer from '@/components/blocks/BlockRenderer';
 import { CalloutRow, shownCallouts } from '@/components/sheet/callouts';
+import CoverStage from '@/components/sheet/CoverStage';
 import DimensionCallouts from '@/components/sheet/DimensionCallouts';
 import Glass from '@/components/sheet/Glass';
 import Icon from '@/components/sheet/Icon';
@@ -160,9 +161,9 @@ export default async function ProjectPage({ params }: { params: Promise<Params> 
         </div>
 
         <div className="hm-wrap pj-grid">
-          <div className="pj-cover">
+          <CoverStage slug={project.slug}>
             <Cover project={project} cover={cover} />
-          </div>
+          </CoverStage>
 
           <aside className="pj-rail" aria-label={UI.titleBlock.caption}>
             <TitleBlock

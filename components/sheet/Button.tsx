@@ -36,6 +36,11 @@ type PlainButton = Common & { href?: undefined; external?: undefined } & Omit<
  * A button (bundle Button, bundle.css 3): 48 px tall (text buttons 44 px), 2 px corners, the label
  * in Archivo 15 px at width 112. With `href` it is a link that looks like a button. Works in server
  * and client components; it holds no words of its own.
+ *
+ * Its motion is all CSS (motion sheet 7.7; app/sheet.css 3 on the numbers of app/motion-chrome.css):
+ * it sinks 1 px while pressed, a hover fill fades in, the primary button's heat sweep grows from the
+ * left, and a text button's underline draws while its arrow moves 3 px right. Under reduced motion
+ * each state shows at once and the arrow stays put.
  */
 export default function Button(props: LinkButton | PlainButton) {
   const { variant = 'primary', icon, className, children } = props;

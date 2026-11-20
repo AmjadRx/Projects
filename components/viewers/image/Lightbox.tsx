@@ -14,16 +14,17 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
 } from 'react';
-import { createPortal } from 'react-dom';
 import Icon from '@/components/sheet/Icon';
 import { aspectOf, type ResolvedImage, type ResolvedMedia } from '@/lib/media';
 import { UI } from '@/lib/strings';
+import { useMotionOk } from '@/lib/useMotionOk';
 import { cn } from '@/lib/utils';
 import DownloadLink, { failureText } from '../shared/DownloadLink';
 import Poster, { canOptimize } from '../shared/Poster';
 import ViewerErrorBoundary from '../shared/ViewerErrorBoundary';
 import { useFocusTrap } from '../shared/hooks';
 import type { ModelView } from '../types';
+import { ARRIVAL_STYLE, usePhotoArrival } from './arrival';
 import styles from './Lightbox.module.css';
 import { naturalSizeOf, stillOf } from './still';
 import {
@@ -50,6 +51,10 @@ import {
  * never sent whole (docs/V3_PLAN.md R-16). A full-size file that does not load shows the words,
  * the alt text, and Try again. A video or a 3D model opens its own viewer, whose code loads only
  * when such an item is shown.
+ *
+ * It renders inside LazyLightbox's layer on <body> (useLightbox.tsx), which fades it in and out.
+ * A photo on its way leaves the stage empty; after 600 ms a 2 px line runs along the stage's foot,
+ * and the photo fades in over 200 ms once it has decoded (motion sheet 6.4; arrival.tsx).
  */
 export interface LightboxProps {
   items: ResolvedMedia[];
@@ -165,7 +170,7 @@ export default function Lightbox({ items, start, onClose, label, onShown }: Ligh
   // a model shows its caption and download link in its own frame.
   const hasCaption = !isPlayer && (!!item.caption || !!item.file.downloadHref);
 
-  return createPortal(
+  return (
     <div
       ref={dialogRef}
       role="dialog"
@@ -266,8 +271,7 @@ export default function Lightbox({ items, start, onClose, label, onShown }: Ligh
           </p>
         )}
       </div>
-    </div>,
-    document.body,
+    </div>
   );
 }
 
@@ -339,10 +343,14 @@ function PhotoStage({
 }) {
   const stageRef = useRef<HTMLDivElement>(null);
   const boxRef = useRef<HTMLDivElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
   const [fit, setFit] = useState<Rect | null>(null);
   const [sharpness, setSharpness] = useState(1);
   const natural = naturalSizeOf(still);
   const ratio = natural ? natural.width / natural.height : aspectOf(media, 4 / 3);
+  // The photo mounts once the stage is measured; from then on it arrives (arrival.tsx).
+  const motionOk = useMotionOk();
+  const arrival = usePhotoArrival(imageRef, motionOk, fit !== null);
 
   // Callbacks in refs, so a new function from the parent never rebuilds the controller.
   const callbacks = useRef({ onController, onScale, onSwipe });
@@ -404,6 +412,7 @@ function PhotoStage({
         {fit && (
           <div className={styles.photo} style={photoStyle}>
             <Image
+              ref={imageRef}
               src={still.src}
               alt={media.alt}
               fill
@@ -411,12 +420,20 @@ function PhotoStage({
               loading="eager"
               unoptimized={!canOptimize(still.src)}
               draggable={false}
-              className={styles.img}
-              onError={onFail}
+              className={cn(styles.img, 'mm-photo')}
+              data-arrive={arrival.attr}
+              style={ARRIVAL_STYLE}
+              onLoad={arrival.onLoad}
+              onError={() => {
+                arrival.onError();
+                onFail();
+              }}
             />
           </div>
         )}
       </div>
+      {/* The stage stays empty while the photo is on its way; the bundle's line runs along its foot. */}
+      {arrival.waiting && <span className="ar-lightbox__bar" aria-hidden="true" />}
     </div>
   );
 }

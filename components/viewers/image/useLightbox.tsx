@@ -2,11 +2,14 @@
 
 import dynamic from 'next/dynamic';
 import { X } from 'lucide-react';
-import { Component, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { Component, useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import Icon from '@/components/sheet/Icon';
+import { cssEasing, media, toMs } from '@/lib/motion';
 import { UI } from '@/lib/strings';
+import { useMotionOk } from '@/lib/useMotionOk';
 import { useFocusTrap } from '../shared/hooks';
+import { openLayer } from '../video/playback';
 import type { LightboxProps } from './Lightbox';
 
 /**
@@ -17,6 +20,14 @@ import type { LightboxProps } from './Lightbox';
  * cancel the open while the code is on its way.
  */
 const Lightbox = dynamic(() => import('./Lightbox'), { ssr: false, loading: () => null });
+
+/** The lightbox fading in and out (motion sheet 6.4), for app/motion-media.css. */
+const LAYER_STYLE = {
+  '--mm-lb-in': `${toMs(media.gallery.lightboxIn.duration)}ms`,
+  '--mm-lb-in-ease': cssEasing(media.gallery.lightboxIn.ease),
+  '--mm-lb-out': `${toMs(media.gallery.lightboxOut.duration)}ms`,
+  '--mm-lb-out-ease': cssEasing(media.gallery.lightboxOut.ease),
+} as CSSProperties;
 
 /**
  * Shown for the moment the lightbox code takes to arrive: the lightbox itself (bundle Lightbox,
@@ -30,7 +41,7 @@ function LightboxLoading({ label, onClose }: { label: string; onClose: () => voi
   // Focus returns to the opener through useLightbox when the open is cancelled; when the lightbox
   // takes over, focus is already inside it and stays there.
   useFocusTrap(coverRef, true, onClose, { restoreFocus: false });
-  return createPortal(
+  return (
     <div ref={coverRef} role="dialog" aria-modal="true" aria-label={label} aria-busy="true" className="ar-lightbox ar-lightbox--one">
       <div className="ar-lightbox__top">
         <button type="button" className="ar-iconbtn" onClick={onClose} aria-label={UI.viewers.close} title={UI.viewers.close}>
@@ -44,8 +55,7 @@ function LightboxLoading({ label, onClose }: { label: string; onClose: () => voi
         </span>
       </div>
       <div className="ar-lightbox__bottom" aria-hidden="true" />
-    </div>,
-    document.body,
+    </div>
   );
 }
 
@@ -73,15 +83,48 @@ class LightboxBoundary extends Component<
 /**
  * The lightbox, fetched on first use. Render it only while it is open: closing it (from the
  * loading cover too) unmounts it, so code that arrives after a cancel opens nothing.
+ *
+ * Motion (motion sheet 6.4): the loading cover and the lightbox share one layer on <body>, which
+ * fades in over the page in 200 ms when it opens and out in 150 ms when it closes, then unmounts,
+ * and focus goes back to the opener. While it fades out a shield takes any click, so a quick second
+ * click lands on nothing. Without motion (reduced motion, /admin) it opens and closes at once. While
+ * it is open the page's players pause, and only the lightbox's own may play by themselves
+ * (components/viewers/video/playback.ts).
  */
 export function LazyLightbox(props: LightboxProps) {
+  const { onClose } = props;
+  const motionOk = useMotionOk();
   const [shown, setShown] = useState(false);
+  const [closing, setClosing] = useState(false);
   const onShown = useCallback(() => setShown(true), []);
-  return (
-    <LightboxBoundary onError={props.onClose}>
-      {!shown && <LightboxLoading label={props.label ?? UI.viewers.image.lightbox} onClose={props.onClose} />}
-      <Lightbox {...props} onShown={onShown} />
-    </LightboxBoundary>
+
+  useEffect(() => openLayer(), []);
+
+  const requestClose = useCallback(() => {
+    if (motionOk) setClosing(true);
+    else onClose();
+  }, [motionOk, onClose]);
+
+  useEffect(() => {
+    if (!closing) return undefined;
+    const timer = window.setTimeout(onClose, toMs(media.gallery.lightboxOut.duration));
+    return () => window.clearTimeout(timer);
+  }, [closing, onClose]);
+
+  return createPortal(
+    <div
+      className="mm-lb"
+      data-motion={motionOk ? '' : undefined}
+      data-closing={closing ? '' : undefined}
+      style={LAYER_STYLE}
+    >
+      <LightboxBoundary onError={onClose}>
+        {!shown && <LightboxLoading label={props.label ?? UI.viewers.image.lightbox} onClose={requestClose} />}
+        <Lightbox {...props} onClose={requestClose} onShown={onShown} />
+      </LightboxBoundary>
+      {closing && <div className="mm-lb__shield" aria-hidden="true" />}
+    </div>,
+    document.body,
   );
 }
 

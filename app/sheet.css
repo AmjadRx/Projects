@@ -113,6 +113,12 @@
 
 /* ---------- 3. Buttons ---------- */
 
+/* The motion (motion sheet 7.7) runs on the numbers of lib/motion.ts `page`, as custom properties
+   from app/motion-chrome.css: the press sinks 1 px in 120 ms, the hover fill fades in over 150 ms,
+   the primary button's heat sweep grows in 240 ms, a text button's underline draws and its arrow
+   nudges 3 px in 150 ms. Hover states, here, in sections 4, 7, 8 and 13, and on the footer's
+   pause control (section 23), are for a mouse or a pen only, `(hover: hover) and (pointer: fine)`:
+   on a touch screen :hover stays after a tap. The press and the focus ring answer every input. */
 .ar-btn {
   position: relative; isolation: isolate;
   display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
@@ -121,24 +127,22 @@
   font-family: var(--font-sans); font-size: 15px; line-height: 1.2; font-weight: 600;
   font-variation-settings: "wdth" 112; letter-spacing: 0.005em;
   text-decoration: none; white-space: nowrap; cursor: pointer; overflow: hidden;
-  transition: transform 120ms var(--ease-out);
+  transition: transform var(--page-press);
   -webkit-tap-highlight-color: transparent;
 }
-.ar-btn::before { content: ""; position: absolute; inset: 0; z-index: -1; opacity: 0; transition: opacity 150ms ease-out; }
-.ar-btn:active { transform: translateY(1px); }
+.ar-btn::before { content: ""; position: absolute; inset: 0; z-index: -1; opacity: 0; transition: opacity var(--page-fill); }
+.ar-btn:active { transform: translateY(var(--page-press-distance)); }
 
 .ar-btn--primary { background-color: var(--action); color: var(--on-action); }
 .ar-btn__sweep {
   position: absolute; left: 0; right: 0; bottom: 0; height: 3px;
   background-image: var(--heat-sweep);
   transform: scaleX(0); transform-origin: left center;
-  transition: transform 240ms var(--ease-out);
+  transition: transform var(--page-sweep);
 }
-.ar-btn--primary:hover .ar-btn__sweep { transform: scaleX(1); }
 
 .ar-btn--secondary { background-color: var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); border-color: var(--line); color: var(--ink); }
 .ar-btn--secondary::before { background-color: var(--sheet-3); }
-.ar-btn--secondary:hover::before { opacity: 1; }
 
 .ar-btn--text {
   min-height: var(--touch-target); padding: 0 var(--space-1);
@@ -148,11 +152,16 @@
 .ar-btn--text .ar-btn__label::after {
   content: ""; position: absolute; left: 0; right: 0; bottom: -3px; height: 1px;
   background-color: currentColor; transform: scaleX(0); transform-origin: left center;
-  transition: transform 150ms ease-out;
+  transition: transform var(--page-underline);
 }
-.ar-btn--text:hover .ar-btn__label::after { transform: scaleX(1); }
-.ar-btn--text .ar-icon { transition: transform 150ms ease-out; }
-.ar-btn--text:hover .ar-icon { transform: translateX(3px); }
+.ar-btn--text .ar-icon { transition: transform var(--page-nudge); }
+
+@media (hover: hover) and (pointer: fine) {
+  .ar-btn--primary:hover .ar-btn__sweep { transform: scaleX(1); }
+  .ar-btn--secondary:hover::before { opacity: 1; }
+  .ar-btn--text:hover .ar-btn__label::after { transform: scaleX(1); }
+  .ar-btn--text:hover .ar-icon { transform: translateX(var(--page-nudge-distance)); }
+}
 
 /* Disabled: drawn in phantom line, the convention for what is not available. */
 .ar-btn:disabled, .ar-btn[aria-disabled="true"] {
@@ -168,11 +177,13 @@
   display: inline-grid; place-items: center; width: var(--touch-target); height: var(--touch-target);
   margin: 0; padding: 0; border: 1px solid var(--line); border-radius: var(--radius);
   background: transparent; color: var(--ink); cursor: pointer;
-  transition: transform 120ms var(--ease-out);
+  transition: transform var(--page-press);
 }
-.ar-iconbtn::before { content: ""; position: absolute; inset: 0; z-index: -1; background-color: var(--sheet-3); opacity: 0; transition: opacity 150ms ease-out; }
-.ar-iconbtn:hover::before { opacity: 1; }
-.ar-iconbtn:active { transform: translateY(1px); }
+.ar-iconbtn::before { content: ""; position: absolute; inset: 0; z-index: -1; background-color: var(--sheet-3); opacity: 0; transition: opacity var(--page-fill); }
+@media (hover: hover) and (pointer: fine) {
+  .ar-iconbtn:hover::before { opacity: 1; }
+}
+.ar-iconbtn:active { transform: translateY(var(--page-press-distance)); }
 .ar-iconbtn:disabled { border-style: dashed; border-color: var(--ink-mute); color: var(--ink-mute); cursor: not-allowed; transform: none; }
 .ar-iconbtn:disabled::before { display: none; }
 
@@ -183,25 +194,30 @@
   text-decoration-line: underline; text-decoration-thickness: 1px;
   text-underline-offset: 0.22em; text-decoration-color: var(--rule);
 }
-.ar-link--inline:hover { text-decoration-color: currentColor; }
 .ar-link--standalone {
   display: inline-flex; align-items: center; gap: var(--space-1);
   min-height: var(--touch-target); font-weight: 500;
 }
 .ar-link__text { position: relative; }
+/* The underline draws from the left on hover and goes back the same way on leave, in 150 ms
+   (motion sheet 7.7, app/motion-chrome.css); focus shows the ring, not the underline. */
 .ar-link--standalone .ar-link__text::after {
   content: ""; position: absolute; left: 0; right: 0; bottom: -2px; height: 1px;
   background-color: currentColor; transform: scaleX(0); transform-origin: left center;
-  transition: transform 150ms ease-out;
+  transition: transform var(--page-underline);
 }
-.ar-link--standalone:hover .ar-link__text::after { transform: scaleX(1); }
 
 /* site: links inside content Markdown that sits in a sheet component take the inline link style. */
 .ar-rev__text a, .ar-callout__text a {
   color: var(--line); text-decoration-line: underline; text-decoration-thickness: 1px;
   text-underline-offset: 0.22em; text-decoration-color: var(--rule);
 }
-.ar-rev__text a:hover, .ar-callout__text a:hover { text-decoration-color: currentColor; }
+
+@media (hover: hover) and (pointer: fine) {
+  .ar-link--inline:hover { text-decoration-color: currentColor; }
+  .ar-link--standalone:hover .ar-link__text::after { transform: scaleX(1); }
+  .ar-rev__text a:hover, .ar-callout__text a:hover { text-decoration-color: currentColor; }
+}
 
 /* ---------- 5. Availability badge (the only pill) ---------- */
 
@@ -227,7 +243,9 @@
   background: transparent; color: var(--ink-dim);
   font-family: var(--font-sans); font-size: 15px; line-height: 1.2; font-weight: 500; cursor: pointer;
 }
-.ar-theme__opt:hover { color: var(--ink); }
+@media (hover: hover) and (pointer: fine) {
+  .ar-theme__opt:hover { color: var(--ink); }
+}
 /* site: the active option follows the page's theme, so it is right from the first paint, before the
    buttons' aria-pressed is set in the browser. */
 html[data-theme="blueprint"] .ar-theme__opt[data-value="blueprint"],
@@ -259,17 +277,21 @@ html[data-theme="whiteprint"] .ar-theme__opt[data-value="whiteprint"] { backgrou
 }
 .ar-nav__link::after {
   content: ""; position: absolute; left: 0; right: 0; bottom: 10px; height: 1px;
-  background-color: var(--line); transform: scaleX(0); transform-origin: left center; transition: transform 150ms ease-out;
+  background-color: var(--line); transform: scaleX(0); transform-origin: left center; transition: transform var(--page-underline);
 }
-.ar-nav__link:hover { color: var(--ink); }
-.ar-nav__link:hover::after { transform: scaleX(1); }
+@media (hover: hover) and (pointer: fine) {
+  .ar-nav__link:hover { color: var(--ink); }
+  .ar-nav__link:hover::after { transform: scaleX(1); }
+}
 /* site: "page" on the page itself, "true" on a page under it (a project under Projects). */
 .ar-nav__link[aria-current] { color: var(--ink); }
 .ar-nav__link[aria-current]::after { transform: scaleX(1); height: 2px; }
 .ar-nav__tools { display: flex; align-items: center; gap: var(--space-3); margin-left: auto; }
 .ar-nav__tools .ar-nav__desk { display: none; }
 .ar-nav__social { place-items: center; width: var(--touch-target); height: var(--touch-target); border-radius: var(--radius); color: var(--ink-dim); }
-.ar-nav__social:hover { color: var(--ink); }
+@media (hover: hover) and (pointer: fine) {
+  .ar-nav__social:hover { color: var(--ink); }
+}
 /* site: LinkedIn and GitHub keep their words in the nav (CONTENT_RULES.md 4): icon and word. */
 .ar-nav__social--word {
   gap: var(--space-2); width: auto; padding: 0 var(--space-1);
@@ -315,7 +337,8 @@ html[data-theme="whiteprint"] .ar-theme__opt[data-value="whiteprint"] { backgrou
 }
 .ar-sheetframe__cols > li + li::before { content: ""; position: absolute; left: 0; bottom: 0; width: 1px; height: 6px; background-color: var(--rule); }
 .ar-sheetframe__rows > li + li::before { content: ""; position: absolute; top: 0; right: 0; width: 6px; height: 1px; background-color: var(--rule); }
-/* The lit zone follows scroll in Phase 5; nothing sets it yet. */
+/* The lit zone: components/site/LitZone.tsx moves it to the zone of the page progress, at once, as
+   a state (motion sheet 7.1). */
 .ar-sheetframe__rows > li.is-lit { color: var(--line); font-weight: 700; }
 .ar-sheetframe__rows > li.is-lit::after { content: ""; position: absolute; top: 0; bottom: 0; right: -1px; width: 2px; background-color: var(--line); }
 
@@ -368,20 +391,17 @@ html[data-theme="whiteprint"] .ar-theme__opt[data-value="whiteprint"] { backgrou
 .ar-dim__plates { position: absolute; inset: 0; pointer-events: none; }
 .ar-dim__case { fill: none; stroke: var(--sheet); stroke-width: 4; stroke-linecap: square; }
 .ar-dim__ln { fill: none; stroke: var(--line); stroke-width: 1.5; stroke-linecap: square; }
-/* Hidden until drawn: on the project page at once, on a card while it is hovered. No draw-in
-   motion until Phase 5. */
-.ar-dim__draw { stroke-dasharray: 1; stroke-dashoffset: 1; }
-.ar-dim__arrow { fill: var(--line); stroke: var(--sheet); stroke-width: 1.5; paint-order: stroke; opacity: 0; }
+/* site: the lines draw, and the arrowheads and plates fade, through Motion (DimensionFigure; motion
+   sheet 5.3): on a card while a mouse or pen is over it, on the project page once its cover has
+   landed. Each part carries its own drawn state, so nothing here hides or shows them. */
+.ar-dim__arrow { fill: var(--line); stroke: var(--sheet); stroke-width: 1.5; paint-order: stroke; }
 .ar-dim__plate {
   position: absolute; display: inline-flex; align-items: baseline; gap: var(--space-2);
   padding: 4px var(--space-2); background-color: var(--sheet); border: 1px solid var(--line); border-radius: var(--radius);
-  white-space: nowrap; opacity: 0;
+  white-space: nowrap;
 }
 .ar-dim__plate .ar-dim__label { font-size: 13px; line-height: 1.3; font-weight: 500; color: var(--ink-dim); }
 .ar-dim__plate .ar-dim__value { font-family: var(--font-mono); font-size: 15px; line-height: 1.3; color: var(--ink); }
-.ar-dim.is-drawn .ar-dim__draw, .ar-card:hover .ar-dim__draw { stroke-dashoffset: 0; }
-.ar-dim.is-drawn .ar-dim__arrow, .ar-card:hover .ar-dim__arrow,
-.ar-dim.is-drawn .ar-dim__plate, .ar-card:hover .ar-dim__plate { opacity: 1; }
 
 .ar-dim__row {
   display: none; margin: var(--space-3) 0 0; padding: 0 0 0 var(--space-3); list-style: none;
@@ -475,14 +495,18 @@ html[data-theme="whiteprint"] .ar-theme__opt[data-value="whiteprint"] { backgrou
   width: 100%; padding: var(--space-5) var(--space-4) var(--space-5);
   color: inherit; text-decoration: none;
 }
-.ar-readout::before { content: ""; position: absolute; inset: 0; z-index: -1; background-color: var(--sheet-2); opacity: 0; transition: opacity 150ms ease-out; }
-.ar-readout:hover::before { opacity: 1; }
+/* On hover the fill fades in and the arrow moves 3 px to the right, in 150 ms (motion sheet 7.7,
+   app/motion-chrome.css). The count-up is the Motion+ step's. */
+.ar-readout::before { content: ""; position: absolute; inset: 0; z-index: -1; background-color: var(--sheet-2); opacity: 0; transition: opacity var(--page-readout-fill); }
 .ar-readout:focus-visible { outline-offset: -2px; }
 .ar-readout__value { display: flex; align-items: baseline; gap: 2px; margin: 0; padding-right: 20px; color: var(--ink); white-space: nowrap; }
 .ar-readout__affix { color: var(--ink-dim); font-size: 0.5em; letter-spacing: 0; }
 .ar-readout__label { margin: 0; font-size: 15px; line-height: 1.45; font-weight: 500; color: var(--ink-dim); }
-.ar-readout__go { position: absolute; top: var(--space-4); right: var(--space-3); color: var(--ink-mute); transition: transform 150ms ease-out; }
-.ar-readout:hover .ar-readout__go { color: var(--line); transform: translate(2px, -2px); }
+.ar-readout__go { position: absolute; top: var(--space-4); right: var(--space-3); color: var(--ink-mute); transition: transform var(--page-nudge); }
+@media (hover: hover) and (pointer: fine) {
+  .ar-readout:hover::before { opacity: 1; }
+  .ar-readout:hover .ar-readout__go { color: var(--line); transform: translateX(var(--page-nudge-distance)); }
+}
 
 /* ---------- 14. Title block ---------- */
 
@@ -622,7 +646,8 @@ html[data-theme="whiteprint"] .ar-theme__opt[data-value="whiteprint"] { backgrou
 
 /* ---------- 17. Project card ---------- */
 
-/* The tilt toward the pointer and the highlight along the rim arrive with Phase 5. */
+/* site: the tilt toward the pointer and the light along the rim are CardShell's, through Motion
+   (motion sheet 5; the rim's styles are in app/motion-cards.css). */
 .ar-card {
   position: relative; display: flex; flex-direction: column; min-width: 0;
   background-color: var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter);
@@ -640,9 +665,8 @@ html[data-theme="whiteprint"] .ar-theme__opt[data-value="whiteprint"] { backgrou
 .ar-card__link::after { content: ""; position: absolute; inset: 0; z-index: 2; }
 .ar-card__pitch { margin: 0; font-size: 17px; line-height: 1.6; color: var(--ink-dim); }
 .ar-card__status { margin: 0; font-family: var(--font-mono); font-size: 13px; line-height: 1.5; color: var(--ink-mute); }
+/* site: the arrow's 3 px nudge on hover is OpenCue's, through Motion, so it stays put under reduced motion. */
 .ar-card__open { display: inline-flex; align-items: center; gap: var(--space-1); margin-top: var(--space-2); font-size: 15px; font-weight: 600; font-variation-settings: "wdth" 112; color: var(--line); }
-.ar-card__open .ar-icon { transition: transform 150ms ease-out; }
-.ar-card:hover .ar-card__open .ar-icon { transform: translateX(3px); }
 @container frame (min-width: 1024px) {
   .ar-card__body { padding: var(--space-5); }
   .ar-card--featured { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
@@ -746,8 +770,9 @@ html[data-theme="whiteprint"] .ar-theme__opt[data-value="whiteprint"] { backgrou
 
 /* ---------- 19. Phone menu ---------- */
 
-/* The sheet is open at once; the unroll from the top arrives with Phase 5. The menu is drawn in a
-   portal on <body>, outside the page frame, so it carries its own type. */
+/* The sheet unrolls from the top and rolls back up (components/site/menuMotion.ts, motion sheet
+   7.5; its edge line is in app/motion-chrome.css), at once under reduced motion. The menu is drawn
+   in a portal on <body>, outside the page frame, so it carries its own type. */
 .ar-mmenu {
   position: fixed; inset: 0; z-index: 60; overflow: hidden;
   color: var(--ink); font-family: var(--font-sans); font-size: 17px; line-height: 1.65; font-variation-settings: "wdth" 100;
@@ -919,8 +944,9 @@ html[data-theme="whiteprint"] .ar-theme__opt[data-value="whiteprint"] { backgrou
 /* The dawn, Blueprint only: the thermal ramp rising from the horizon over a band 0.42 of the
    horizon's height, in the live sky's four stops. Its opacity follows the page from --sky-dawn-min
    at the top to --sky-dawn-max at the end, with no easing: here where the browser ties an
-   animation to scroll, else from Motion's scroll progress (Sky.tsx). Under reduced motion the
-   animation is off and the dawn holds at the top-of-page strength. */
+   animation to scroll, else from Motion's scroll progress (Sky.tsx). Under reduced motion, and
+   while the visitor has paused motion (D-67), the animation is off and the dawn holds at the
+   top-of-page strength. */
 .ar-sky__dawn {
   left: 0; right: 0; bottom: calc(100% - var(--horizon)); height: calc(var(--horizon) * 0.42);
   background-image: linear-gradient(0deg,
@@ -933,7 +959,7 @@ html[data-theme="whiteprint"] .ar-theme__opt[data-value="whiteprint"] { backgrou
 }
 [data-theme="whiteprint"] .ar-sky__dawn { display: none; }
 @supports (animation-timeline: scroll()) {
-  .ar-sky__dawn { animation: ar-sky-dawn auto linear both; animation-timeline: scroll(root block); }
+  :root:not([data-motion-paused]) .ar-sky__dawn { animation: ar-sky-dawn auto linear both; animation-timeline: scroll(root block); }
 }
 @keyframes ar-sky-dawn {
   from { opacity: var(--sky-dawn-min); }
@@ -958,7 +984,9 @@ html[data-theme="whiteprint"] .ar-theme__opt[data-value="whiteprint"] { backgrou
   font: inherit; text-decoration-line: underline; text-decoration-thickness: 1px;
   text-underline-offset: 0.22em; text-decoration-color: var(--rule);
 }
-.ar-foot__pause:hover { text-decoration-color: currentColor; }
+@media (hover: hover) and (pointer: fine) {
+  .ar-foot__pause:hover { text-decoration-color: currentColor; }
+}
 
 /* ---------- 24. Glass panel ---------- */
 
@@ -1151,7 +1179,7 @@ html[data-theme="whiteprint"] .ar-theme__opt[data-value="whiteprint"] { backgrou
 .ar-repo__meta > span { white-space: nowrap; }
 .ar-repo__key { margin-right: var(--space-1); font-family: var(--font-sans); color: var(--ink-mute); }
 
-/* ---------- 28. Card covers that move: video and 3D model (at rest; the motion is Phase 5) ---------- */
+/* ---------- 28. Card covers that move: video and 3D model (the motion is CardCover's; its layers are in app/motion-cards.css) ---------- */
 
 .ar-card__motion { position: relative; }
 .ar-card__motion > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }

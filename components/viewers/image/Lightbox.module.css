@@ -1,9 +1,9 @@
 /*
  * The lightbox's parts that the bundle's .ar-lightbox (app/sheet.css 18) does not draw: the zoom
  * group, the caption line, the photo stage's zoom and pan, and the players. Night in both themes,
- * 44 px controls (D-67). Nothing here animates. The dialog is a portal on <body>, outside the page
- * frame, so it is its own container, named `frame` too: a player inside it reads the window's
- * width as it would read the page frame's.
+ * 44 px controls (D-67). Nothing here animates (the fades are app/motion-media.css). The dialog
+ * sits in a layer on <body>, outside the page frame, so it is its own container, named `frame`
+ * too: a player inside it reads the window's width as it would read the page frame's.
  */
 .dialog {
   container: lightbox frame / inline-size;
@@ -104,6 +104,13 @@
 .img {
   object-fit: contain;
   -webkit-user-drag: none;
+}
+
+/* The loading line (the bundle's .ar-lightbox__bar) sits at the stage's foot: the photo stage is
+   already 16 px in from each side, so inside it the line spans it edge to edge. */
+.photoStage :global(.ar-lightbox__bar) {
+  left: 0;
+  right: 0;
 }
 
 .playerArea {

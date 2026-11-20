@@ -8,51 +8,64 @@
  * measured data." in the well's bottom left corner.
  *
  * This shell is all a page ships: the poster, the toolbar, and the state. The engine
- * (ModelEngine.tsx, with three.js) loads with next/dynamic only when the viewer may run: in view
- * on a desktop with a fine pointer, on a tap on phones and tablets or on a slow connection, and
- * at once inside the lightbox. At most two 3D viewers render at a time (activeViewers.ts); a
- * viewer asked to step back unmounts its canvas and shows its poster with a resume button.
+ * (ModelEngine.tsx, with three.js) loads with next/dynamic only when the viewer may run: within
+ * 200 px of the view on a desktop with a fine pointer, on a tap on phones and tablets or on a slow
+ * connection, and at once inside the lightbox. At most two 3D viewers render at a time
+ * (activeViewers.ts); a viewer asked to step back unmounts its canvas and shows its poster with a
+ * resume button.
+ *
+ * Motion (sheet 6.3, through useModelMotion): the model turns until first touched; the "Drag to
+ * orbit" hint fades out after the first touch; the exploded view follows the slider's thumb
+ * exactly, and an arrow key steps it 0.1 with the parts settling over 160 ms. Without motion the
+ * hint goes and the keys step at once.
  *
  * Models carry no download link by default (docs/V3_PLAN.md Q-24): the file is the owner's
  * design geometry. The text alternative is the content's alt text.
  */
 import dynamic from 'next/dynamic';
 import { Box, ChevronDown, ChevronUp, Home, Play, RotateCcw, RotateCw, ZoomIn, ZoomOut, type LucideIcon } from 'lucide-react';
-import { useCallback, useEffect, useId, useRef, useState, type FocusEvent } from 'react';
+import { animate, useMotionValue, type AnimationPlaybackControls } from 'motion/react';
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type CSSProperties,
+  type FocusEvent,
+  type KeyboardEvent,
+  type ReactNode,
+} from 'react';
 import Icon from '@/components/sheet/Icon';
+import { media as mediaMotion } from '@/lib/motion';
 import { UI } from '@/lib/strings';
 import { cn } from '@/lib/utils';
 import Poster from '../shared/Poster';
 import TapToLoad from '../shared/TapToLoad';
 import ViewerErrorBoundary from '../shared/ViewerErrorBoundary';
-import ViewerFrame from '../shared/ViewerFrame';
+import ViewerFrame, { useViewerFrame, type ViewerFrameContextValue } from '../shared/ViewerFrame';
 import { claimViewerSlot, releaseViewerSlot, touchViewerSlot } from '../shared/activeViewers';
-import { useDocumentVisible, useInView, useReducedMotion } from '../shared/hooks';
+import { useDocumentVisible, useInView } from '../shared/hooks';
 import { useViewerActivation } from '../shared/useViewerActivation';
 import type { ModelView, ModelViewerProps } from '../types';
 import { ROTATE_STEP, ZOOM_STEP, type EngineHandle, type EnginePart } from './engine-types';
 import styles from './ModelViewer.module.css';
+import Notice from './Notice';
+import { HINT_FADE_VARS, stepExplode } from './orbit';
+import { useModelMotion } from './useModelMotion';
+import { supportsWebGL2 } from './webgl';
 
 const ModelEngine = dynamic(() => import('./ModelEngine'), { ssr: false, loading: () => null });
 
 /** The well (bundle MediaFrame): 16:10. */
 const MODEL_ASPECT = 16 / 10;
 
-let webgl2: boolean | undefined;
+/** The slider's scale: 0 to 100, for 0 to 1 of the exploded view. */
+const EXPLODE_STEPS = 100;
 
-/** three.js needs WebGL 2. Checked once per page, on the first viewer that tries to start. */
-function supportsWebGL2(): boolean {
-  if (webgl2 === undefined) {
-    try {
-      const canvas = document.createElement('canvas');
-      const context = canvas.getContext('webgl2');
-      webgl2 = context !== null;
-      context?.getExtension('WEBGL_lose_context')?.loseContext();
-    } catch {
-      webgl2 = false;
-    }
-  }
-  return webgl2;
+/** Hands the engine the frame's full-screen state and description, which live in ViewerFrame's context. */
+function FrameBridge({ children }: { children: (frame: ViewerFrameContextValue) => ReactNode }) {
+  return <>{children(useViewerFrame())}</>;
 }
 
 function ToolButton({
@@ -73,18 +86,6 @@ function ToolButton({
   );
 }
 
-/** A short line on a night plate over the poster: why the engine is not running. */
-function Notice({ text, onShown }: { text: string; onShown?: () => void }) {
-  useEffect(() => {
-    onShown?.();
-  }, [onShown]);
-  return (
-    <p role="status" className="ar-mv__note">
-      {text}
-    </p>
-  );
-}
-
 export default function ModelViewer({ media, views, explode: offerExplode, callouts, inLightbox = false }: ModelViewerProps) {
   const offered: ModelView[] = views.length > 0 ? views : ['realistic'];
   const slotId = useId();
@@ -94,10 +95,13 @@ export default function ModelViewer({ media, views, explode: offerExplode, callo
   const { active, requiresTap, activate } = useViewerActivation(wellRef, 'view-or-tap');
   const documentVisible = useDocumentVisible();
   const inView = useInView(wellRef);
-  const reducedMotion = useReducedMotion();
+  const motion = useModelMotion();
 
   const [view, setView] = useState<ModelView>(offered[0]);
+  /** The slider's value, 0 to EXPLODE_STEPS; the parts follow `explode`, which eases after a key. */
   const [explodeAmount, setExplodeAmount] = useState(0);
+  const explode = useMotionValue(0);
+  const explodeEase = useRef<AnimationPlaybackControls | null>(null);
   const [hovered, setHovered] = useState<string | null>(null);
   const [pinned, setPinned] = useState<string | null>(null);
   const [parts, setParts] = useState<EnginePart[] | null>(null);
@@ -174,6 +178,30 @@ export default function ModelViewer({ media, views, explode: offerExplode, callo
     if (event.currentTarget.matches(':focus-visible')) setHovered(id);
   };
 
+  // Sheet 6.3: the parts follow the thumb exactly.
+  const setExplodeTo = (steps: number) => {
+    explodeEase.current?.stop();
+    setExplodeAmount(steps);
+    explode.set(steps / EXPLODE_STEPS);
+    interact();
+  };
+
+  // Sheet 6.3: an arrow key moves the thumb 0.1 at once and the parts settle there over 160 ms.
+  const onExplodeKey = (event: KeyboardEvent<HTMLInputElement>) => {
+    const direction = event.key === 'ArrowRight' || event.key === 'ArrowUp' ? 1 : event.key === 'ArrowLeft' || event.key === 'ArrowDown' ? -1 : 0;
+    if (direction === 0 || event.altKey || event.ctrlKey || event.metaKey) return;
+    event.preventDefault();
+    const next = stepExplode(explodeAmount / EXPLODE_STEPS, direction);
+    explodeEase.current?.stop();
+    setExplodeAmount(Math.round(next * EXPLODE_STEPS));
+    const { keyDuration, keyEase } = mediaMotion.model.explode;
+    if (motion) explodeEase.current = animate(explode, next, { duration: keyDuration, ease: keyEase });
+    else explode.set(next);
+    interact();
+  };
+
+  useEffect(() => () => explodeEase.current?.stop(), []);
+
   const live = engineOn && !failed;
   // A hover preview cannot outlive the engine (disabled buttons get no pointer-leave).
   useEffect(() => {
@@ -218,8 +246,11 @@ export default function ModelViewer({ media, views, explode: offerExplode, callo
           <ToolButton label={UI.viewers.zoomOut} icon={ZoomOut} disabled={controlsDisabled} onClick={command((api) => api.zoom(ZOOM_STEP))} />
           <ToolButton label={UI.viewers.resetView} icon={Home} disabled={controlsDisabled} onClick={command((api) => api.reset())} />
         </div>
-        {/* Until the first touch; it keeps its place after, so the bar never moves. */}
-        <span className={cn('ar-mv__hint', (touched || failed || webgl === false) && styles.hintHidden)}>
+        {/* Until the first touch, then it fades; it keeps its place after, so the bar never moves. */}
+        <span
+          className={cn('ar-mv__hint', styles.hint, (touched || failed || webgl === false) && styles.hintHidden)}
+          style={motion ? (HINT_FADE_VARS as CSSProperties) : undefined}
+        >
           {UI.viewers.model.hint}
         </span>
       </div>
@@ -231,15 +262,13 @@ export default function ModelViewer({ media, views, explode: offerExplode, callo
               <input
                 type="range"
                 min={0}
-                max={100}
+                max={EXPLODE_STEPS}
                 step={1}
                 value={explodeAmount}
                 disabled={controlsDisabled || explodeHidden}
                 aria-valuetext={`${explodeAmount}%`}
-                onChange={(event) => {
-                  setExplodeAmount(Number(event.target.value));
-                  interact();
-                }}
+                onKeyDown={onExplodeKey}
+                onChange={(event) => setExplodeTo(Number(event.target.value))}
               />
             </label>
           )}
@@ -294,21 +323,27 @@ export default function ModelViewer({ media, views, explode: offerExplode, callo
         {!(live && ready) && (media.poster || !(requiresTap && !started)) && <Poster media={media} wellAspect={MODEL_ASPECT} />}
         {engineOn && (
           <ViewerErrorBoundary fallback={<Notice text={UI.viewers.model.failed} onShown={handleFailed} />}>
-            <ModelEngine
-              src={media.file.src}
-              view={view}
-              explode={explodeAmount / 100}
-              highlight={hovered ?? pinned}
-              autoTurn={!reducedMotion && !touched}
-              running={documentVisible && inView}
-              reducedMotion={reducedMotion}
-              callouts={callouts}
-              handleRef={handleRef}
-              autoFocus={focusEngine}
-              onReady={handleReady}
-              onInteract={interact}
-              onContextLost={handleContextLost}
-            />
+            <FrameBridge>
+              {(frame) => (
+                <ModelEngine
+                  src={media.file.src}
+                  view={view}
+                  explode={explode}
+                  highlight={hovered ?? pinned}
+                  autoTurn={motion && !touched}
+                  running={documentVisible && inView}
+                  motion={motion}
+                  fullscreen={frame.isFullscreen}
+                  descriptionId={frame.descriptionId}
+                  callouts={callouts}
+                  handleRef={handleRef}
+                  autoFocus={focusEngine}
+                  onReady={handleReady}
+                  onInteract={interact}
+                  onContextLost={handleContextLost}
+                />
+              )}
+            </FrameBridge>
           </ViewerErrorBoundary>
         )}
         {requiresTap && !started && (

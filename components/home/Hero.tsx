@@ -5,10 +5,15 @@ import AvailabilityBadge from '@/components/sheet/AvailabilityBadge';
 import Button from '@/components/sheet/Button';
 import Placeholder from '@/components/sheet/Placeholder';
 import Poster, { canOptimize } from '@/components/viewers/shared/Poster';
+import Headline from './hero/Headline';
+import HeroDrawing from './hero/HeroDrawing';
 import HeroVideo from './HeroVideo';
+import HeroModel from './hero/HeroModel';
 import { gpaText, hasText } from '@/lib/format';
+import { introScript } from '@/lib/intro';
 import { aspectOf, objectPosition, type ResolvedMedia } from '@/lib/media';
 import { resolveMedia } from '@/lib/media-server';
+import { load, toMs } from '@/lib/motion';
 import { UI } from '@/lib/strings';
 import type { Project, Site } from '@/lib/types';
 
@@ -20,6 +25,9 @@ const COLUMN_SIZES = '(min-width: 1024px) 40vw, (min-width: 768px) 28rem, 90vw';
 
 /** The visual's frame when nothing is uploaded: the drawing's box (600 by 560), so the hero keeps its shape. */
 const EMPTY_RATIO = 600 / 560;
+
+/** The headline's give-up (sheet 2.4), which app/motion-drawing.css reads from the section. */
+const HEADLINE_STYLE = { '--hm-headline-giveup': `${toMs(load.headline.giveUpAfter)}ms` } as CSSProperties;
 
 /**
  * `sizes` for the hero visual. The well is capped at 78vh, so a tall picture is drawn
@@ -95,17 +103,46 @@ function HeroVisual({ media }: { media: ResolvedMedia | null }) {
 }
 
 /**
+ * The hero visual by `settings.heroMode` (ARCHITECTURE.md 6), the one place the mode is read:
+ * `drawing` is Raven in plan view with the thermal lens; `media` the owner's photo or video, with
+ * the lens off. `model` shows the drawing until the owner's model hero joins here
+ * (components/home/hero/HeroModel.tsx, as its own branch).
+ */
+function HeroArt({ settings }: { settings: Site['settings'] }) {
+  switch (settings.heroMode) {
+    case 'media':
+      return (
+        <div className="hm-hero__art">
+          <HeroVisual media={resolveMedia(settings.heroMedia)} />
+        </div>
+      );
+    case 'model':
+      // The owner's model, or the drawing until a model file is uploaded (ARCHITECTURE.md 6).
+      return <HeroModel model={settings.heroModel} fallback={<HeroDrawing />} />;
+    case 'drawing':
+    default:
+      return <HeroDrawing />;
+  }
+}
+
+/**
  * The hero (ARCHITECTURE.md 5; the canvas's hm-hero): the headline, the sub-tagline, the degree
  * line with the labelled GPA, two buttons, the availability badge, and the hero visual. From
  * 1024 px the copy takes columns 1 to 7 and the visual columns 8 to 12; below that the headline
  * comes first, then the visual, then the rest. On Blueprint a scrim sits under the copy.
+ * "See the work" is the page's one primary button.
  *
- * Phase 3 and 4 show the visual in `media` mode whatever `settings.heroMode` says; the drawing
- * and the model arrive in Phase 5. "See the work" is the page's one primary button.
+ * The load sequence (DESIGN_DIRECTION.md 6.2; lib/intro.ts): the section's first child is the
+ * inline script that, once a visit, marks the section with data-intro before anything in it
+ * paints. The headline (hero/Headline.tsx) keys off that mark: its start state, its line reveal on
+ * Motion+ splitText, and its give-up after load.headline.giveUpAfter, which the section passes to
+ * app/motion-drawing.css as --hm-headline-giveup (introAge counts from the mark). The drawing holds
+ * its start state from the same mark and runs its steps from a second one, data-intro-go, set by
+ * HeroDrawing's own inline script once the whole drawing is in the page. The scripts set
+ * attributes in the browser, hence suppressHydrationWarning on the section.
  */
 export default function Hero({ site, projects }: { site: Site; projects: Project[] }) {
   const { personal, settings } = site;
-  const media = resolveMedia(settings.heroMedia);
   const second = projects.find((p) => p.slug === SECOND_BUTTON_SLUG);
   const degreeParts = [
     { text: personal.degree, gpa: false },
@@ -116,13 +153,12 @@ export default function Hero({ site, projects }: { site: Site; projects: Project
   const showBadge = settings.showAvailabilityBadge && hasText(personal.availability);
 
   return (
-    <section className="hm-hero hm-hero--scrim" aria-labelledby="hero-title">
+    <section className="hm-hero hm-hero--scrim" aria-labelledby="hero-title" style={HEADLINE_STYLE} suppressHydrationWarning>
+      <script dangerouslySetInnerHTML={{ __html: introScript() }} />
       <div className="hm-wrap">
         <div className="hm-hero__grid">
           <div className="hm-hero__copy">
-            <h1 className="hm-hero__title" id="hero-title">
-              {hasText(personal.tagline) ? personal.tagline : personal.name}
-            </h1>
+            <Headline text={hasText(personal.tagline) ? personal.tagline : personal.name} />
             <div className="hm-hero__rest">
               {hasText(personal.subTagline) ? <p className="hm-hero__sub">{personal.subTagline}</p> : null}
               {degreeParts.length > 0 ? (
@@ -159,9 +195,7 @@ export default function Hero({ site, projects }: { site: Site; projects: Project
               ) : null}
             </div>
           </div>
-          <div className="hm-hero__art">
-            <HeroVisual media={media} />
-          </div>
+          <HeroArt settings={settings} />
         </div>
       </div>
     </section>

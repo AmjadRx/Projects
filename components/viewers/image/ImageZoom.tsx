@@ -6,6 +6,7 @@ import { useRef, type CSSProperties } from 'react';
 import Icon from '@/components/sheet/Icon';
 import { objectPosition } from '@/lib/media';
 import { UI } from '@/lib/strings';
+import { useMotionOk } from '@/lib/useMotionOk';
 import { cn } from '@/lib/utils';
 import Poster, { canOptimize } from '../shared/Poster';
 import ViewerFrame from '../shared/ViewerFrame';
@@ -13,6 +14,7 @@ import { BODY_SIZES } from '../shared/sizes';
 import type { ImageZoomProps } from '../types';
 import styles from './image.module.css';
 import { drawnFraction, scaleSizes } from '@/lib/media';
+import { ARRIVAL_STYLE, LoadingWell, usePhotoArrival } from './arrival';
 import { naturalSizeOf, stillOf } from './still';
 import { LazyLightbox, useLightbox } from './useLightbox';
 
@@ -34,6 +36,10 @@ const NATURAL_MAX_VH = 80;
  *
  * The alt text is exactly the content's, often empty. The photo's own alt is its text
  * alternative, so it is not repeated as a description.
+ *
+ * A photo on its way leaves the well at its size with the loading state, and fades in over 200 ms
+ * once decoded (motion sheet 8.1; arrival.tsx). A `priority` photo, a likely Largest Contentful
+ * Paint, is never held back.
  */
 export default function ImageZoom({
   media,
@@ -44,9 +50,18 @@ export default function ImageZoom({
   className,
 }: ImageZoomProps & { className?: string }) {
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
   const { openAt, open, close } = useLightbox();
   const still = stillOf(media);
   const natural = naturalSizeOf(still);
+  const motionOk = useMotionOk();
+  const arrival = usePhotoArrival(imageRef, motionOk && !priority && !!still);
+  const arriving = {
+    ref: imageRef,
+    'data-arrive': arrival.attr,
+    onLoad: arrival.onLoad,
+    onError: arrival.onError,
+  };
   const ownRatio = natural ? natural.width / natural.height : undefined;
   const wellAspect = (fit === 'natural' ? (ownRatio ?? aspect) : (aspect ?? ownRatio)) ?? 16 / 10;
 
@@ -65,6 +80,7 @@ export default function ImageZoom({
         style={natural ? { maxWidth: natural.width, maxHeight: natural.height } : undefined}
       >
         <Image
+          {...arriving}
           src={still.src}
           alt={media.alt}
           fill
@@ -72,12 +88,13 @@ export default function ImageZoom({
           priority={priority}
           unoptimized={!canOptimize(still.src)}
           draggable={false}
-          className={`object-contain ${styles.img}`}
-          style={{ objectPosition: objectPosition(media.focal) }}
+          className={`object-contain ${styles.img} mm-photo`}
+          style={{ objectPosition: objectPosition(media.focal), ...ARRIVAL_STYLE }}
         />
       </span>
     ) : (
       <Image
+        {...arriving}
         src={still.src}
         alt={media.alt}
         fill
@@ -85,8 +102,8 @@ export default function ImageZoom({
         priority={priority}
         unoptimized={!canOptimize(still.src)}
         draggable={false}
-        className={`object-cover ${styles.img}`}
-        style={{ objectPosition: objectPosition(media.focal) }}
+        className={`object-cover ${styles.img} mm-photo`}
+        style={{ objectPosition: objectPosition(media.focal), ...ARRIVAL_STYLE }}
       />
     )
   ) : (
@@ -95,6 +112,7 @@ export default function ImageZoom({
 
   const button = (
     <button ref={buttonRef} type="button" className={styles.open} onClick={() => open(0, buttonRef.current)}>
+      <LoadingWell arrival={arrival} />
       {picture}
       <span className="ar-sr">{UI.viewers.image.open}</span>
       <span className={cn('ar-mv__full', styles.mark)} aria-hidden="true">

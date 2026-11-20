@@ -1,9 +1,10 @@
 /*
  * The admin (ARCHITECTURE.md 7): plain and dense, a tool and not a showcase, so no sheet frame,
- * no sky, and no motion beyond a busy spinner. Every color is a token from app/tokens.css (no
- * literal colors here), so both themes work through <html data-theme>. Every class starts with
- * `adm-`, so nothing here touches the public pages; the root `.adm` (rendered by AdminApp) sets
- * the container, the type, and the colors.
+ * no sky, and no motion beyond a busy spinner and the save bar's status line, which scrambles into
+ * its new words (components/admin/shell/StatusText.tsx). Every color is a token from
+ * app/tokens.css (no literal colors here), so both themes work through <html data-theme>. Every
+ * class starts with `adm-`, so nothing here touches the public pages; the root `.adm` (rendered by
+ * AdminApp) sets the container, the type, and the colors.
  *
  * Layout uses container queries on `.adm` (never viewport media queries), so a classic scrollbar
  * cannot shift a breakpoint: below 768 px of admin width the tabs are a horizontal strip under a

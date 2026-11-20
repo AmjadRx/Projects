@@ -8,8 +8,9 @@
  *   the pause control send the sky to Still at once (destroying the scene) and bring it back when
  *   they clear. The frame rate steps it down (Full to Light, then Light to Still with a fade) and a
  *   failure sends it to Still; neither is undone during the visit.
- * - The scene's chunk is imported never before the load event, then at the next idle moment
- *   (SKY.liveLoad), and only for a tier other than Still. The scene is asked whether it can draw
+ * - The scene's chunk is imported never before the load event and the end of the home page's load
+ *   sequence, then at the next idle moment (SKY.liveLoad), and only for a tier other than Still.
+ *   The scene is asked whether it can draw
  *   (canRender) before any of its data is fetched. It starts from the still image's step
  *   (<html data-sky-step>, written by the head script in lib/theme.ts), so the fade shows no jump.
  * - The live layer fades in (.is-ready, 600 ms in CSS) once the first frame is drawn, never before
@@ -22,6 +23,7 @@
  * - <html data-theme> changes reach the scene through a MutationObserver, and the layer's size
  *   through a ResizeObserver.
  */
+import { afterIntro } from '@/lib/intro';
 import { SKY, toMs } from '@/lib/motion';
 import { motionPaused, subscribeMotionPaused } from '@/lib/motionPause';
 import { STILL_FALLBACK_STEP, stepTimeNear } from '@/lib/sky/still-steps';
@@ -201,10 +203,19 @@ export function startSkyHost(elements: SkyHostElements, options: SkyHostOptions)
       attempts += 1;
       const id = attempts;
       attempt = id;
-      cancelWait = afterLoadAndIdle(win, doc, () => {
-        cancelWait = null;
-        void make(id);
-      });
+      // On the first home view the scene also waits for the load sequence to end (lib/intro.ts),
+      // so its boot never lands on the sequence's frames on a slow phone; the still shows until.
+      let cancelIdle: (() => void) | null = null;
+      const cancelIntro = afterIntro(() => {
+        cancelIdle = afterLoadAndIdle(win, doc, () => {
+          cancelWait = null;
+          void make(id);
+        });
+      }, doc);
+      cancelWait = () => {
+        cancelIntro();
+        cancelIdle?.();
+      };
     }
   }
 

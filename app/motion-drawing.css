@@ -1,0 +1,222 @@
+/*
+ * The hero drawing (Phase 5, stage 2; DESIGN_DIRECTION.md 6.1 and 6.2; motion sheets 2, 4 and 8):
+ * Raven in plan view, its thermal lens, the phone and tablet scan band, the static split, and
+ * the load sequence's stroke-in. The markup is components/home/hero/RavenDrawing.tsx inside
+ * HeroDrawing.tsx, whose figure carries the numbers from lib/motion.ts as custom properties
+ * (--hd-*); DrawingStage.tsx adds what needs a script (the lens following a pointer, its ring then
+ * the Motion+ Cursor, or a finger; the rotor tilt). The drawing rules (hm-art, hm-ln, hm-lens,
+ * hm-th, hm-s) are the canvas's home.css, unchanged unless marked "site:". At the end: the
+ * headline's start state and give-up in the same load sequence (Headline.tsx).
+ *
+ * Every visitor's final state comes from CSS alone, from the first paint, so nothing waits for a
+ * script and the server markup never changes: a mouse or a pen sees the lens at rest over the
+ * battery bay; touch sees the whole drawing; reduced motion, or motion paused in the footer, sees
+ * the static split. The thermal ramp appears here as ramp place 1 (DESIGN_DIRECTION.md 2.4).
+ */
+
+/* ---------- The figure ---------- */
+
+/*
+ * site: the drawing fills its column, but is at most 78 percent of the window's height, as the
+ * media visual is (components/home/Hero.tsx, wellStyle), so a phone held sideways or a short
+ * window shows the whole drawing. The caption keeps to the drawing's width, under it. On desktop
+ * the pair sits at the column's end, as the media well does (app/styles/home.css).
+ */
+.hm-hero__art--drawing { justify-items: stretch; grid-template-columns: min(100%, calc(78vh * var(--hd-w) / var(--hd-h))); }
+@container frame (min-width: 1024px) { .hm-hero__art--drawing { justify-content: end; } }
+@container frame (min-width: 1360px) { .hm-hero__art--drawing { margin-right: calc(-1 * var(--space-8)); } }
+/*
+ * site: a size container, so strokes drawn in screen pixels can follow the drawing's scale (cqi).
+ * Vertical scrolling and pinch zoom both stay with the browser.
+ */
+.hm-art { position: relative; width: 100%; aspect-ratio: 600 / 560; touch-action: pan-y pinch-zoom; container-type: inline-size; }
+/* site: the box takes the pointer; nothing in the drawing does, not even the ring past its edge. */
+.hm-art > svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.hm-art__cap { margin: 0; font-family: var(--font-mono); font-size: 13px; line-height: 1.54; color: var(--ink-dim); }
+
+/* ---------- The line layer ---------- */
+
+.hm-ln { fill: none; stroke: var(--line); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.hm-ln--thin { stroke-width: 1; }
+.hm-ln--faint { stroke-opacity: 0.5; }
+.hm-ln--axis { stroke-width: 0.8; stroke-opacity: 0.35; stroke-dasharray: 18 5 3 5; }
+.hm-ln--disc { stroke-width: 1; stroke-dasharray: 14 4 2 4; }
+/* site: a pod's sides stretch as its rotor tilts, so they end flat and the round caps cover the joins. */
+.hm-ln--butt { stroke-linecap: butt; }
+.hm-lens { fill: none; stroke: var(--line); stroke-width: 1.5; }
+@container frame (max-width: 767px) {
+  .hm-ln, .hm-lens { stroke-width: 2.2; }
+  .hm-ln--thin, .hm-ln--disc { stroke-width: 1.6; }
+  .hm-ln--axis { stroke-width: 1.2; }
+}
+
+/*
+ * site: the wing discs fold by a vertical scale as the rotors tilt (sheet 4.3), which would thin
+ * their strokes where they run across. They are drawn in screen pixels instead, at the drawing's
+ * own scale: 100cqi over the drawing's width in units is one unit, in px.
+ */
+.hd-svg { --hd-u: calc(100cqi / var(--hd-w, 600)); }
+.hd-ns { vector-effect: non-scaling-stroke; }
+.hm-ln--disc.hd-ns,
+.hm-th-disc.hd-ns {
+  stroke-width: var(--hd-u);
+  stroke-dasharray: calc(14 * var(--hd-u)) calc(4 * var(--hd-u)) calc(2 * var(--hd-u)) calc(4 * var(--hd-u));
+}
+@container frame (max-width: 767px) { .hm-ln--disc.hd-ns { stroke-width: calc(1.6 * var(--hd-u)); } }
+
+/* ---------- The thermal layer: the same geometry in the ramp ---------- */
+
+.hm-th-wing { fill: var(--t1); fill-opacity: 0.78; }
+.hm-th-nac { fill: var(--t2); fill-opacity: 0.85; }
+.hm-th-fus { fill: var(--t2); fill-opacity: 0.8; }
+.hm-th-cable { fill: none; stroke: var(--t3); stroke-opacity: 0.75; stroke-width: 5; stroke-linecap: round; }
+.hm-th-disc { fill: none; stroke: var(--t2); stroke-opacity: 0.55; stroke-width: 1; stroke-dasharray: 14 4 2 4; }
+.hm-s0 { stop-color: var(--t0); }
+.hm-s3 { stop-color: var(--t3); }
+.hm-s4 { stop-color: var(--t4); }
+.hm-s5 { stop-color: var(--t5); }
+.hm-s6 { stop-color: var(--t6); }
+.hm-sn { stop-color: var(--night); }
+
+/* The stroke-in's mask for the dashed lines: wide solid strokes that draw in over them. */
+.hd-reveal { fill: none; stroke: white; stroke-width: 8; stroke-linecap: round; }
+.hd-reveal .hd-ns { stroke-width: 8px; }
+
+/* ---------- The lens, the scan band and the split ---------- */
+
+/* Phones and tablets first: no lens until a finger presses (TouchLens fades it in and out). */
+.hd-th,
+.hd-ring { opacity: 0; }
+.hd-clip-split,
+.hd-split { display: none; }
+.hd-scan { visibility: hidden; }
+.hd-split { fill: none; stroke: var(--line); stroke-width: var(--hd-split-line, 1px); vector-effect: non-scaling-stroke; }
+
+/* A mouse or a pen: the lens rests over the battery bay with the thermal view inside (sheet 4.1). */
+@media (hover: hover) and (pointer: fine) {
+  .hd-th,
+  .hd-ring { opacity: 1; }
+}
+
+/* Reduced motion, or motion paused in the footer (D-67): the static split (sheet 4.4, 8.1). */
+@media (prefers-reduced-motion: reduce) {
+  .hd-th { opacity: 1 !important; }
+  .hd-ring,
+  .hd-clip-lens,
+  .hd-scan { display: none; }
+  .hd-clip-split,
+  .hd-split { display: inline; }
+}
+[data-motion-paused] .hd-th { opacity: 1 !important; }
+[data-motion-paused] .hd-ring,
+[data-motion-paused] .hd-clip-lens,
+[data-motion-paused] .hd-scan { display: none; }
+[data-motion-paused] .hd-clip-split,
+[data-motion-paused] .hd-split { display: inline; }
+
+/* ---------- The lens on the Motion+ Cursor (sheet 4.1; DESIGN_DIRECTION.md 6.1 and 6.4) ---------- */
+
+/*
+ * site: while a mouse or a pen moves the lens, its ring is the Motion+ Cursor in follow mode
+ * (PointerLens.tsx, LensCursor.tsx), portalled to the body. The drawing's own ring hides under it,
+ * and over the drawing the cursor becomes the lens. Nowhere else does the browser's cursor change.
+ */
+@media (hover: hover) and (pointer: fine) {
+  .hm-art[data-lens-follow] { cursor: none; }
+  .hm-art[data-lens-follow] .hd-ring { visibility: hidden; }
+}
+/* site: the Cursor's two layers, one in window coordinates (clipped to the page's content), one at the lens's centre. */
+.hm-lens-cursor__view,
+.hm-lens-cursor__at { position: absolute; left: 0; top: 0; }
+/* site: the Cursor's ring (the drawing's .hm-lens circle and ticks), centred on the lens's centre. */
+.hd-cursor-ring { position: absolute; left: 0; top: 0; overflow: visible; transform: translate(-50%, -50%); }
+
+/* ---------- The load sequence (sheet 2), while the hero section carries data-intro ---------- */
+
+/*
+ * lib/intro.ts marks the hero section once a visit, never under reduced motion, with motion
+ * paused or with Save-Data on:
+ * - data-intro, before anything in it paints: the start state (strokes undrawn, the desktop lens
+ *   hidden), so nothing shows early, even while the drawing arrives in parts;
+ * - data-intro-go, once the whole drawing is in the page: every step starts in that one style
+ *   pass, at its delay from lib/motion.ts `load`, and holds its end state (fill-mode both).
+ * Both marks go once the steps have ended. Each step's end state is the final state, so taking
+ * the marks off changes nothing on screen.
+ *
+ * - Every solid path draws from pathLength 0 to 1, all together; the dashed lines are revealed by
+ *   the same strokes drawing in their mask.
+ * - A mouse or a pen: the thermal view and the ring stay hidden until the strokes end, then fade in.
+ * - Phones and tablets: one band crosses left to right once, from off the left edge to off the
+ *   right, showing the thermal view through it; the drawing is whole again after it.
+ *
+ * All of it applies only while motion is allowed: turning on reduced motion or pausing motion in
+ * the footer during the sequence ends it at once (its steps stop; lib/intro.ts takes the marks off).
+ */
+@keyframes hd-draw {
+  from { stroke-dashoffset: 1.01; }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes hd-appear {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes hd-band {
+  from { visibility: visible; transform: translateX(var(--hd-scan-from)); }
+  to { visibility: visible; transform: translateX(var(--hd-scan-to)); }
+}
+@keyframes hd-band-in {
+  from { transform: translateX(calc(-1 * var(--hd-scan-from))); }
+  to { transform: translateX(calc(-1 * var(--hd-scan-to))); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* The start state. */
+  :root:not([data-motion-paused]) .hm-hero[data-intro] .hd-draw { stroke-dasharray: 1 2; stroke-dashoffset: 1.01; }
+  :root:not([data-motion-paused]) .hm-hero[data-intro] .hd-dash { mask: url(#hd-reveal); }
+
+  /* The steps. */
+  :root:not([data-motion-paused]) .hm-hero[data-intro][data-intro-go] .hd-draw {
+    animation: hd-draw var(--hd-draw-dur) var(--hd-draw-ease) var(--hd-draw-delay) both;
+  }
+  :root:not([data-motion-paused]) .hm-hero[data-intro][data-intro-go] .hd-scan {
+    animation: hd-band var(--hd-scan-dur) var(--hd-scan-ease) var(--hd-scan-delay);
+  }
+  :root:not([data-motion-paused]) .hm-hero[data-intro][data-intro-go] .hd-scan__in {
+    animation: hd-band-in var(--hd-scan-dur) var(--hd-scan-ease) var(--hd-scan-delay);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    :root:not([data-motion-paused]) .hm-hero[data-intro] .hd-th__intro,
+    :root:not([data-motion-paused]) .hm-hero[data-intro] .hd-ring__intro { opacity: 0; }
+    :root:not([data-motion-paused]) .hm-hero[data-intro][data-intro-go] .hd-scan,
+    :root:not([data-motion-paused]) .hm-hero[data-intro][data-intro-go] .hd-scan__in { animation: none; }
+    :root:not([data-motion-paused]) .hm-hero[data-intro][data-intro-go] .hd-th__intro,
+    :root:not([data-motion-paused]) .hm-hero[data-intro][data-intro-go] .hd-ring__intro {
+      animation: hd-appear var(--hd-lens-dur) var(--hd-lens-ease) var(--hd-lens-delay) both;
+    }
+  }
+}
+
+/* ---------- The headline (sheet 2.3 and 2.4; components/home/hero/Headline.tsx) ---------- */
+
+/*
+ * site: the load sequence's first step. While the hero section carries data-intro and no script
+ * has taken the headline over (data-headline-set on the h1), the headline waits hidden: the start
+ * state, from before it is parsed. The reveal takes over by splitting it into lines that hold
+ * their own start state, and marking the h1, in one task. If nothing has taken over by
+ * load.headline.giveUpAfter (--hm-headline-giveup, on the section from lib/motion.ts), CSS sets
+ * the headline in place at once and the reveal is skipped: the headline never stays hidden.
+ * Without scripts, on a later visit, under reduced motion or with motion paused, data-intro is
+ * never set and the headline is simply there.
+ */
+@keyframes hm-headline-set {
+  to { opacity: 1; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  :root:not([data-motion-paused]) .hm-hero[data-intro] .hm-hero__title:not([data-headline-set]) {
+    opacity: 0;
+    animation: hm-headline-set 0s linear var(--hm-headline-giveup, 0s) forwards;
+  }
+}
+/* site: while it moves, each split line (a block on its own row, headlineReveal.ts) keeps the break the text has: no line wraps again. */
+.hm-hero__title .hm-hero__line { white-space: nowrap; }

@@ -1,0 +1,91 @@
+/*
+ * The hero's model (hero mode "model"; DESIGN_DIRECTION.md 6.1 "The realistic hero"; motion sheet
+ * 4.5): the canvas's Hero-1440-Realistic and Hero-390-Realistic boards and its home.css "Realistic
+ * mode", with the bundle's frameless model viewer (.ar-mvh) for the plates. The markup is
+ * components/viewers/model/HeroModelViewer.tsx; the 3D viewer's own parts are in
+ * ModelViewer.module.css beside it.
+ *
+ *   figure.hm-model                 in the hero's visual column (.hm-hero__art)
+ *     div.hm-model__stage           the drawing's 600 by 560 box: poster, canvas, lens ring
+ *     p.ar-sr                       the model's description, out of the flow (sheet.css)
+ *     div.hm-model__bar             the view switch on glass, and "Drag to orbit"
+ *     figcaption.hm-art__cap        (home.css), the figure's last child
+ *
+ * Nothing here has a duration of its own: the ring's position and opacity are written by the lens's
+ * motion values, and the poster's and the hint's fades read their numbers from lib/motion.ts
+ * through custom properties. No hex value: tokens only.
+ */
+
+/*
+ * The sky's light on the model (skyLight.ts reads these through palette.ts): the canvas's face
+ * colors for a solid in front of the sky, lit from above by the zenith's cool light. No face takes
+ * the thermal ramp. Whiteprint has no sky: the bundle's night-based solid, lit the same way.
+ */
+.hm-model {
+  --model-sky-top: color-mix(in srgb, var(--ink) 34%, var(--sky-mid));
+  --model-sky-side: color-mix(in srgb, var(--ink) 15%, var(--sky-zenith));
+  --model-sky-low: color-mix(in srgb, var(--ink) 8%, var(--sky-zenith));
+  position: relative; display: grid; gap: var(--space-3); justify-self: stretch;
+  width: 100%; min-width: 0; margin: 0;
+}
+[data-theme="whiteprint"] .hm-model {
+  --model-sky-top: color-mix(in srgb, var(--on-night) 30%, var(--night));
+  --model-sky-side: color-mix(in srgb, var(--on-night) 18%, var(--night));
+  --model-sky-low: color-mix(in srgb, var(--on-night) 10%, var(--night));
+}
+
+/* Page scrolling wins: a vertical swipe scrolls, a pinch zooms the page; a sideways drag orbits. */
+.hm-model__stage {
+  position: relative; width: 100%; aspect-ratio: 600 / 560;
+  touch-action: pan-y pinch-zoom; user-select: none; -webkit-user-select: none;
+}
+.hm-model__stage [role="application"]:focus-visible { outline-color: var(--line); }
+
+/* The poster paints first and fades under the first frame; its timing comes from lib/motion.ts
+   (hero.model.posterOut) through --hm-poster-out and --hm-poster-ease. */
+.hm-model__poster { position: absolute; inset: 0; transition: opacity var(--hm-poster-out, 0s) var(--hm-poster-ease, linear); }
+.hm-model__poster.is-out { opacity: 0; }
+
+/* The lens ring over the thermal circle: 1.5 px in the line color, with four short ticks outside
+   it (home.css .hm-model__ring). Its size, place, and opacity come from the lens (useHeroLens). */
+.hm-model__ring {
+  position: absolute; left: 0; top: 0; z-index: 1; width: 0; height: 0;
+  border: 1.5px solid var(--line); border-radius: 50%; opacity: 0; pointer-events: none;
+}
+.hm-model__ring::before, .hm-model__ring::after { content: ""; position: absolute; background-color: var(--line); }
+.hm-model__ring::before {
+  left: 50%; top: -17px; bottom: -17px; width: 1.5px; transform: translateX(-50%);
+  -webkit-mask-image: linear-gradient(black 0 11px, transparent 11px calc(100% - 11px), black calc(100% - 11px));
+  mask-image: linear-gradient(black 0 11px, transparent 11px calc(100% - 11px), black calc(100% - 11px));
+}
+.hm-model__ring::after {
+  top: 50%; left: -17px; right: -17px; height: 1.5px; transform: translateY(-50%);
+  -webkit-mask-image: linear-gradient(90deg, black 0 11px, transparent 11px calc(100% - 11px), black calc(100% - 11px));
+  mask-image: linear-gradient(90deg, black 0 11px, transparent 11px calc(100% - 11px), black calc(100% - 11px));
+}
+/* While the lens follows a mouse or a pen, its ring is the Motion+ Cursor (useHeroLens,
+   components/home/hero/LensCursor.tsx), portalled to the body: the stage's own ring hides under it.
+   The Cursor's ring is the same ring, centred on the lens's centre, its size set by the lens. */
+.hm-model__stage[data-lens-follow] > .hm-model__ring { visibility: hidden; }
+.hm-model__ring--cursor { opacity: 1; transform: translate(-50%, -50%); }
+
+/* The bar under the stage: the view switch on glass, then the hint. */
+.hm-model__bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-4); }
+.hm-model .ar-mv__views {
+  background-color: var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter);
+}
+.hm-model__hint {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  font-family: var(--font-mono); font-size: 13px; line-height: 1.5; color: var(--ink-dim);
+}
+
+/* Over the sky, not a night well: the plates are glass in the page's ink (bundle .ar-mvh). */
+.hm-model .ar-mv__note {
+  color: var(--ink); border-color: var(--rule);
+  background-color: var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter);
+}
+.hm-model__stage .ar-mv__play .ar-mv__btn {
+  color: var(--ink); border-color: var(--ink-mute);
+  background-color: var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter);
+}
+.hm-model__stage .ar-mv__play .ar-mv__btn:hover { border-color: var(--ink); }

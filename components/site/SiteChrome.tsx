@@ -6,7 +6,11 @@ import { UI } from '@/lib/strings';
 import { themeFromSetting } from '@/lib/theme';
 import Footer from './Footer';
 import Nav from './Nav';
+import PanelRise from './PanelRise';
 import SheetFrame from './SheetFrame';
+
+/** The id of the page's `main`: the skip link's target, and where the panels rise. */
+const MAIN_ID = 'main';
 
 /**
  * The public frame around every page (ARCHITECTURE.md 5, Global; the canvas's page frame):
@@ -21,7 +25,9 @@ import SheetFrame from './SheetFrame';
  *       .hm-foot > footer        the footer, with the sky's credit line when the background is the sky
  *     .ar-sheetframe             the drawing border with its zone marks, 1024 px and up
  *
- * Pages put their content in `main` (see app/styles/frame.css for .hm-wrap and .hm-sec).
+ * Pages put their content in `main` (see app/styles/frame.css for .hm-wrap and .hm-sec). The panel
+ * rise (PanelRise, motion sheet 7.2) watches the glass panels and cards of `main` on every page,
+ * so no page takes part in it.
  */
 export default function SiteChrome({ children }: { children: ReactNode }) {
   const { site, projects, resolveLink } = siteData();
@@ -30,7 +36,7 @@ export default function SiteChrome({ children }: { children: ReactNode }) {
 
   return (
     <div className="ar-frame ar-page hm">
-      <a href="#main" className="ar-skip">
+      <a href={`#${MAIN_ID}`} className="ar-skip">
         {UI.site.skipToContent}
       </a>
       <Sky background={settings.background} />
@@ -42,7 +48,7 @@ export default function SiteChrome({ children }: { children: ReactNode }) {
           availability={settings.showAvailabilityBadge ? personal.availability : undefined}
           theme={theme}
         />
-        <main id="main" tabIndex={-1} className="hm-main">
+        <main id={MAIN_ID} tabIndex={-1} className="hm-main">
           {children}
         </main>
         <div className="hm-foot">
@@ -58,6 +64,7 @@ export default function SiteChrome({ children }: { children: ReactNode }) {
         </div>
       </div>
       <SheetFrame />
+      <PanelRise mainId={MAIN_ID} />
     </div>
   );
 }
