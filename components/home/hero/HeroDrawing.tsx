@@ -36,18 +36,22 @@ const DRAWING_STYLE = {
  * (ARCHITECTURE.md 6): Raven in plan view with the thermal lens, and the fixed caption under it,
  * which never moves. The figure is the canvas's hm-hero__art; its caption names it.
  *
- * The inline script right after the svg is the load sequence's go (lib/intro.ts introGoScript):
- * on a full page load it runs once the whole drawing has been parsed, so every stroke starts
- * drawing in the same frame, and it ends the sequence when the drawing's steps have ended.
+ * The inline script after the svg is the load sequence's go (lib/intro.ts introGoScript): on a
+ * full page load it runs once the whole drawing has been parsed, so every stroke starts drawing in
+ * the same frame, and it ends the sequence when the drawing's steps have ended. It is the figure's
+ * last child, after the caption (site, Phase 7): reading the drawing's animations makes the browser
+ * lay the page out, and it may paint while the parser waits, so the caption must already be there,
+ * or it arrives in a later frame and the figure grows under it (a layout shift of 0.006 to 0.01 at
+ * desktop widths).
  */
 export default function HeroDrawing() {
   return (
     <figure className="hm-hero__art hm-hero__art--drawing" style={DRAWING_STYLE}>
       <DrawingStage>
         <RavenDrawing label={UI.hero.drawing} />
-        <script dangerouslySetInnerHTML={{ __html: introGoScript() }} />
       </DrawingStage>
       <figcaption className="hm-art__cap">{UI.heroCaption}</figcaption>
+      <script dangerouslySetInnerHTML={{ __html: introGoScript() }} />
     </figure>
   );
 }
