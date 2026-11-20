@@ -115,6 +115,15 @@
 [data-theme="whiteprint"] { color-scheme: light; }
 
 /*
+ * Not part of the bundle: the nav's glass, which the phone menu's sheet and the sheet frame's bands
+ * share, dims what passes under it by half; and the nav's shortcut hint. The reasons and the ratios
+ * are in tests/token-contrast.test.ts.
+ */
+:root { --nav-glass-dim: 0.5; }
+:root, [data-theme="blueprint"] { --nav-hint: var(--ink-dim); }
+[data-theme="whiteprint"] { --nav-hint: var(--ink-mute); }
+
+/*
  * The printed page (app/print.css): the canvas's Print board's paper and inks, the same whichever
  * theme is on screen. Near-black Prussian ink on white, dim and mute inks darker than the screen's
  * for paper, the line color, and a firmer rule. app/print.css maps the theme tokens onto these.

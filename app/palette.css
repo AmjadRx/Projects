@@ -20,7 +20,8 @@
 @media (hover: hover) and (pointer: fine) {
   .ar-nav__search:hover { color: var(--ink); border-color: var(--line); }
 }
-.ar-nav__kbd { font-family: var(--font-mono); font-size: 13px; color: var(--ink-mute); white-space: nowrap; }
+/* site: the hint is --nav-hint (app/tokens.css; ink-mute again on the Light tier, app/sheet.css 24). */
+.ar-nav__kbd { font-family: var(--font-mono); font-size: 13px; color: var(--nav-hint); white-space: nowrap; }
 .ar-nav__search-text { display: none; }
 /* site: the bundle shows the button from 1024 px only, but the Palette boards open the palette on a
    phone (390 px, with its Close button), so under 1024 px the button stays as its icon alone, a
