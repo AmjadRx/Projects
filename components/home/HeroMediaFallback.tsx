@@ -14,6 +14,10 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
  * Once the window changes width that height no longer holds, and the drawing takes its own size,
  * as in drawing mode; a window that only grows or shrinks in height (a phone's toolbar) keeps it.
  *
+ * A drawing that takes the slot while the load sequence plays never ran its inline go script
+ * (lib/intro.ts introGoScript): DrawingStage's beginIntro sets the go mark as it mounts, so it
+ * strokes in from there, and the sequence ends with its steps. Later, it paints final.
+ *
  * An image's error does not bubble, so the slot hears it on its way down (capture). A picture that
  * failed before the page came alive fired its error before anything listened: a finished image
  * with no pixels is that case, read once as the slot mounts. A video that will not play keeps its
