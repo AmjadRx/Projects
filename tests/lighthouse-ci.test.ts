@@ -180,7 +180,8 @@ describe('a page\'s theme, from both checks', () => {
     const verdicts = themeVerdicts(['/', '/about', '/log'], checks, proof({ '/': 'whiteprint', '/about': 'blueprint', '/log': 'whiteprint' }), 'whiteprint');
     expect(verdicts.get('/')).toEqual({ ok: false, text: 'FAIL: 1 of 3 runs loaded another theme\'s sky still' });
     expect(verdicts.get('/about')).toEqual({ ok: false, text: 'FAIL: Chrome painted Blueprint' });
-    expect(verdicts.get('/log')).toEqual({ ok: false, text: 'no runs' });
+    // No runs: the page fails on its assertions ("no result"), not on its theme.
+    expect(verdicts.get('/log')).toEqual({ ok: true, text: 'no runs' });
   });
 
   it('describes the theme check in one paragraph, naming what failed', () => {
@@ -449,6 +450,25 @@ describe('the summary', () => {
     expect(themeOk).toBe(false);
     expect(markdown).toContain('FAIL: 1 of 1 run loaded another theme\'s sky still');
     expect(markdown).toContain('Pages whose theme is wrong or not proven: /.');
+  });
+
+  it('fails a page with no runs on its assertions, and leaves it out of the theme failures', () => {
+    const passing = ['performance', 'accessibility', 'best-practices', 'seo'].map((id) => result(`${BASE}/`, 'categories', 1, true, id));
+    passing.push(result(`${BASE}/`, 'cumulative-layout-shift', 0, true), result(`${BASE}/`, 'total-blocking-time', 0, true));
+    const { markdown, passed, total, themeOk } = summaryMarkdown({
+      formFactor: 'desktop',
+      theme: 'whiteprint',
+      rows: assertionRows(passing, ['/', '/about'], 'desktop'),
+      checks: themeChecks([run(`${BASE}/`, ['/sky/still/whiteprint-desktop.webp'])], 'whiteprint'),
+      proof: proof({ '/': 'whiteprint', '/about': 'whiteprint' }),
+      environment: '',
+      lhciStatus: 0,
+      notes: ['No complete set of runs, so no result: /about.'],
+    });
+    expect([passed, total]).toEqual([6, 12]);
+    expect(themeOk).toBe(true);
+    expect(markdown).toContain('| /about | no result | no result | no result | no result | no result | no result | no runs |');
+    expect(markdown).not.toContain('Pages whose theme');
   });
 
   it('says Lighthouse did not run when Chrome painted the wrong theme before collect', () => {

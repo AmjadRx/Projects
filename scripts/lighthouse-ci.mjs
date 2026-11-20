@@ -317,10 +317,11 @@ export function themeChecks(lhrs, expected) {
 
 /**
  * Each page's theme from both checks, as route -> { ok, text }: the theme check before collect
- * (`proof`) and the sky still each run loaded (`checks`). A page passes when Chrome painted its
- * theme or a run loaded its theme's still, and no run loaded the other theme's still. A page whose
+ * (`proof`) and the sky still each run loaded (`checks`). A measured page passes when Chrome painted
+ * its theme or a run loaded its theme's still, and no run loaded the other theme's still. A page whose
  * runs loaded no still passes only on the theme check, so turning the sky off cannot hide a wrong
- * theme.
+ * theme. A page with no runs fails on its assertions, so only Chrome painting the wrong theme fails it
+ * here.
  */
 export function themeVerdicts(routes, checks, proof, expected) {
   const name = THEME_NAMES[expected];
@@ -335,7 +336,9 @@ export function themeVerdicts(routes, checks, proof, expected) {
     if (verdict === 'wrong') {
       result = { ok: false, text: `FAIL: Chrome painted ${paintedName(page.painted)}` };
     } else if (!check) {
-      result = { ok: false, text: 'no runs' };
+      // Nothing was measured, so nothing was measured in the wrong theme; every assertion of the
+      // page already fails as "no result".
+      result = { ok: true, text: 'no runs' };
     } else if (check.wrong > 0) {
       result = { ok: false, text: `FAIL: ${check.wrong} of ${runs(check.runs)} loaded another theme's sky still` };
     } else {
