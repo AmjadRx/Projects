@@ -1,0 +1,106 @@
+/*
+ * The command palette (ARCHITECTURE.md 5, "Also new"): the nav's search button (the bundle's Nav,
+ * bundle.css 8) and the palette (the bundle's CommandPalette, bundle.css 33; the Palette boards),
+ * for components/palette/. Loaded after app/sheet.css (app/layout.tsx). Rules marked "site" are
+ * additions for real markup.
+ *
+ * Nothing here moves (motion sheets 7 and 8): the palette opens at once over its scrim, and its
+ * results change at once as the visitor types; hover colors change at once.
+ */
+
+/* ---------- The nav's search button ---------- */
+
+.ar-nav__search {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
+  min-height: var(--touch-target); padding: 0 var(--space-3);
+  border: 1px solid var(--ink-mute); border-radius: var(--radius); background: transparent; color: var(--ink-dim);
+  font-family: var(--font-sans); font-size: 15px; font-weight: 500; cursor: pointer;
+}
+/* site: hover is for a mouse or a pen only (app/sheet.css 3). */
+@media (hover: hover) and (pointer: fine) {
+  .ar-nav__search:hover { color: var(--ink); border-color: var(--line); }
+}
+.ar-nav__kbd { font-family: var(--font-mono); font-size: 13px; color: var(--ink-mute); white-space: nowrap; }
+.ar-nav__search-text { display: none; }
+/* site: the bundle shows the button from 1024 px only, but the Palette boards open the palette on a
+   phone (390 px, with its Close button), so under 1024 px the button stays as its icon alone, a
+   44 px square beside Menu; the shortcut it names joins it from 1024 px, the word from 1280 px. */
+.ar-nav__search { min-width: var(--touch-target); }
+.ar-nav__search .ar-nav__kbd { display: none; }
+@container frame (min-width: 1024px) {
+  .ar-nav__search .ar-nav__kbd { display: inline; }
+}
+@container frame (min-width: 1280px) {
+  .ar-nav__search-text { display: inline; }
+}
+
+/* ---------- The palette ---------- */
+
+/* site: drawn inside the page frame (a portal on .ar-frame), so the frame's container queries, type
+   and focus ring reach it, above the nav (30) and the sheet frame (40). */
+.ar-cmdk { position: fixed; inset: 0; z-index: 80; display: grid; justify-items: center; align-items: start; padding: 12vh var(--space-4) var(--space-4); }
+.ar-cmdk__scrim { position: absolute; inset: 0; background-color: color-mix(in srgb, var(--night) 64%, transparent); }
+.ar-cmdk__panel {
+  position: relative; display: flex; flex-direction: column; width: min(640px, 100%); max-height: 100%;
+  border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden;
+  background-color: var(--glass); -webkit-backdrop-filter: blur(16px) brightness(0.55); backdrop-filter: blur(16px) brightness(0.55); box-shadow: var(--shadow-card);
+}
+[data-theme="whiteprint"] .ar-cmdk__panel { -webkit-backdrop-filter: none; backdrop-filter: none; }
+/* site: on the sky's Light tier the glass is the plain panel color with no blur (app/sheet.css 23, R-06). */
+:root[data-sky-tier="light"]:not([data-theme="whiteprint"]):has(.ar-sky[data-background="sky"]) .ar-cmdk__panel {
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+.ar-cmdk__field { display: flex; align-items: center; gap: var(--space-3); min-height: 60px; padding: 0 var(--space-4); border-bottom: 1px solid var(--rule); color: var(--ink-mute); flex: none; }
+.ar-cmdk__input {
+  flex: 1; min-width: 0; height: 56px; margin: 0; padding: 0; border: 0; outline: none; background: transparent;
+  font-family: var(--font-sans); font-size: 19px; line-height: 1.3; font-weight: 500; color: var(--ink);
+}
+.ar-cmdk__input::placeholder { color: var(--ink-mute); opacity: 1; }
+/* site: the field keeps the system's focus ring (app/sheet.css 1, DESIGN_DIRECTION.md 8), which wins
+   over the bundle's outline: none. So that the ring stands clear of the panel's edge, the icon and
+   the typed text, the field is 44 px tall in its 60 px row, with 8 px inside the ring. */
+.ar-cmdk__input { height: var(--touch-target); padding: 0 var(--space-2); border-radius: var(--radius); }
+.ar-cmdk kbd, .ar-cmdk__esc {
+  display: inline-grid; place-items: center; min-width: 26px; height: 24px; padding: 0 var(--space-2);
+  border: 1px solid var(--rule); border-radius: var(--radius); font-family: var(--font-mono); font-size: 13px; line-height: 1; color: var(--ink-dim);
+}
+.ar-cmdk__close {
+  display: none; min-height: var(--touch-target); padding: 0 var(--space-3); border: 1px solid var(--line); border-radius: var(--radius);
+  background: transparent; color: var(--ink); font-family: var(--font-sans); font-size: 15px; font-weight: 600; cursor: pointer;
+}
+/* site: the list shrinks in a short window rather than pushing the keys out, and its scroll stays
+   in it. */
+.ar-cmdk__list { overflow-y: auto; padding: var(--space-2) 0; max-height: 380px; min-height: 0; overscroll-behavior: contain; }
+.ar-cmdk__list[hidden] { display: none; }
+.ar-cmdk__group + .ar-cmdk__group { margin-top: var(--space-2); padding-top: var(--space-2); border-top: 1px solid var(--rule); }
+.ar-cmdk__glabel { margin: 0; padding: var(--space-2) var(--space-4) var(--space-1); font-family: var(--font-mono); font-size: 13px; line-height: 1.5; color: var(--ink-mute); }
+.ar-cmdk__item {
+  display: flex; align-items: center; gap: var(--space-3); min-height: var(--touch-target); margin: 0 var(--space-2); padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius); color: var(--ink); text-decoration: none;
+}
+/* site: the pointer makes a result the active one (CommandPalette.tsx), so one row is lit at a time. */
+.ar-cmdk__item.is-active { background-color: var(--sheet-3); box-shadow: inset 2px 0 0 var(--line); }
+/* ink-mute falls under AA on sheet-3 (3.99 Blueprint, 4.42 Whiteprint): the highlighted row's meta moves to ink-dim. */
+.ar-cmdk__item.is-active .ar-cmdk__meta { color: var(--ink-dim); }
+/* site: a long title wraps to as many lines as it needs (the States board, "peg"), a long word too. */
+.ar-cmdk__label { flex: 1; min-width: 0; font-size: 17px; line-height: 1.35; font-weight: 500; overflow-wrap: anywhere; }
+.ar-cmdk__hit { background: none; color: var(--line); font-weight: 700; text-decoration: underline; text-underline-offset: 0.2em; }
+.ar-cmdk__meta { flex: none; font-family: var(--font-mono); font-size: 13px; line-height: 1.4; color: var(--ink-mute); white-space: nowrap; }
+.ar-cmdk__go { display: inline-flex; color: var(--line); opacity: 0; }
+.ar-cmdk__item.is-active .ar-cmdk__go { opacity: 1; }
+.ar-cmdk__empty { margin: 0; padding: var(--space-5) var(--space-4); font-size: 15px; line-height: 1.6; color: var(--ink-dim); }
+.ar-cmdk__keys {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin: 0; padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--rule); font-size: 13px; line-height: 1.5; color: var(--ink-mute); flex: none;
+}
+.ar-cmdk__keys span { margin-right: var(--space-2); }
+/* site: a palette left open never prints over the page (the print stylesheet draws the sheet). */
+@media print { .ar-cmdk { display: none; } }
+@container frame (max-width: 767px) {
+  .ar-cmdk { padding: 0; }
+  .ar-cmdk__panel { width: 100%; height: 100%; border: 0; border-radius: 0; }
+  .ar-cmdk__list { max-height: none; flex: 1; }
+  .ar-cmdk .ar-cmdk__esc, .ar-cmdk__keys { display: none; }
+  .ar-cmdk__close { display: inline-flex; align-items: center; }
+  .ar-cmdk__meta { display: none; }
+}

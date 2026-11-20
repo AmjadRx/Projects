@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { Calendar, Github, Globe, Linkedin, Mail, Phone, type LucideIcon } from 'lucide-react';
+import { Calendar, Github, Globe, Linkedin, Mail, Phone, Search, type LucideIcon } from 'lucide-react';
+import PaletteTrigger from '@/components/palette/PaletteTrigger';
 import Icon from '@/components/sheet/Icon';
 import { hasText } from '@/lib/format';
 import type { NavItem } from '@/lib/site';
@@ -25,9 +26,10 @@ const SOCIAL_ICONS: Record<string, LucideIcon> = {
  * The name, the links from `nav` (already resolved by navItemsFor, so a hidden page has no item),
  * the social links with showInNav as icon and word (CONTENT_RULES.md 4: LinkedIn is shown as the
  * word "LinkedIn"), and the compact theme toggle, from 1024 px; below that, the name and the Menu
- * button. Along its foot runs the heat rule, the page progress cold to hot (HeatRule, motion sheet
- * 7.1). The nav itself never moves or hides on scroll. Inside the sheet frame it starts at the
- * frame's inset. No search button until Phase 7.
+ * button. The search button opens the command palette at every width (components/palette/; its
+ * icon and words are drawn here, on the server). Along its foot runs the heat rule, the page
+ * progress cold to hot (HeatRule, motion sheet 7.1). The nav itself never moves or hides on scroll.
+ * Inside the sheet frame it starts at the frame's inset.
  */
 export default function Nav({
   name,
@@ -73,6 +75,11 @@ export default function Nav({
               <span>{social.label}</span>
             </a>
           ))}
+          <PaletteTrigger label={UI.palette.open}>
+            <Icon icon={Search} size={18} />
+            <span className="ar-nav__search-text">{UI.palette.search}</span>
+            <kbd className="ar-nav__kbd">{UI.palette.shortcut}</kbd>
+          </PaletteTrigger>
           <span className="ar-nav__desk">
             <ThemeToggle variant="compact" labels={themeLabels} initial={theme} />
           </span>

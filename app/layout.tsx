@@ -20,6 +20,7 @@ import './motion-media.css';
 import './motion-cards.css';
 import './motion-model.css';
 import './motion-home.css';
+import './palette.css';
 import './utilities.css';
 
 /*
