@@ -15,8 +15,8 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
  * as in drawing mode; a window that only grows or shrinks in height (a phone's toolbar) keeps it.
  *
  * A drawing that takes the slot while the load sequence plays never ran its inline go script
- * (lib/intro.ts introGoScript): DrawingStage's beginIntro sets the go mark as it mounts, so it
- * strokes in from there, and the sequence ends with its steps. Later, it paints final.
+ * (lib/intro.ts introGoScript): its DrawingStage sets the go mark as it mounts, so it strokes in
+ * from there, and the sequence ends with its steps. Later, it paints final.
  *
  * An image's error does not bubble, so the slot hears it on its way down (capture). A picture that
  * failed before the page came alive fired its error before anything listened: a finished image

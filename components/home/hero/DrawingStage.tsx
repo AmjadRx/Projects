@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState, type ReactNode } from 'react';
-import { beginIntro } from '@/lib/intro';
+import { INTRO_ATTR, INTRO_GO_ATTR, beginIntro, runIntro } from '@/lib/intro';
 import { useMotionPaused } from '@/lib/motionPause';
 import { useMotionOk } from '@/lib/useMotionOk';
 import { useFinePointer, useIsoLayoutEffect } from './hooks';
@@ -26,7 +26,10 @@ import TouchLens from './TouchLens';
  *
  * On a client-side navigation to the home page it also starts the load sequence before the first
  * paint (lib/intro.ts beginIntro); on a full load the hero's two inline scripts have already done
- * that (introScript at the top of the section, introGoScript right after the svg).
+ * that (introScript at the top of the section, introGoScript right after the svg). A drawing that
+ * comes into the hero while the sequence plays (media mode, when the photo does not load:
+ * ../HeroMediaFallback.tsx) never ran its go script: it gives itself the go mark as it mounts
+ * (lib/intro.ts runIntro), so it strokes in from there and the sequence ends with its steps.
  */
 export default function DrawingStage({ children }: { children: ReactNode }) {
   const art = useRef<HTMLDivElement>(null);
@@ -38,7 +41,9 @@ export default function DrawingStage({ children }: { children: ReactNode }) {
 
   useIsoLayoutEffect(() => {
     const section = art.current?.closest<HTMLElement>('.hm-hero');
-    if (section) beginIntro(section);
+    if (section && beginIntro(section) && !section.hasAttribute(INTRO_GO_ATTR)) {
+      runIntro(section, Number(section.getAttribute(INTRO_ATTR)));
+    }
     // React fills `art` only once the box itself has mounted, after the layout effects of what is
     // inside it, so a leaf mounted with the box would find it empty. The leaves mount in the
     // render right after this one instead, which React runs before the first paint.

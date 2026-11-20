@@ -141,7 +141,7 @@ function HeroArt({ settings }: { settings: Site['settings'] }) {
  * app/motion-drawing.css as --hm-headline-giveup (introAge counts from the mark). The drawing holds
  * its start state from the same mark and runs its steps from a second one, data-intro-go, set by
  * HeroDrawing's own inline script once the whole drawing is in the page (or, for the drawing that
- * takes a failed photo's slot, by lib/intro.ts beginIntro as it mounts). The scripts set
+ * takes a failed photo's slot, by its DrawingStage as it mounts). The scripts set
  * attributes in the browser, hence suppressHydrationWarning on the section.
  */
 export default function Hero({ site, projects }: { site: Site; projects: Project[] }) {

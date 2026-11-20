@@ -172,8 +172,8 @@ function endIntro(section: Element): void {
   section.removeAttribute(INTRO_GO_ATTR);
 }
 
-/** introGoScript()'s rules, for a sequence beginIntro() started at `start`. */
-function runIntro(section: HTMLElement, start: number): void {
+/** introGoScript()'s rules, for a sequence that began at `start`. */
+export function runIntro(section: HTMLElement, start: number): void {
   const end = () => endIntro(section);
   const drawing = section.querySelector(DRAWING);
   if (!drawing) {
@@ -211,11 +211,8 @@ function runIntro(section: HTMLElement, start: number): void {
  */
 export function beginIntro(section: HTMLElement): boolean {
   if (section.hasAttribute(INTRO_ATTR)) {
-    // Inline scripts started it. Note the visit; a late drawing gets its go.
+    // The inline scripts started it and end it; remember the visit here too.
     markIntroSeen();
-    if (!section.hasAttribute(INTRO_GO_ATTR) && section.querySelector(DRAWING)) {
-      runIntro(section, Number(section.getAttribute(INTRO_ATTR)));
-    }
     return true;
   }
   if (!introWanted(browserConditions())) return false;
