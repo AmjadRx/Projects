@@ -68,6 +68,18 @@
 .hm-hero__media { position: relative; max-width: 100%; }
 .hm-hero__media.ar-well { aspect-ratio: auto; }
 .hm-hero__media .ar-mv__well { position: relative; }
+/* site: the media hero's picture did not load (components/home/HeroMediaFallback.tsx; the states
+   boards, S.5): the drawing takes the slot in a box of the height the picture held, so nothing
+   shifts, in the middle of it and at the largest size that fits. Its caption keeps at least 288 px
+   of width, where it sets on two lines at most (13 px at 1.54, .hm-art__cap), and the drawing has
+   the height the caption leaves. */
+.hm-hero__held { container-type: size; align-content: center; }
+.hm-hero__held > .hm-hero__art {
+  --hd-fit: min(100cqw, 78vh * var(--hd-w) / var(--hd-h), (100cqh - var(--space-3) - 2 * 1.54 * 13px) * var(--hd-w) / var(--hd-h));
+  grid-column: auto; order: 0; margin-right: 0;
+  grid-template-columns: max(var(--hd-fit), min(100cqw, 288px));
+}
+.hm-hero__held .hm-art { width: var(--hd-fit); }
 
 /* ---------- Readouts ---------- */
 

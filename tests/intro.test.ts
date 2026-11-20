@@ -201,8 +201,45 @@ describe('beginIntro, after a client-side navigation', () => {
     section.setAttribute(ATTR, '120');
     blockStorage();
     expect(beginIntro(section)).toBe(true);
+    expect(section.hasAttribute(GO)).toBe(false);
     expect(introSeen()).toBe(true);
     expect(beginIntro(hero())).toBe(false);
+  });
+
+  it("starts the steps of a drawing that came into a sequence already playing (the media hero's, when its photo fails), and ends with them", async () => {
+    const { beginIntro } = await intro();
+    const draw = fakeAnimation();
+    const section = hero([draw]);
+    // The hero's first script set the mark at the first paint; the photo failed 300 ms later and
+    // the drawing took its slot, where no go script runs.
+    section.setAttribute(ATTR, String(performance.now()));
+    await vi.advanceTimersByTimeAsync(300);
+    expect(beginIntro(section)).toBe(true);
+    expect(section.hasAttribute(GO)).toBe(true);
+    // Its steps end 700 ms later; the marks stay until load.end since the first mark, then go.
+    await vi.advanceTimersByTimeAsync(700);
+    draw.finish();
+    await flush();
+    await vi.advanceTimersByTimeAsync(END - 1000 - 1);
+    expect(section.hasAttribute(ATTR) && section.hasAttribute(GO)).toBe(true);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(section.hasAttribute(ATTR) || section.hasAttribute(GO)).toBe(false);
+  });
+
+  it('leaves a drawing whose go script has run to that script', async () => {
+    const { beginIntro } = await intro();
+    const section = hero([fakeAnimation()]);
+    let listed = 0;
+    (section.querySelector('svg') as unknown as { getAnimations: () => FakeAnimation[] }).getAnimations = () => {
+      listed += 1;
+      return [];
+    };
+    section.setAttribute(ATTR, String(performance.now()));
+    section.setAttribute(GO, '');
+    expect(beginIntro(section)).toBe(true);
+    expect(listed).toBe(0);
+    await vi.advanceTimersByTimeAsync(END * 2);
+    expect(section.hasAttribute(ATTR) && section.hasAttribute(GO)).toBe(true);
   });
 
   it('never plays twice in one page when storage is blocked and hydration comes after the end', async () => {

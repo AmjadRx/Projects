@@ -28,6 +28,10 @@
  * - After a client-side navigation to the home page, where React's copies of those scripts never
  *   run, beginIntro(), called from a layout effect before the new page first paints. The drawing
  *   is already whole there, so it sets both marks at once.
+ * - For a drawing that comes into the hero while the sequence plays (media mode, when the photo
+ *   does not load: the drawing takes its slot), beginIntro() too, as the drawing mounts: it sets
+ *   data-intro-go, so the drawing's steps run from there, and ends the sequence as introGoScript()
+ *   would.
  *
  * Both play only when this visit has not seen the sequence, the visitor does not prefer reduced
  * motion, has not paused motion and has not turned on Save-Data (sheet 8.2: nothing plays by
@@ -206,13 +210,19 @@ function runIntro(section: HTMLElement, start: number): void {
 
 /**
  * Starts the sequence on a hero section the inline scripts never saw (a client-side navigation),
- * when this visit wants it. Returns true while the sequence plays on `section`, whoever started it.
- * Call it from a layout effect, so the start state is in place before the section first paints.
+ * when this visit wants it, or the steps of a drawing that came into a sequence already playing.
+ * Returns true while the sequence plays on `section`, whoever started it. Call it from a layout
+ * effect, so the start state is in place before the section first paints.
  */
 export function beginIntro(section: HTMLElement): boolean {
   if (section.hasAttribute(INTRO_ATTR)) {
-    // The inline scripts started it and end it; remember the visit here too.
+    // The inline scripts started it and end it; remember the visit here too. A drawing that came
+    // into the section after they ran (the media hero's, when its photo fails during the sequence:
+    // components/home/HeroMediaFallback.tsx) never ran its go script, so its steps start here.
     markIntroSeen();
+    if (!section.hasAttribute(INTRO_GO_ATTR) && section.querySelector(DRAWING)) {
+      runIntro(section, Number(section.getAttribute(INTRO_ATTR)));
+    }
     return true;
   }
   if (!introWanted(browserConditions())) return false;

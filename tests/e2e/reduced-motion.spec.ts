@@ -184,39 +184,80 @@ async function settled(items: Locator): Promise<string[]> {
   return places(items);
 }
 
-/** How many frames the sampler notes (startSampling): a swap and the frames after it. */
+/** How many frames the sampler notes when no swap is awaited (startSampling). */
 const SAMPLES = 12;
+/** A swap is over once this many frames in a row show the strip it gives way to. */
+const AFTER_FRAMES = 8;
+/** The most frames the sampler notes while it awaits a swap; one that never comes fails the check. */
+const MAX_SAMPLES = 900;
+
+/** One frame as the sampler saw it: where the elements were drawn, and whether the marker was in the page. */
+interface Sample {
+  at: string;
+  marker: boolean;
+}
 
 /**
- * Notes, once each of the next SAMPLES frames has been drawn, where the elements `selector` finds
- * were drawn in it (their left edges): a swap that drew a frame anywhere else, for one frame, shows.
+ * Notes where the elements `selector` finds are drawn (their left edges), and whether `marker`
+ * finds anything (which strip is there), now and once each frame after this one has been drawn: a
+ * swap that drew a frame anywhere else, for one frame, shows. With `to`, it goes on until
+ * AFTER_FRAMES frames in a row have shown the marker as `to` (the swap is over), at most
+ * MAX_SAMPLES frames; without it, for SAMPLES frames.
  */
-async function startSampling(page: Page, selector: string): Promise<void> {
+async function startSampling(page: Page, selector: string, marker: string, to?: boolean): Promise<void> {
   await page.evaluate(
-    ({ selector: find, count }) => {
-      const samples: string[] = [];
-      (window as unknown as { __e2eSamples: string[] }).__e2eSamples = samples;
-      const read = () => Array.from(document.querySelectorAll(find), (element) => element.getBoundingClientRect().left.toFixed(1)).join(',');
-      // After a frame's callbacks, once it has been drawn: where it was drawn.
+    ({ find, mark, until, count, after, most }) => {
+      const state = { samples: [] as { at: string; marker: boolean }[], done: false };
+      (window as unknown as { __e2eSamples: typeof state }).__e2eSamples = state;
+      const note = () =>
+        state.samples.push({
+          at: Array.from(document.querySelectorAll(find), (element) => element.getBoundingClientRect().left.toFixed(1)).join(','),
+          marker: document.querySelector(mark) !== null,
+        });
+      const over = () => {
+        const { samples } = state;
+        if (until === null) return samples.length >= count;
+        if (samples.length >= most) return true;
+        return samples.length >= after && samples.slice(-after).every((sample) => sample.marker === until);
+      };
+      // The frame drawn last, before the test acts; then, after each frame's callbacks, once it has
+      // been drawn: where it was drawn.
+      note();
       const next = () =>
         requestAnimationFrame(() =>
           setTimeout(() => {
-            samples.push(read());
-            if (samples.length < count) next();
+            note();
+            if (over()) state.done = true;
+            else next();
           }, 0),
         );
       next();
     },
-    { selector, count: SAMPLES },
+    { find: selector, mark: marker, until: to ?? null, count: SAMPLES, after: AFTER_FRAMES, most: MAX_SAMPLES },
   );
 }
 
-/** The places the sampler noted, once it has noted all of them. */
-async function sampled(page: Page): Promise<string[]> {
-  await page.waitForFunction((count) => ((window as unknown as { __e2eSamples?: string[] }).__e2eSamples?.length ?? 0) >= count, SAMPLES, {
+/** The frames the sampler noted, once it has done. */
+async function sampled(page: Page): Promise<Sample[]> {
+  await page.waitForFunction(() => (window as unknown as { __e2eSamples?: { done: boolean } }).__e2eSamples?.done === true, null, {
     polling: 100,
+    timeout: 60_000,
   });
-  return page.evaluate(() => (window as unknown as { __e2eSamples: string[] }).__e2eSamples);
+  return page.evaluate(() => (window as unknown as { __e2eSamples: { samples: Sample[] } }).__e2eSamples.samples);
+}
+
+/**
+ * The sampler saw the swap, from one strip to the other (the marker from `!to` to `to`) and on to
+ * its end, and every frame of it was drawn in one place.
+ */
+function expectSwapInPlace(samples: Sample[], to: boolean, what: string): void {
+  expect(samples[0]?.marker, `${what}: the frame before it shows the strip it starts from`).toBe(!to);
+  expect(samples.length, `${what}: it is over within ${MAX_SAMPLES} frames`).toBeLessThan(MAX_SAMPLES);
+  expect(
+    samples.slice(-AFTER_FRAMES).every((sample) => sample.marker === to),
+    `${what}: the last ${AFTER_FRAMES} frames show the strip it gives way to`,
+  ).toBe(true);
+  expect(new Set(samples.map((sample) => sample.at)).size, `${what}: every frame drawn in one place (${samples.length} frames)`).toBe(1);
 }
 
 /** The number of frames in a 250 ms span with a requestAnimationFrame callback: more than LOOP_FRAMES is a loop. */
@@ -238,12 +279,14 @@ test.describe('the pause control, with the page open', () => {
           const frames = gallery.locator('.ar-gal__frame');
           const count = gallery.locator('.ar-gal__count');
           // Carousel's items carry aria-hidden="false"; the still strip's carry none.
+          const CAROUSEL = 'section.ar-gal .mm-gal > ul > li[aria-hidden="false"]';
+          const FRAMES = 'section.ar-gal .ar-gal__frame';
           const carouselItems = gallery.locator('.mm-gal > ul > li[aria-hidden="false"]');
           // The server's still strip gives way to Carousel as it nears the view, drawn where it was.
-          await startSampling(page, 'section.ar-gal .ar-gal__frame');
+          await startSampling(page, FRAMES, CAROUSEL, true);
           await gallery.scrollIntoViewIfNeeded();
           await expect(carouselItems.first(), 'Carousel moves the strip with motion on').toBeAttached();
-          expect(new Set(await sampled(page)).size, 'every frame drawn in one place as Carousel takes over').toBe(1);
+          expectSwapInPlace(await sampled(page), true, 'Carousel takes over from the still strip');
 
           await gallery.getByRole('button', { name: UI.viewers.next, exact: true }).click();
           await expect(count).toHaveText(/^2 of \d+$/);
@@ -251,10 +294,10 @@ test.describe('the pause control, with the page open', () => {
           const counter = await count.textContent();
 
           await startShifts(page);
-          await startSampling(page, 'section.ar-gal .ar-gal__frame');
+          await startSampling(page, FRAMES, CAROUSEL, false);
           await pressPause(page);
           await expect(carouselItems, 'paused: the still strip, with no Carousel').toHaveCount(0);
-          expect(new Set(await sampled(page)).size, 'every frame of the swap drawn in one place').toBe(1);
+          expectSwapInPlace(await sampled(page), false, 'paused, the still strip takes over');
           expect(await places(frames), 'every frame where it was').toEqual(moving);
           await expect(count).toHaveText(counter ?? '');
           expect(await shiftsSince(page), 'layout shift as the still strip takes over').toBe(0);
@@ -276,10 +319,10 @@ test.describe('the pause control, with the page open', () => {
           expect(await loopFrames(page), 'still no frame loop').toBeLessThanOrEqual(LOOP_FRAMES);
 
           await startShifts(page);
-          await startSampling(page, 'section.ar-gal .ar-gal__frame');
+          await startSampling(page, FRAMES, CAROUSEL, true);
           await pressPause(page);
           await expect(carouselItems.first(), 'played again: Carousel is back').toBeAttached();
-          expect(new Set(await sampled(page)).size, 'every frame of the swap drawn in one place').toBe(1);
+          expectSwapInPlace(await sampled(page), true, 'played again, Carousel takes over');
           expect(await places(frames), 'every frame where the still strip had it').toEqual(moving);
           await expect(count).toHaveText(counter ?? '');
           expect(await shiftsSince(page), 'layout shift as Carousel takes over').toBe(0);
@@ -295,40 +338,47 @@ test.describe('the pause control, with the page open', () => {
       await page.addInitScript(installFrameMeter);
       await page.addInitScript(installShiftMeter);
       expect(await open(page, '/'), 'status').toBe(200);
+      const CAROUSEL = '.hm-feat--carousel';
+      const CARDS = '.hm-feat-box .hm-feat__item';
       const box = page.locator('.hm-feat-box');
-      const cards = box.locator('.hm-feat__item');
+      const cards = page.locator(CARDS);
       // Just below the window, within a quarter window of it: the Carousel takes the strip's place.
       await box.evaluate((element) => {
         const top = element.getBoundingClientRect().top + window.scrollY;
         window.scrollTo({ top: Math.max(0, top - window.innerHeight - 40), behavior: 'instant' });
       });
-      await expect(page.locator('.hm-feat--carousel'), 'the Carousel near the view, with motion on').toBeAttached({ timeout: 15_000 });
+      await expect(page.locator(CAROUSEL), 'the Carousel near the view, with motion on').toBeAttached({ timeout: 15_000 });
       await box.evaluate((element) => element.scrollIntoView({ block: 'center', behavior: 'instant' }));
       await page.getByRole('button', { name: UI.home.featuredStrip.next, exact: true }).click();
       const moving = await settled(cards);
       const marks = await page.locator('.hm-swipe__dots').innerHTML();
 
       await startShifts(page);
-      await startSampling(page, '.hm-feat-box .hm-feat__item');
+      await startSampling(page, CARDS, CAROUSEL, false);
       await pressPause(page);
-      await expect(page.locator('.hm-feat--carousel'), 'paused: the scrolling strip').toHaveCount(0);
-      expect(new Set(await sampled(page)).size, 'every frame of the swap drawn in one place').toBe(1);
+      await expect(page.locator(CAROUSEL), 'paused: the scrolling strip').toHaveCount(0);
+      expectSwapInPlace(await sampled(page), false, 'paused, the scrolling strip takes over');
       expect(await places(cards), 'every card where it was').toEqual(moving);
       expect(await page.locator('.hm-swipe__dots').innerHTML(), 'the marks on the same card').toBe(marks);
       expect(await shiftsSince(page), 'layout shift as the strip takes over').toBe(0);
       expect(await loopFrames(page), 'no frame loop with the strip in view').toBeLessThanOrEqual(LOOP_FRAMES);
 
       // Played again in the window: the strip stays there; once it has left the window the Carousel comes back.
-      await startSampling(page, '.hm-feat-box .hm-feat__item');
+      await startSampling(page, CARDS, CAROUSEL);
       await pressPause(page);
-      expect(new Set(await sampled(page)).size, 'the strip stays where it is in the window').toBe(1);
-      await expect(page.locator('.hm-feat--carousel')).toHaveCount(0);
+      const played = await sampled(page);
+      expect(
+        played.every((sample) => !sample.marker),
+        'no Carousel while the strip is in the window',
+      ).toBe(true);
+      expect(new Set(played.map((sample) => sample.at)).size, 'the strip stays where it is in the window').toBe(1);
+      await expect(page.locator(CAROUSEL)).toHaveCount(0);
       expect(await places(cards)).toEqual(moving);
       await box.evaluate((element) => {
         const top = element.getBoundingClientRect().top + window.scrollY;
         window.scrollTo({ top: Math.max(0, top - window.innerHeight - 40), behavior: 'instant' });
       });
-      await expect(page.locator('.hm-feat--carousel'), 'out of the window, the Carousel is back').toBeAttached({ timeout: 15_000 });
+      await expect(page.locator(CAROUSEL), 'out of the window, the Carousel is back').toBeAttached({ timeout: 15_000 });
     });
   });
 });
