@@ -37,9 +37,11 @@
 
 /* Glass and the night wells. Glass dims and blurs the sky behind a panel; Whiteprint has no sky,
    so its glass is the plain white panel. Inside a night well (photos, video, viewers) lines and
-   labels use the night inks in both themes. */
+   labels use the night inks in both themes. site: the sticky nav and the phone menu's sheet, which
+   photos pass under, dim by --nav-glass-dim (app/tokens.css says why). */
 :root, [data-theme] {
   --glass-filter: blur(var(--glass-blur)) brightness(var(--glass-dim));
+  --nav-glass-filter: blur(var(--glass-blur)) brightness(var(--nav-glass-dim));
   --night-line: var(--line);
   --on-night-dim: color-mix(in srgb, var(--on-night) 72%, var(--night));
   --night-rule: color-mix(in srgb, var(--on-night) 30%, transparent);
@@ -48,6 +50,7 @@
 }
 [data-theme="whiteprint"] {
   --glass-filter: none;
+  --nav-glass-filter: none;
   --night-line: var(--on-night);
   --night-grid-minor: color-mix(in srgb, var(--on-night) 6%, transparent);
   --night-grid-major: color-mix(in srgb, var(--on-night) 12%, transparent);
@@ -257,7 +260,9 @@ html[data-theme="whiteprint"] .ar-theme__opt[data-value="whiteprint"] { backgrou
 
 /* ---------- 8. Nav ---------- */
 
-.ar-nav { position: relative; z-index: 10; background-color: var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); border-bottom: 1px solid var(--rule); }
+/* site: the nav's glass dims what scrolls under it by half (--nav-glass-filter, section 1), so its
+   ink-dim words keep AA over a white photo (app/tokens.css). */
+.ar-nav { position: relative; z-index: 10; background-color: var(--glass); -webkit-backdrop-filter: var(--nav-glass-filter); backdrop-filter: var(--nav-glass-filter); border-bottom: 1px solid var(--rule); }
 /* site: the nav is sticky; inside the sheet frame it starts at the frame's inset. */
 .ar-nav--sticky { position: sticky; top: 0; z-index: 30; }
 .ar-nav__in {
@@ -798,8 +803,10 @@ html[data-theme="whiteprint"] .ar-theme__opt[data-value="whiteprint"] { backgrou
 .ar-mmenu__foot { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-4); margin-top: auto; padding: var(--space-5) var(--gutter-phone) var(--space-6); border-top: 1px solid var(--rule); }
 .ar-mmenu__social { display: flex; flex-wrap: wrap; gap: 0 var(--space-5); margin: 0; padding: 0; list-style: none; }
 .ar-mmenu__roll { position: absolute; inset: 0; display: flex; flex-direction: column; overflow: hidden; }
-/* site: the sheet scrolls when a short window (a phone on its side) cannot show it all. */
-.ar-mmenu__sheet { display: flex; flex-direction: column; flex: 1; min-height: 100%; overflow-y: auto; overscroll-behavior: contain; background-color: var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); }
+/* site: the sheet scrolls when a short window (a phone on its side) cannot show it all. It is the
+   nav's glass (section 1, --nav-glass-filter): it lies over whatever the page shows, photos too,
+   and its line-colored LinkedIn and GitHub keep AA over a white one. */
+.ar-mmenu__sheet { display: flex; flex-direction: column; flex: 1; min-height: 100%; overflow-y: auto; overscroll-behavior: contain; background-color: var(--glass); -webkit-backdrop-filter: var(--nav-glass-filter); backdrop-filter: var(--nav-glass-filter); }
 
 /* ---------- 20. Footer ---------- */
 
@@ -1007,10 +1014,12 @@ html[data-theme="whiteprint"] .ar-theme__opt[data-value="whiteprint"] { backgrou
    ink-mute down to 3.6 to 1. So the fill is the panel color itself, and text on glass keeps the
    tokens' own contrast with --sheet-2 over any sky: ink 12.4, ink-dim 7.4, ink-mute 4.7 to 1, all
    AA. Whiteprint's glass is already the plain white panel. Only where the page shows the sky: the
-   head script cannot know settings.background, and the flat grid or the plain sheet keeps its glass. */
+   head script cannot know settings.background, and the flat grid or the plain sheet keeps its glass.
+   The nav's glass (section 1) drops its blur with the rest. */
 :root[data-sky-tier="light"]:not([data-theme="whiteprint"]):has(.ar-sky[data-background="sky"]) {
   --glass: var(--sheet-2);
   --glass-filter: none;
+  --nav-glass-filter: none;
 }
 
 /* ---------- 25. Media viewers (one frame for every kind of attachment) ---------- */

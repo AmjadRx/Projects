@@ -115,6 +115,22 @@
 [data-theme="whiteprint"] { color-scheme: light; }
 
 /*
+ * Not part of the bundle: the sticky nav's glass and its shortcut hint. Photos scroll under the nav
+ * and lie under the open phone menu, as under no other glass: over a white one the shared glass
+ * comes to #4a5b79, where ink-dim (the nav's links, LinkedIn, GitHub, Search) falls to 3.63 to 1,
+ * ink-mute (the hint, "Ctrl K") to 2.31, and line (the menu's LinkedIn and GitHub) to 4.34. So the
+ * nav and the menu's sheet dim what lies under them by half rather than by a third
+ * (--nav-glass-filter, app/sheet.css 1): never lighter than #3a4a68 behind their words, where
+ * ink-dim keeps 4.69 to 1 and line 5.61, while over the dark sky the bar is all but unchanged. In
+ * Blueprint the hint is ink-dim, the bundle's muted text wherever ink-mute would fall under AA (here
+ * it would need a bar near opaque); Whiteprint's nav is the plain white panel, where ink-mute keeps
+ * 5.15 to 1. tests/token-contrast.test.ts checks each pair.
+ */
+:root { --nav-glass-dim: 0.5; }
+:root, [data-theme="blueprint"] { --nav-hint: var(--ink-dim); }
+[data-theme="whiteprint"] { --nav-hint: var(--ink-mute); }
+
+/*
  * The printed page (app/print.css): the canvas's Print board's paper and inks, the same whichever
  * theme is on screen. Near-black Prussian ink on white, dim and mute inks darker than the screen's
  * for paper, the line color, and a firmer rule. app/print.css maps the theme tokens onto these.
