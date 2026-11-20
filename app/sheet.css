@@ -896,7 +896,17 @@ html[data-theme="whiteprint"] .ar-theme__opt[data-value="whiteprint"] { backgrou
    horizon the still is scaled by the window's projection scale --k (projScale, written with the
    container's units) over the scale it was drawn at, about the horizon's centre; below the horizon
    its ground is stretched to the window, which keeps the grid's lines and rows where the scene
-   draws them. A window wider than 2.7 to 1 stretches it sideways. */
+   draws them. A window wider than 2.7 to 1 stretches it sideways.
+   site (Phase 7): both parts are boxes the size of the window (inset 0) that place the image in
+   them with background-size and background-position, each clipped to its side of the horizon. A
+   browser treats an image that fills the whole window as the page's background, not as its largest
+   content (Chromium leaves an image whose painted area, after clips, is the whole viewport out of
+   Largest Contentful Paint), so the page's LCP is its own largest words or picture, as for a
+   visitor, and never waits for this decoration. So each clip is a polygon, not an inset: its band
+   of the window plus a spike of no area outside the box, along x = -1px, that reaches the window's
+   other edge. The spike paints nothing, but the clip's bounds, which the metric reads, are the
+   whole box. The pixels are the earlier clipped boxes' to within sub-pixel resampling: the image
+   now sits on whole pixels, where the box with its translateX(-50%) drew it at fractions of one. */
 .ar-sky__still {
   inset: 0;
   --sky-still: var(--sky-still-phone, var(--sky-still-phone-fallback));
@@ -925,17 +935,23 @@ html[data-theme="whiteprint"] .ar-theme__opt[data-value="whiteprint"] { backgrou
   [data-theme="whiteprint"] .ar-sky__still { --sky-still: url("/sky/still/whiteprint-desktop.webp"); }
 }
 .ar-sky__still::before, .ar-sky__still::after {
-  content: ""; position: absolute;
-  background-image: var(--sky-still); background-repeat: no-repeat; background-size: 100% 100%;
+  content: ""; position: absolute; inset: 0;
+  background-image: var(--sky-still); background-repeat: no-repeat;
 }
 .ar-sky__still::before {
   --k: min(calc(var(--sky-k-h) * 100cqh), max(calc(var(--sky-k-w) * 100cqw), calc(var(--sky-k-c) * 100cqh)));
-  left: 50%; top: calc(var(--sky-hz) * 100cqh - var(--k) * var(--sky-still-hy));
-  width: max(calc(var(--k) * var(--sky-still-w)), 100cqw); height: calc(var(--k) * var(--sky-still-h));
-  transform: translateX(-50%);
-  clip-path: inset(0 0 calc(var(--sky-still-ground) * 100%) 0);
+  background-size: max(calc(var(--k) * var(--sky-still-w)), 100cqw) calc(var(--k) * var(--sky-still-h));
+  background-position: 50% calc(var(--sky-hz) * 100cqh - var(--k) * var(--sky-still-hy));
+  /* Above the horizon, and a spike down the left side, outside the box, to the foot. */
+  clip-path: polygon(0 0, 100% 0, 100% calc(var(--sky-hz) * 100%), 0 calc(var(--sky-hz) * 100%),
+    -1px calc(var(--sky-hz) * 100%), -1px 100%, -1px calc(var(--sky-hz) * 100%), 0 calc(var(--sky-hz) * 100%));
 }
-.ar-sky__still::after { inset: 0; clip-path: inset(calc(var(--sky-hz) * 100%) 0 0 0); }
+.ar-sky__still::after {
+  background-size: 100% 100%;
+  /* Below the horizon, and a spike up the left side, outside the box, to the top. */
+  clip-path: polygon(0 calc(var(--sky-hz) * 100%), 100% calc(var(--sky-hz) * 100%), 100% 100%, 0 100%,
+    0 calc(var(--sky-hz) * 100%), -1px calc(var(--sky-hz) * 100%), -1px 0, -1px calc(var(--sky-hz) * 100%));
+}
 /* The live scene's canvases, faded in over the still once its first frame is drawn (the host adds
    .is-ready, never sooner than 400 ms after the first paint). */
 .ar-sky__live { inset: 0; opacity: 0; transition: opacity var(--sky-fade) ease-out; }
