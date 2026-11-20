@@ -84,7 +84,7 @@ export function createThemeProxy({ upstreamPort, cookie }) {
 }
 
 /** A port nothing listens on now. */
-function freePort() {
+export function freePort() {
   return new Promise((resolve, reject) => {
     const probe = net.createServer();
     probe.unref();
