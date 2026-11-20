@@ -44,8 +44,13 @@ function longestWord(title: string): number {
   return Math.max(0, ...title.split(/\s+|(?<=-)/).map((word) => word.length));
 }
 
-/** The cover's width: the main column of eight from 1024 px (800 px at most), else the full width. */
-const COVER_SIZES = '(min-width: 1280px) 800px, (min-width: 1024px) 62vw, 100vw';
+/**
+ * The cover's width as drawn, so a phone or a laptop asks for no bigger a file than it shows: the
+ * column inside the 20 px gutters below 1024 px; from 1024 px eight of twelve columns (32 px gaps)
+ * inside the frame's 16 px inset and the 32 px gutters, which reach their 800 px at a 1344 px window
+ * (the 1280 px content width). Measured in Chrome from 360 to 2560 px.
+ */
+const COVER_SIZES = '(min-width: 1344px) 800px, (min-width: 1024px) calc(66.67vw - 75px), calc(100vw - 40px)';
 
 /**
  * The page's address as the printed sheet's frame band shows it ("amjadrehawi.com/projects/raven";
