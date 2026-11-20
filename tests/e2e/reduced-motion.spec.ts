@@ -17,13 +17,16 @@
 import type { BrowserContext, Locator, Page } from '@playwright/test';
 import { UI } from '../../lib/strings';
 import { expect, newVisitor, test } from './support/fixtures';
-import { frameActivity, installFrameMeter, restScan, type RestReading } from './support/motion';
+import {
+  frameActivity,
+  installFrameMeter,
+  LOOP_FRAMES,
+  LOOP_SPAN_MS as SPAN_MS,
+  restScan,
+  type RestReading,
+} from './support/motion';
 import { open, readableText, twoFrames, visitWholePage, waitForReady } from './support/page';
 import { DESKTOP, device, GALLERY_PAGES, PHONE, routeTitle, ROUTES } from './support/site';
-
-/** A span of this many milliseconds with a callback in more than LOOP_FRAMES frames holds a loop. */
-const SPAN_MS = 250;
-const LOOP_FRAMES = 2;
 
 /**
  * What is wrong at each place of a scan, with the places next to each other that share a problem
