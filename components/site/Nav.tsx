@@ -27,7 +27,8 @@ const SOCIAL_ICONS: Record<string, LucideIcon> = {
  * the social links with showInNav as icon and word (CONTENT_RULES.md 4: LinkedIn is shown as the
  * word "LinkedIn"), and the compact theme toggle, from 1024 px; below that, the name and the Menu
  * button. The search button opens the command palette at every width (components/palette/; its
- * icon and words are drawn here, on the server). Along its foot runs the heat rule, the page
+ * icon and words are drawn here, on the server; app/palette.css fits the row to it down to 320 px,
+ * with Menu as its icon alone under 360 px). Along its foot runs the heat rule, the page
  * progress cold to hot (HeatRule, motion sheet 7.1). The nav itself never moves or hides on scroll.
  * Inside the sheet frame it starts at the frame's inset.
  */

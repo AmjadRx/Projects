@@ -192,13 +192,16 @@ export const UI = {
     sectionOf: (project: string, heading: string) => `${project}: ${heading}`,
     /** The keys under the list (hidden from assistive technology, which hears the combobox). */
     keys: { up: '↑', down: '↓', move: 'to move', enter: 'Enter', go: 'to open', esc: 'Esc', close: 'to close' },
-    /** Nothing matches: what to try instead, with the nav's page names when there are any. */
+    /**
+     * Nothing matches: what to try instead, with the nav's page names when there are any. Shown in
+     * place of the list, and said politely in place of the count.
+     */
     noMatch: (query: string, pages: readonly string[]) =>
       pages.length > 0
         ? `No match for "${query}". Try a project name or a page: ${pages.join(', ')}.`
         : `No match for "${query}". Try a project name.`,
-    /** Said politely after the results change. */
-    count: (n: number) => (n === 0 ? 'No results' : n === 1 ? '1 result' : `${n} results`),
+    /** Said politely after the results change, when there are any. */
+    count: (n: number) => (n === 1 ? '1 result' : `${n} results`),
   },
   heroCaption: 'Raven, tri-tiltrotor eVTOL. Illustration, not measured data.',
   viewers: {

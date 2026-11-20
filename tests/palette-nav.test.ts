@@ -3,7 +3,8 @@
  * PaletteTrigger.tsx): it renders closed with its name, shortcut, icon and words, and no palette
  * markup; the palette's code is not part of the button's module graph (it loads on demand); and,
  * laid out by a real browser with the site's own stylesheets and fonts, the nav does not overflow
- * at 390 px, nor at 768, 1024, 1280 or 1440, with the button a 44 px target at each.
+ * from 320 px (WCAG 1.4.10) through 360, 390, 768, 1024, 1280 and 1440, with the button and Menu
+ * 44 px targets at each, Menu keeping its word from 360 px and its name at every width.
  *
  * The layout check needs Google Chrome (playwright-core, channel "chrome", or CHROME_PATH); where
  * no browser can start it is skipped and says so.
@@ -122,7 +123,7 @@ async function launch() {
 }
 
 describe('the nav laid out in a browser', () => {
-  it('does not overflow at 390 px or any other width, and the button is a 44 px target', { timeout: 90_000 }, async (context) => {
+  it('does not overflow from 320 px up, and the button and Menu are 44 px targets', { timeout: 90_000 }, async (context) => {
     const browser = await launch();
     if (typeof browser === 'string') {
       context.skip(`no browser could start: ${browser.split('\n')[0]}`);
@@ -141,7 +142,7 @@ describe('the nav laid out in a browser', () => {
           await Promise.all([...document.fonts].map((face) => face.load()));
           await document.fonts.ready;
         });
-        for (const width of [390, 768, 1024, 1280, 1440]) {
+        for (const width of [320, 360, 390, 768, 1024, 1280, 1440]) {
           await page.setViewportSize({ width, height: 800 });
           const report = await page.evaluate(() => {
             const inner = document.querySelector('.ar-nav__in') as HTMLElement;
@@ -156,12 +157,19 @@ describe('the nav laid out in a browser', () => {
               .filter((el) => el.getBoundingClientRect().right > right + 0.5 || el.getBoundingClientRect().left < left - 0.5)
               .map((el) => el.className || el.tagName);
             const button = (document.querySelector('.ar-nav__search') as HTMLElement).getBoundingClientRect();
+            const menu = document.querySelector('.ar-nav__tools .ar-menubtn') as HTMLElement;
+            const menuBox = menu.getBoundingClientRect();
+            const menuWord = menu.querySelector('span') as HTMLElement;
             const fonts = [...document.fonts].filter((face) => face.status === 'loaded').map((face) => face.family);
             return {
               innerOverflow: inner.scrollWidth - inner.clientWidth,
               pageOverflow: document.documentElement.scrollWidth - window.innerWidth,
               outside,
               button: { width: button.width, height: button.height, right: button.right },
+              menu: { drawn: menu.getClientRects().length > 0, width: menuBox.width, height: menuBox.height, name: menu.textContent },
+              // Drawn as a word, or kept only as the button's name (clipped to a pixel).
+              menuWordShown: menuWord.getBoundingClientRect().width > 1,
+              navDrawn: (inner.querySelector(':scope > nav') as HTMLElement).getClientRects().length > 0,
               right,
               fonts,
               word: getComputedStyle(document.querySelector('.ar-nav__search-text') as HTMLElement).display,
@@ -179,6 +187,16 @@ describe('the nav laid out in a browser', () => {
           // The icon alone under 1024 px; the shortcut from 1024 px; the word from 1280 px.
           expect(report.kbd !== 'none', where).toBe(width >= 1024);
           expect(report.word !== 'none', where).toBe(width >= 1280);
+          // The links' <nav> is in the row only where its links are drawn, from 1024 px.
+          expect(report.navDrawn, where).toBe(width >= 1024);
+          // Menu under 1024 px: a 44 px target named "Menu", its word drawn from 360 px.
+          expect(report.menu.drawn, where).toBe(width < 1024);
+          if (width < 1024) {
+            expect(report.menu.width, where).toBeGreaterThanOrEqual(44);
+            expect(report.menu.height, where).toBeGreaterThanOrEqual(44);
+            expect(report.menu.name, where).toBe('Menu');
+            expect(report.menuWordShown, where).toBe(width >= 360);
+          }
         }
       }
     } finally {

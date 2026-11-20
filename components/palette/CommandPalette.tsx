@@ -5,6 +5,7 @@ import { ArrowRight, Search } from 'lucide-react';
 import {
   useEffect,
   useId,
+  useLayoutEffect,
   useMemo,
   useReducer,
   useRef,
@@ -16,7 +17,16 @@ import {
 import Icon from '@/components/sheet/Icon';
 import type { PaletteIndex } from '@/lib/palette';
 import { UI } from '@/lib/strings';
-import { activeResult, paletteKey, paletteStep, PALETTE_START, searchPalette, type PaletteHit, type PaletteResult } from './model';
+import {
+  activeResult,
+  paletteKey,
+  paletteStep,
+  PALETTE_START,
+  searchPalette,
+  type PaletteHit,
+  type PaletteKey,
+  type PaletteResult,
+} from './model';
 import { PALETTE_CLASS } from './shortcut';
 
 /**
@@ -61,6 +71,19 @@ function drawn(element: HTMLElement | null): element is HTMLElement {
   return element !== null && element.getClientRects().length > 0;
 }
 
+/** What a key does in the palette (the field's React handler passes its native event). */
+function intentOf(event: KeyboardEvent): PaletteKey {
+  return paletteKey({
+    key: event.key,
+    altKey: event.altKey,
+    ctrlKey: event.ctrlKey,
+    metaKey: event.metaKey,
+    shiftKey: event.shiftKey,
+    // keyCode 229: the key that ends a composition (Safari), still the input method's.
+    isComposing: event.isComposing || event.keyCode === 229,
+  });
+}
+
 /**
  * The command palette (ARCHITECTURE.md 5, "Also new"; the bundle's CommandPalette, bundle.css 33;
  * the Palette boards at 1440 px in both themes and at 390 px): a modal dialog over a scrim with one
@@ -70,9 +93,12 @@ function drawn(element: HTMLElement | null): element is HTMLElement {
  *
  * The WAI-ARIA combobox with a listbox inside a modal dialog: focus stays in the field, Down and Up
  * move the active result (aria-activedescendant, aria-selected) round the list, Enter opens it,
- * Escape closes, and Tab stays inside (one of the three focus traps ARCHITECTURE.md 10 allows). The
- * count of results is read politely. The results are links, so a click, a middle click, or a
- * link's own menu work as anywhere; they take no Tab stop. The page behind does not scroll.
+ * Escape closes, and Tab stays inside (one of the three focus traps ARCHITECTURE.md 10 allows).
+ * Escape and Tab are answered on the document, as the shared focus trap answers them
+ * (components/viewers/shared/hooks.ts), so they work wherever focus is, even where it has fallen
+ * to the page. The count of results is read politely, and when nothing matches, what to try. The
+ * results are links, so a click, a middle click, or a link's own menu work as anywhere; they take
+ * no Tab stop. The page behind does not scroll.
  *
  * Nothing moves (motion sheets 7 and 8): it opens and closes at once, and the results change at
  * once as the visitor types, with or without reduced motion or the pause control.
@@ -89,9 +115,15 @@ export default function CommandPalette({ id, index, onClose, onChoose }: Command
   const panelRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
-  // Open: focus in the field, the page held still, and focus kept inside while open.
-  useEffect(() => {
+  // Open: focus in the field, the page held still, and focus kept inside while open. Focus that
+  // moves out comes back to the field; Escape closes and Tab moves between the drawn stops (the
+  // field, and Close under 768 px) from wherever focus is, the page behind included. Done before
+  // the first paint (this component is only ever drawn in the browser), so no key typed as the
+  // palette appears goes astray.
+  useLayoutEffect(() => {
     const input = inputRef.current;
     input?.focus({ preventScroll: true });
     const root = document.documentElement;
@@ -101,9 +133,26 @@ export default function CommandPalette({ id, index, onClose, onChoose }: Command
       const panel = panelRef.current;
       if (panel && event.target instanceof Node && !panel.contains(event.target)) input?.focus({ preventScroll: true });
     };
+    const onKey = (event: KeyboardEvent) => {
+      const intent = intentOf(event);
+      if (intent === 'close') {
+        // This layer's Escape only, as the shared trap answers it.
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        onCloseRef.current(true);
+      } else if (intent === 'tab') {
+        event.preventDefault();
+        const stops = ([input, closeRef.current] as (HTMLElement | null)[]).filter(drawn);
+        const at = stops.indexOf(document.activeElement as HTMLElement);
+        const next = at < 0 ? 0 : (at + (event.shiftKey ? -1 : 1) + stops.length) % stops.length;
+        stops[next]?.focus();
+      }
+    };
     document.addEventListener('focusin', keepFocus);
+    document.addEventListener('keydown', onKey, true);
     return () => {
       document.removeEventListener('focusin', keepFocus);
+      document.removeEventListener('keydown', onKey, true);
       root.style.overflow = overflow;
     };
   }, []);
@@ -115,11 +164,12 @@ export default function CommandPalette({ id, index, onClose, onChoose }: Command
     if (option && typeof option.scrollIntoView === 'function') option.scrollIntoView({ block: 'nearest' });
   }, [activeId, results]);
 
-  // The count, read politely once typing pauses.
+  // The count, read politely once typing pauses; when nothing matches, what to try instead.
+  const announce = count > 0 ? UI.palette.count(count) : UI.palette.noMatch(state.query.trim(), index.pages);
   useEffect(() => {
-    const timer = setTimeout(() => setSaid(UI.palette.count(count)), ANNOUNCE_DELAY_MS);
+    const timer = setTimeout(() => setSaid(announce), ANNOUNCE_DELAY_MS);
     return () => clearTimeout(timer);
-  }, [count, state.query]);
+  }, [announce, state.query]);
 
   /** A result's link was followed: close, with focus back only when it leads to the page shown. */
   const choose = (result: PaletteResult, event: ReactMouseEvent<HTMLAnchorElement>) => {
@@ -129,32 +179,10 @@ export default function CommandPalette({ id, index, onClose, onChoose }: Command
     onClose(result.href === `${window.location.pathname}${window.location.search}`);
   };
 
-  const onKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
-    const intent = paletteKey({
-      key: event.key,
-      altKey: event.altKey,
-      ctrlKey: event.ctrlKey,
-      metaKey: event.metaKey,
-      shiftKey: event.shiftKey,
-      isComposing: event.nativeEvent.isComposing || event.keyCode === 229,
-    });
-    if (intent === null) return;
-    if (intent === 'close') {
-      event.preventDefault();
-      onClose(true);
-      return;
-    }
-    if (intent === 'tab') {
-      event.preventDefault();
-      const stops = ([inputRef.current, closeRef.current] as (HTMLElement | null)[]).filter(drawn);
-      if (stops.length === 0) return;
-      const at = stops.indexOf(document.activeElement as HTMLElement);
-      const next = at < 0 ? 0 : (at + (event.shiftKey ? -1 : 1) + stops.length) % stops.length;
-      stops[next].focus();
-      return;
-    }
-    // The arrows and Enter belong to the field; on the Close button, Enter presses the button.
-    if (event.target !== inputRef.current) return;
+  // The arrows and Enter, in the field (on the Close button, Enter presses the button).
+  const onKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {
+    const intent = intentOf(event.nativeEvent);
+    if (intent !== 'next' && intent !== 'previous' && intent !== 'go') return;
     event.preventDefault();
     if (intent === 'go') {
       // Through the link itself, so the router follows it as it follows any link.
@@ -174,7 +202,6 @@ export default function CommandPalette({ id, index, onClose, onChoose }: Command
         role="dialog"
         aria-modal="true"
         aria-label={UI.palette.label}
-        onKeyDown={onKeyDown}
         onMouseDown={(event) => {
           // A press anywhere in the panel but the field keeps the field's focus, so typing goes on.
           if (event.target !== inputRef.current) event.preventDefault();
@@ -195,6 +222,7 @@ export default function CommandPalette({ id, index, onClose, onChoose }: Command
             placeholder={UI.palette.label}
             value={state.query}
             onChange={(event) => dispatch({ type: 'query', query: event.target.value })}
+            onKeyDown={onKeyDown}
             autoComplete="off"
             autoCapitalize="none"
             autoCorrect="off"

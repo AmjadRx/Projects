@@ -24,7 +24,8 @@
 .ar-nav__search-text { display: none; }
 /* site: the bundle shows the button from 1024 px only, but the Palette boards open the palette on a
    phone (390 px, with its Close button), so under 1024 px the button stays as its icon alone, a
-   44 px square beside Menu; the shortcut it names joins it from 1024 px, the word from 1280 px. */
+   44 px square beside Menu (the row is fitted to it below); the shortcut it names joins it from
+   1024 px, the word from 1280 px. */
 .ar-nav__search { min-width: var(--touch-target); }
 .ar-nav__search .ar-nav__kbd { display: none; }
 @container frame (min-width: 1024px) {
@@ -32,6 +33,24 @@
 }
 @container frame (min-width: 1280px) {
   .ar-nav__search-text { display: inline; }
+}
+/* site: while the palette's code and index are on the way, the pointer says so (aria-busy,
+   PaletteTrigger.tsx). */
+.ar-nav__search[aria-busy="true"] { cursor: progress; }
+/* site: so that the name, the search button and Menu share one row down to 320 px (WCAG 1.4.10):
+   under 1024 px the nav's links are in the phone menu, so their empty <nav> leaves the row (it
+   would cost a 32 px gap) and the tools sit 8 px apart, which fits from 352 px with the seed's
+   name; under 360 px Menu shows its icon alone, a 44 px square, its word kept as its name. */
+@container frame (max-width: 1023px) {
+  .ar-nav__in > nav { display: none; }
+  .ar-nav__tools { gap: var(--space-2); }
+}
+@container frame (max-width: 359px) {
+  .ar-nav__tools .ar-menubtn { position: relative; justify-content: center; width: var(--touch-target); padding: 0; }
+  .ar-nav__tools .ar-menubtn > span {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0;
+    overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+  }
 }
 
 /* ---------- The palette ---------- */

@@ -1,12 +1,13 @@
 // @vitest-environment jsdom
 /**
  * The command palette in a document (components/palette/PaletteTrigger.tsx and CommandPalette.tsx):
- * the nav's button and the shortcut open it on demand; focus goes to the field and stays inside
- * (Tab included) while it is open; the arrow keys move the active result (aria-activedescendant,
- * aria-selected); Enter follows the active result's link; Escape, Close, the scrim, and the
- * shortcut again close it and return focus to what opened it; a section chosen takes focus once its
- * page shows it; the count is read politely; the page behind is held still; and the shortcut does
- * nothing in a field or over another layer.
+ * the nav's button and the shortcut open it on demand, and a request still loading can be called
+ * off; focus goes to the field and stays inside (Tab included, from wherever focus has fallen)
+ * while it is open; the arrow keys move the active result (aria-activedescendant, aria-selected);
+ * Enter follows the active result's link; Escape, Close, the scrim, and the shortcut again close it
+ * and return focus to what opened it; the chosen page's main, or the chosen section, takes focus
+ * once its page shows it; the count, or what to try, is read politely; the page behind is held
+ * still; and the shortcut does nothing in a field or over another layer.
  */
 import { act, createElement as h, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
@@ -72,6 +73,33 @@ const dialog = () => document.querySelector<HTMLElement>('[role="dialog"]');
 const input = () => document.querySelector<HTMLInputElement>('.ar-cmdk__input')!;
 const options = () => Array.from(document.querySelectorAll<HTMLAnchorElement>('[role="option"]'));
 const activeOption = () => document.querySelector<HTMLAnchorElement>('[role="option"][aria-selected="true"]');
+const main = () => document.getElementById('main')!;
+
+/** The page shows another route, as the router does after a link (the nav stays mounted). */
+async function showRoute(pathname: string) {
+  route.pathname = pathname;
+  await act(async () => root!.render(trigger()));
+}
+
+/** Holds the index's fetch until the returned function lets it through. */
+function holdIndex(): () => Promise<void> {
+  let release = () => {};
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => {
+      fetchCalls += 1;
+      await gate;
+      return new Response(JSON.stringify(INDEX), { status: 200 });
+    }),
+  );
+  return async () => {
+    release();
+    await settle();
+  };
+}
 
 /** Lets the dynamic import and the fetch settle, then React render. */
 async function settle() {
@@ -116,12 +144,15 @@ beforeEach(async () => {
       return new Response(JSON.stringify(INDEX), { status: 200, headers: { 'content-type': 'application/json' } });
     }),
   );
-  // The page frame the palette is drawn in, as on the site (components/site/SiteChrome.tsx).
+  // The page frame the palette is drawn in, as on the site (components/site/SiteChrome.tsx), with
+  // its main, the skip link's target.
   frame = document.createElement('div');
   frame.className = 'ar-frame';
   const header = document.createElement('header');
   const mount = document.createElement('div');
   const page = document.createElement('main');
+  page.id = 'main';
+  page.tabIndex = -1;
   page.innerHTML = '<a id="before" href="/about">About</a><h2 id="rv-e">Roadmap</h2><h2 id="rv-h">Build photos</h2><input id="field">';
   header.appendChild(mount);
   frame.append(header, page);
@@ -238,7 +269,7 @@ describe('the combobox', () => {
     expect(event.defaultPrevented).toBe(true);
   });
 
-  it('reads the count politely once typing pauses', async () => {
+  it('reads the count politely once typing pauses, and what to try when nothing matches', async () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     await act(async () => button().click());
     for (let i = 0; i < 5; i += 1) await act(async () => vi.advanceTimersByTimeAsync(0));
@@ -257,28 +288,53 @@ describe('the combobox', () => {
     expect(status.textContent).toBe('1 result');
     type('zzz');
     await act(async () => vi.advanceTimersByTimeAsync(600));
-    expect(status.textContent).toBe('No results');
+    // The empty state's own sentence, the one drawn in place of the list.
+    const sentence = 'No match for "zzz". Try a project name or a page: Projects, Build log.';
+    expect(document.querySelector('.ar-cmdk__empty')?.textContent).toBe(sentence);
+    expect(status.textContent).toBe(sentence);
+    type('zzzq');
+    await act(async () => vi.advanceTimersByTimeAsync(600));
+    expect(status.textContent).toBe('No match for "zzzq". Try a project name or a page: Projects, Build log.');
   });
 });
 
 describe('going to a result', () => {
-  it('follows the active result on Enter and closes, leaving focus to the new page', async () => {
+  it("follows the active result on Enter, closes, and focuses the new page's main once it is shown", async () => {
     await openByButton();
     type('build log');
     key(input(), { key: 'Enter' });
     await settle();
     expect(route.followed).toEqual(['/log']);
     expect(dialog()).toBeNull();
-    expect(document.activeElement).not.toBe(button());
     expect(document.documentElement.style.overflow).toBe('');
+    // The router has not shown the page yet: focus waits for it, and does not go back to the button.
+    expect(document.activeElement).not.toBe(button());
+    expect(document.activeElement).not.toBe(main());
+    await showRoute('/log');
+    expect(document.activeElement).toBe(main());
+    // main is the skip link's target, focusable already: nothing is added to it.
+    expect(main().getAttribute('tabindex')).toBe('-1');
   });
 
-  it('follows a clicked result the same way', async () => {
+  it('follows a clicked result the same way, a project included', async () => {
     await openByButton();
     await act(async () => options()[3].click());
     await settle();
     expect(route.followed).toEqual(['/projects/raven']);
     expect(dialog()).toBeNull();
+    await showRoute('/projects/raven');
+    expect(document.activeElement).toBe(main());
+  });
+
+  it('forgets where focus was to go if the visitor goes elsewhere first', async () => {
+    await openByButton();
+    type('build log');
+    key(input(), { key: 'Enter' });
+    await settle();
+    await showRoute('/about');
+    expect(document.activeElement).not.toBe(main());
+    await showRoute('/log');
+    expect(document.activeElement).not.toBe(main());
   });
 
   it('returns focus to the button when the result is the page already shown', async () => {
@@ -304,8 +360,7 @@ describe('going to a result', () => {
     expect(route.followed).toEqual(['/projects/raven#rv-e']);
     const heading = document.getElementById('rv-e')!;
     expect(document.activeElement).not.toBe(heading);
-    route.pathname = '/projects/raven';
-    await act(async () => root!.render(trigger()));
+    await showRoute('/projects/raven');
     expect(document.activeElement).toBe(heading);
     expect(heading.getAttribute('tabindex')).toBe('-1');
     act(() => heading.blur());
@@ -313,8 +368,7 @@ describe('going to a result', () => {
   });
 
   it('focuses a section on the page already shown at once', async () => {
-    route.pathname = '/projects/raven';
-    await act(async () => root!.render(trigger()));
+    await showRoute('/projects/raven');
     await openByButton();
     type('build photos');
     key(input(), { key: 'Enter' });
@@ -326,9 +380,14 @@ describe('going to a result', () => {
 describe('closing', () => {
   it('closes on Escape and returns focus to the button that opened it', async () => {
     await openByButton();
+    // The palette's Escape is its own: nothing else on the page hears it.
+    const elsewhere = vi.fn();
+    window.addEventListener('keydown', elsewhere);
     const event = key(input(), { key: 'Escape' });
+    window.removeEventListener('keydown', elsewhere);
     await settle();
     expect(event.defaultPrevented).toBe(true);
+    expect(elsewhere).not.toHaveBeenCalled();
     expect(dialog()).toBeNull();
     expect(document.activeElement).toBe(button());
     expect(button().getAttribute('aria-expanded')).toBe('false');
@@ -350,9 +409,68 @@ describe('closing', () => {
 
   it('closes on a route change, without taking focus back', async () => {
     await openByButton();
-    route.pathname = '/about';
-    await act(async () => root!.render(trigger()));
+    await showRoute('/about');
     expect(dialog()).toBeNull();
+  });
+});
+
+describe('a palette still loading', () => {
+  it('marks the button busy, and Escape calls it off: it does not open when it arrives', async () => {
+    const release = holdIndex();
+    await act(async () => button().click());
+    expect(button().getAttribute('aria-busy')).toBe('true');
+    expect(button().getAttribute('aria-expanded')).toBe('false');
+    const escape = key(document.body, { key: 'Escape' });
+    // The page still hears its Escape: nothing was drawn to answer it.
+    expect(escape.defaultPrevented).toBe(false);
+    expect(button().hasAttribute('aria-busy')).toBe(false);
+    await release();
+    expect(dialog()).toBeNull();
+    expect(button().getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('is called off by the button or the shortcut pressed again', async () => {
+    const release = holdIndex();
+    await act(async () => button().click());
+    await act(async () => button().click());
+    expect(button().hasAttribute('aria-busy')).toBe(false);
+    key(document.body, { key: 'k', ctrlKey: true });
+    expect(button().getAttribute('aria-busy')).toBe('true');
+    expect(key(document.body, { key: 'k', ctrlKey: true }).defaultPrevented).toBe(true);
+    expect(button().hasAttribute('aria-busy')).toBe(false);
+    await release();
+    expect(dialog()).toBeNull();
+  });
+
+  it('stays closed if focus has moved on by the time it arrives', async () => {
+    const release = holdIndex();
+    const link = document.getElementById('before')!;
+    act(() => button().focus());
+    await act(async () => button().click());
+    act(() => link.focus());
+    await release();
+    expect(dialog()).toBeNull();
+    expect(button().hasAttribute('aria-busy')).toBe(false);
+    expect(document.activeElement).toBe(link);
+    // The next request opens it at once.
+    await openByButton();
+    expect(dialog()).not.toBeNull();
+  });
+
+  it('opens for the latest request only, when one before it was called off', async () => {
+    const release = holdIndex();
+    const link = document.getElementById('before')!;
+    act(() => link.focus());
+    key(link, { key: 'k', ctrlKey: true });
+    key(link, { key: 'Escape' });
+    act(() => button().focus());
+    await act(async () => button().click());
+    await release();
+    expect(dialog()).not.toBeNull();
+    expect(document.activeElement).toBe(input());
+    key(input(), { key: 'Escape' });
+    await settle();
+    expect(document.activeElement).toBe(button());
   });
 });
 
@@ -388,6 +506,34 @@ describe('the focus trap', () => {
     await openByButton();
     act(() => document.getElementById('before')!.focus());
     expect(document.activeElement).toBe(input());
+  });
+
+  it('answers Tab and Escape where focus has fallen to the page, as when the field is hidden', async () => {
+    const rects = vi.spyOn(Element.prototype, 'getClientRects').mockImplementation(function (this: Element) {
+      return { length: this.classList.contains('ar-cmdk__close') ? 0 : 1 } as DOMRectList;
+    });
+    await openByButton();
+    act(() => input().blur());
+    expect(document.activeElement).toBe(document.body);
+    expect(key(document.body, { key: 'Tab' }).defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(input());
+    act(() => input().blur());
+    expect(key(document.body, { key: 'Tab', shiftKey: true }).defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(input());
+    act(() => input().blur());
+    const escape = key(document.body, { key: 'Escape' });
+    await settle();
+    expect(escape.defaultPrevented).toBe(true);
+    expect(dialog()).toBeNull();
+    expect(document.activeElement).toBe(button());
+    rects.mockRestore();
+  });
+
+  it('leaves Tab with Ctrl or Alt, and keys typed while an input method composes, to the browser', async () => {
+    await openByButton();
+    expect(key(input(), { key: 'Tab', ctrlKey: true }).defaultPrevented).toBe(false);
+    expect(key(input(), { key: 'Escape', isComposing: true }).defaultPrevented).toBe(false);
+    expect(dialog()).not.toBeNull();
   });
 });
 

@@ -9,12 +9,13 @@ import { inPalette, isPaletteShortcut, isTypingTarget, otherLayerOpen } from './
 /** closed: nothing drawn. loading: asked for, its code or index still on the way. open: drawn. */
 type Phase = 'closed' | 'loading' | 'open';
 
-/** A section the visitor chose: focused once its page shows it. */
+/** Where focus lands once the result the visitor chose is shown. */
 interface Landing {
-  /** The path the section's page is at, and the path the visitor chose it from. */
+  /** The path the result's page is at, and the path the visitor chose it from. */
   path: string;
   from: string;
-  id: string;
+  /** A section's heading, or null for the page itself: its main, the skip link's target. */
+  id: string | null;
 }
 
 /** The element focus would return to, if it is still on the page and can take focus. */
@@ -23,9 +24,9 @@ function focusable(element: Element | null): element is HTMLElement {
 }
 
 /**
- * Focuses a section's heading without scrolling (the router has scrolled it into view), so the next
- * Tab and a screen reader go on from it, as after a skip link. The heading stays focusable only
- * until focus leaves it.
+ * Focuses where a result leads, without scrolling (the router has scrolled): the page's main, or a
+ * section's heading, so the next Tab and a screen reader go on from there, as after the skip link.
+ * An element that takes no focus of its own (a heading) is focusable only until focus leaves it.
  */
 function land(element: HTMLElement): void {
   if (!element.hasAttribute('tabindex')) {
@@ -50,8 +51,13 @@ function land(element: HTMLElement): void {
  * not over another layer (the menu, the lightbox, full screen); pressed in the open palette it
  * closes it. Every other key, and this one where it does not act, is left to the page and the
  * browser. Escape, Close, and the scrim close it and return focus to what opened it: the button,
- * or whatever had focus when the shortcut was pressed. A result that leads elsewhere closes it and
- * leaves focus to the new page, or to the section it names. A route change closes it.
+ * or whatever had focus when the shortcut was pressed. A result that leads elsewhere closes it, and
+ * once its page is shown focus goes to that page's main, or to the section it names. A route change
+ * closes it.
+ *
+ * While the palette's code and index are still on the way (the button is aria-busy), Escape, the
+ * shortcut, or the button again call the request off; and if focus has moved on by the time they
+ * arrive, or another layer has opened, the palette does not open.
  */
 export default function PaletteTrigger({ label, children }: { label: string; children: ReactNode }) {
   const [phase, setPhase] = useState<Phase>('closed');
@@ -63,6 +69,8 @@ export default function PaletteTrigger({ label, children }: { label: string; chi
   /** Where focus goes once the palette has closed: what opened it, or nothing. */
   const returnTo = useRef<HTMLElement | null>(null);
   const landing = useRef<Landing | null>(null);
+  /** Counts the requests to open, so a late answer to one called off is not taken for a newer one. */
+  const asked = useRef(0);
   const dialogId = useId();
   const pathname = usePathname() ?? '/';
   const pathRef = useRef(pathname);
@@ -73,26 +81,7 @@ export default function PaletteTrigger({ label, children }: { label: string; chi
     setPhase(next);
   }, []);
 
-  const open = useCallback(
-    (from: Element | null) => {
-      if (phaseRef.current !== 'closed') return;
-      opener.current = focusable(from) ? from : null;
-      go('loading');
-      loadPalette().then(
-        (palette) => {
-          if (phaseRef.current !== 'loading') return;
-          setLoaded(palette);
-          go('open');
-        },
-        () => {
-          // Offline, or a new deployment took the old files away: the next press tries again.
-          if (phaseRef.current === 'loading') go('closed');
-        },
-      );
-    },
-    [go],
-  );
-
+  /** Closes it, or calls off a palette still loading; `back` returns focus to what opened it. */
   const close = useCallback(
     (back: boolean) => {
       if (phaseRef.current === 'closed') return;
@@ -103,15 +92,45 @@ export default function PaletteTrigger({ label, children }: { label: string; chi
     [go],
   );
 
-  // A section chosen: once its page is shown, its heading takes focus.
+  /** The button or the shortcut: opens a closed palette, calls off a loading one, closes an open one. */
+  const toggle = useCallback(
+    (from: Element | null) => {
+      if (phaseRef.current !== 'closed') {
+        close(phaseRef.current === 'open');
+        return;
+      }
+      opener.current = focusable(from) ? from : null;
+      const focused = document.activeElement;
+      const ask = ++asked.current;
+      go('loading');
+      loadPalette().then(
+        (palette) => {
+          // Called off, or asked for again since (a later request answers for itself).
+          if (ask !== asked.current || phaseRef.current !== 'loading') return;
+          // Focus has moved on (a Tab, a click, another layer) while it loaded: it stays closed.
+          if (document.activeElement !== focused || otherLayerOpen(document)) close(false);
+          else {
+            setLoaded(palette);
+            go('open');
+          }
+        },
+        // Offline, or a new deployment took the old files away: the next press tries again.
+        () => {
+          if (ask === asked.current) close(false);
+        },
+      );
+    },
+    [go, close],
+  );
+
+  // A result chosen: once its page is shown, focus goes to its section's heading or its main. The
+  // page already shown, without a section, takes focus back to what opened the palette instead.
   const choose = useCallback((href: string) => {
     const hash = href.indexOf('#');
-    if (hash < 0) {
-      landing.current = null;
-      return;
-    }
-    const path = href.slice(0, hash) || pathRef.current;
-    landing.current = { path, from: pathRef.current, id: decodeURIComponent(href.slice(hash + 1)) };
+    const from = pathRef.current;
+    const path = (hash < 0 ? href : href.slice(0, hash)) || from;
+    const id = hash < 0 ? null : decodeURIComponent(href.slice(hash + 1));
+    landing.current = id === null && path === from ? null : { path, from, id };
   }, []);
 
   // After the palette has gone (so its own focus guard has gone too): focus back to what opened it.
@@ -122,7 +141,8 @@ export default function PaletteTrigger({ label, children }: { label: string; chi
     if (back && back.isConnected) back.focus({ preventScroll: true });
   }, [phase]);
 
-  // A section's page is shown: focus its heading. Another page meanwhile: forget it.
+  // The result's page is shown: focus its section's heading, or its main. Another page meanwhile:
+  // forget it.
   useEffect(() => {
     const target = landing.current;
     if (!target || phase !== 'closed') return;
@@ -131,8 +151,8 @@ export default function PaletteTrigger({ label, children }: { label: string; chi
       return;
     }
     landing.current = null;
-    const heading = document.getElementById(target.id);
-    if (heading) land(heading);
+    const element = target.id === null ? document.querySelector('main') : document.getElementById(target.id);
+    if (element instanceof HTMLElement) land(element);
   }, [pathname, phase]);
 
   // A route change (Back, a link) closes it.
@@ -140,20 +160,20 @@ export default function PaletteTrigger({ label, children }: { label: string; chi
     if (phaseRef.current !== 'closed') close(false);
   }, [pathname, close]);
 
-  // The shortcut.
+  // The shortcut; and Escape, while the palette is still loading, calls it off (once it is open,
+  // the palette answers Escape itself).
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && phaseRef.current === 'loading') close(false);
       if (!isPaletteShortcut(event)) return;
       const inside = inPalette(event.target);
       if (!inside && (isTypingTarget(event.target) || otherLayerOpen(document))) return;
       event.preventDefault();
-      if (event.repeat) return;
-      if (phaseRef.current === 'open') close(true);
-      else open(document.activeElement);
+      if (!event.repeat) toggle(document.activeElement);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [open, close]);
+  }, [toggle, close]);
 
   // Fetched ahead at an idle moment, so the shortcut opens it at once.
   useEffect(() => prefetchWhenIdle(), []);
@@ -172,7 +192,8 @@ export default function PaletteTrigger({ label, children }: { label: string; chi
         aria-haspopup="dialog"
         aria-expanded={phase === 'open'}
         aria-controls={phase === 'open' ? dialogId : undefined}
-        onClick={() => open(buttonRef.current)}
+        aria-busy={phase === 'loading' || undefined}
+        onClick={() => toggle(buttonRef.current)}
         onPointerEnter={prefetchPalette}
         onPointerDown={prefetchPalette}
         onFocus={prefetchPalette}
