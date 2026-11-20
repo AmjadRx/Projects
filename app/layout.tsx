@@ -22,6 +22,7 @@ import './motion-model.css';
 import './motion-home.css';
 import './palette.css';
 import './utilities.css';
+import './print.css';
 
 /*
  * The two faces of the design system, self-hosted from the Claude Design bundle's files in

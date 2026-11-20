@@ -33,7 +33,7 @@ export default function ProjectsPage() {
         <h1 className="pj-title" id="projects-title">
           {heading}
         </h1>
-        <p className="pj-sub">{UI.projects.intro}</p>
+        <p className="pj-sub">{UI.projects.line}</p>
       </header>
       <ProjectExplorer gridId="project-grid" filter={domainFilter(projects)} items={items} />
     </section>

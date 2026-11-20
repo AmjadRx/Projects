@@ -24,7 +24,7 @@ export default function NotFound() {
           <Placeholder text={UI.notFound.well} />
         </div>
         <h1 className="st-title">{UI.notFound.heading}</h1>
-        <p className="st-sub">{UI.notFound.body}</p>
+        <p className="st-sub">{UI.notFound.line}</p>
         {projects || home ? (
           <div className="st-404__actions">
             {projects ? (

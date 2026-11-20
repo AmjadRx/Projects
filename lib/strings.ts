@@ -93,6 +93,9 @@ export const UI = {
     sheetOf: (n: number, total: number) => `Sheet ${n} of ${total}`,
     /** The label over a log block on a project page. */
     buildLog: 'Build log',
+    /** The line under the heading and the filter's count, in the Projects boards' words (Site.dc.html). */
+    line: 'Every project in sheet order. Filter by domain.',
+    count: (shown: number, total: number) => `${shown} of ${total} projects`,
   },
   /**
    * The project card: the cue on a featured card, the tag on a cover that is a video or a model, and
@@ -124,6 +127,8 @@ export const UI = {
     project: 'Project',
     caption: 'Revisions, newest first',
     photos: 'Photos',
+    /** The table's name for screen readers, in the bundle's words (RevisionTable). */
+    logCaption: 'Build log, newest first',
   },
   /** The /log page: the line under its title, and what it says when no project has an entry yet. */
   log: {
@@ -151,6 +156,10 @@ export const UI = {
     copyFailed: 'Copy did not work. Select the address instead.',
     elsewhere: 'Elsewhere',
     location: 'Location',
+    /** The copy button's name, the word its status says, and the links' name, in the Contact board's words. */
+    copyEmail: 'Copy the email address',
+    copiedShort: 'Copied',
+    otherWays: 'Other ways to reach me',
   },
   callout: { note: 'Note', status: 'Status' },
   /** A media well with nothing to show: no file yet, a file on its way, or a file that did not load. */
@@ -167,6 +176,8 @@ export const UI = {
     projects: 'See all projects',
     /** The line in the empty drawing well above the heading. */
     well: 'No sheet at this address',
+    /** The line under the heading, the NotFound board's words. */
+    line: 'There is no sheet at this address.',
   },
   /**
    * The command palette (ARCHITECTURE.md 5, "Also new"; the bundle's Nav and CommandPalette, and the
@@ -203,6 +214,8 @@ export const UI = {
     /** Said politely after the results change, when there are any. */
     count: (n: number) => (n === 1 ? '1 result' : `${n} results`),
   },
+  /** The printed project sheet (app/print.css; the Print board): the drafting label over the highlights. */
+  print: { notes: 'Notes' },
   heroCaption: 'Raven, tri-tiltrotor eVTOL. Illustration, not measured data.',
   /**
    * The generated Open Graph images (lib/og/): the label of the home image's title block cell,

@@ -271,8 +271,8 @@ describe('the domain filter (motion sheet 7.4)', () => {
   it("builds the filter's words on the server", () => {
     const filter = domainFilter(projects);
     expect(filter.label).toBe(UI.projects.filterLabel);
-    expect(filter.all).toEqual({ label: UI.projects.filterAll, count: 3, result: UI.projects.showing(3, 3) });
-    expect(filter.options[0]).toEqual({ key: 'embedded', label: 'Embedded', count: 2, result: UI.projects.showing(2, 3) });
+    expect(filter.all).toEqual({ label: UI.projects.filterAll, count: 3, result: UI.projects.count(3, 3) });
+    expect(filter.options[0]).toEqual({ key: 'embedded', label: 'Embedded', count: 2, result: UI.projects.count(2, 3) });
     expect(filter.options.map((o) => o.key)).toEqual(domainOptions(projects).map((o) => o.key));
     expect(domainKeys({ domain: 'Embedded, embedded, EMBEDDED' })).toEqual(['embedded']);
   });
@@ -289,7 +289,7 @@ describe('the domain filter (motion sheet 7.4)', () => {
     expect(html).not.toMatch(/opacity:\s*0/);
     expect(html).toContain('id="project-grid"');
     expect(html).toContain('aria-pressed="true"');
-    expect(html).toContain(UI.projects.showing(3, 3));
+    expect(html).toContain(UI.projects.count(3, 3));
   });
 });
 

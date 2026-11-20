@@ -18,7 +18,7 @@ import type { ResolvedMedia } from '@/lib/media';
 import { resolveMedia } from '@/lib/media-server';
 import { JsonLd, pageMetadata } from '@/lib/meta';
 import { projectMetaImage } from '@/lib/og/meta';
-import { siteData } from '@/lib/site';
+import { siteData, siteUrl } from '@/lib/site';
 import { creativeWorkJsonLd } from '@/lib/structured-data';
 import { UI } from '@/lib/strings';
 import type { Project } from '@/lib/types';
@@ -46,6 +46,14 @@ function longestWord(title: string): number {
 
 /** The cover's width: the main column of eight from 1024 px (800 px at most), else the full width. */
 const COVER_SIZES = '(min-width: 1280px) 800px, (min-width: 1024px) 62vw, 100vw';
+
+/**
+ * The page's address as the printed sheet's frame band shows it ("amjadrehawi.com/projects/raven";
+ * the Print board): the site's own host and the path, with no scheme.
+ */
+function printAddress(slug: string): string {
+  return `${new URL(siteUrl()).host}/projects/${slug}`;
+}
 
 export function generateStaticParams(): Params[] {
   return siteData().projects.map((project) => ({ slug: project.slug }));
@@ -108,6 +116,10 @@ function PagerLink({ project, sheet, sheets, dir }: { project: Project; sheet: n
  * subtitle; the cover with its dimension callouts; the title block (under the cover on phones and
  * tablets, the sticky rail from 1024 px); the pitch and highlights; the progress strip when there
  * is one; the blocks in order; and the previous and next project.
+ *
+ * Printed, the article is one drawing sheet (app/print.css, the Print board): its data-print-*
+ * attributes carry the words the sheet adds, the page address, the owner's name over the title, and
+ * the label over the highlights. Nothing else changes in the markup.
  */
 export default async function ProjectPage({ params }: { params: Promise<Params> }) {
   const { slug } = await params;
@@ -124,14 +136,14 @@ export default async function ProjectPage({ params }: { params: Promise<Params> 
 
   return (
     <>
-      <article>
+      <article className="pj-sheet" data-print-address={printAddress(project.slug)}>
         <JsonLd data={creativeWorkJsonLd(site, project, projectRevDate(project.slug))} />
         <div className="hm-wrap pj-top">
           <Link href="/projects" className="pj-back">
             <Icon icon={ArrowLeft} size={18} />
             <span className="pj-back__text">{UI.projects.backToProjects}</span>
           </Link>
-          <header className="pj-head">
+          <header className="pj-head" data-print-owner={hasText(site.personal.name) ? site.personal.name.trim() : undefined}>
             <h1
               className={cn('pj-title', project.title.length > LONG_TITLE && 'pj-title--long', word >= LONG_WORD && 'pj-title--word')}
               style={word >= LONG_WORD ? ({ '--pj-word': word } as CSSProperties) : undefined}
@@ -162,7 +174,7 @@ export default async function ProjectPage({ params }: { params: Promise<Params> 
             <section className="pj-intro" aria-label={UI.projects.summary}>
               {hasText(project.pitch) ? <p className="pj-pitch">{project.pitch}</p> : null}
               {highlights.length > 0 ? (
-                <ul className="pj-hl ar-glass">
+                <ul className="pj-hl ar-glass" data-print-label={UI.print.notes}>
                   {highlights.map((item, i) => (
                     <li key={i}>{item}</li>
                   ))}
