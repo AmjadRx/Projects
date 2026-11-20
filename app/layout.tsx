@@ -52,7 +52,13 @@ const b612Mono = localFont({
   variable: '--font-b612-mono',
 });
 
-/** Site-wide defaults from content: `seo.title`, `seo.description`, and the owner's name. */
+/**
+ * Site-wide defaults from content: `seo.title`, `seo.description`, and the owner's name. The
+ * public pages name their own share image (lib/og/meta.ts); a page that names none (the 404 page,
+ * /admin, the development pages) gets the home image from app/opengraph-image.tsx, which Next
+ * links here, for Open Graph and the large-image Twitter card alike. The icons and the manifest
+ * come from app/icon.tsx, app/apple-icon.tsx, and app/manifest.ts.
+ */
 export function generateMetadata(): Metadata {
   const site = loadSite();
   const name = site.personal.name;
@@ -64,7 +70,7 @@ export function generateMetadata(): Metadata {
     ...(description ? { description } : {}),
     applicationName: name,
     openGraph: { type: 'website', siteName: name, title, ...(description ? { description } : {}) },
-    twitter: { card: 'summary', title, ...(description ? { description } : {}) },
+    twitter: { card: 'summary_large_image', title, ...(description ? { description } : {}) },
     robots: { index: true, follow: true },
   };
 }

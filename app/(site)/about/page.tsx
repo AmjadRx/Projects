@@ -5,12 +5,13 @@ import Glass from '@/components/sheet/Glass';
 import { gpaText, hasText, isGpaFact } from '@/lib/format';
 import { resolveMedia } from '@/lib/media-server';
 import { pageMetadata } from '@/lib/meta';
+import { homeMetaImage } from '@/lib/og/meta';
 import { navLabel, siteData } from '@/lib/site';
 import { UI } from '@/lib/strings';
 
 export function generateMetadata(): Metadata {
   const { site } = siteData();
-  return pageMetadata(site, { title: navLabel(site, '/about', 'About'), description: site.seo.description, path: '/about' });
+  return pageMetadata(site, { title: navLabel(site, '/about', 'About'), description: site.seo.description, path: '/about', image: homeMetaImage(site) });
 }
 
 /** The headshot's width: four columns of twelve from 1024 px, a 240 px figure below. */

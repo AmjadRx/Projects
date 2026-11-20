@@ -3,12 +3,13 @@ import { domainFilter, domainKeys } from '@/components/sheet/DomainFilter';
 import ProjectCard, { CARD_SIZES } from '@/components/sheet/ProjectCard';
 import ProjectExplorer from '@/components/sheet/ProjectExplorer';
 import { pageMetadata } from '@/lib/meta';
+import { homeMetaImage } from '@/lib/og/meta';
 import { navLabel, siteData } from '@/lib/site';
 import { UI } from '@/lib/strings';
 
 export function generateMetadata(): Metadata {
   const { site } = siteData();
-  return pageMetadata(site, { title: navLabel(site, '/projects', 'Projects'), description: site.seo.description, path: '/projects' });
+  return pageMetadata(site, { title: navLabel(site, '/projects', 'Projects'), description: site.seo.description, path: '/projects', image: homeMetaImage(site) });
 }
 
 /**

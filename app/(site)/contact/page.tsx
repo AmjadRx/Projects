@@ -6,6 +6,7 @@ import Glass from '@/components/sheet/Glass';
 import Icon from '@/components/sheet/Icon';
 import { hasText, isExternalUrl } from '@/lib/format';
 import { pageMetadata } from '@/lib/meta';
+import { homeMetaImage } from '@/lib/og/meta';
 import { navLabel, siteData, socialLinksFor } from '@/lib/site';
 import { UI } from '@/lib/strings';
 import type { SocialLink } from '@/lib/types';
@@ -13,7 +14,7 @@ import { cn, detectIcon } from '@/lib/utils';
 
 export function generateMetadata(): Metadata {
   const { site } = siteData();
-  return pageMetadata(site, { title: navLabel(site, '/contact', 'Contact'), description: site.seo.description, path: '/contact' });
+  return pageMetadata(site, { title: navLabel(site, '/contact', 'Contact'), description: site.seo.description, path: '/contact', image: homeMetaImage(site) });
 }
 
 /** Lucide outline glyphs for the contact links: the bundle allows the linkedin and github marks. */

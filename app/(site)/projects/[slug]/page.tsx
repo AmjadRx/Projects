@@ -16,8 +16,10 @@ import { hasText } from '@/lib/format';
 import { projectRevDate } from '@/lib/history';
 import type { ResolvedMedia } from '@/lib/media';
 import { resolveMedia } from '@/lib/media-server';
-import { absoluteUrl, JsonLd, pageMetadata } from '@/lib/meta';
+import { JsonLd, pageMetadata } from '@/lib/meta';
+import { projectMetaImage } from '@/lib/og/meta';
 import { siteData } from '@/lib/site';
+import { creativeWorkJsonLd } from '@/lib/structured-data';
 import { UI } from '@/lib/strings';
 import type { Project } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -49,23 +51,17 @@ export function generateStaticParams(): Params[] {
   return siteData().projects.map((project) => ({ slug: project.slug }));
 }
 
-/** The still image that stands for the cover in metadata: the photo, or a video or model poster. */
-function coverStill(cover: ResolvedMedia | null): string | undefined {
-  if (!cover) return undefined;
-  if (cover.kind === 'image') return cover.file.src;
-  return cover.poster?.src;
-}
-
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { slug } = await params;
   const { site, projects } = siteData();
   const project = projects.find((p) => p.slug === slug);
   if (!project) return {};
+  // The share image is the project's generated sheet (lib/og/), not its cover photo.
   return pageMetadata(site, {
     title: project.title,
     description: project.pitch,
     path: `/projects/${project.slug}`,
-    image: coverStill(resolveMedia(project.cover)),
+    image: projectMetaImage(project.slug),
   });
 }
 
@@ -124,26 +120,12 @@ export default async function ProjectPage({ params }: { params: Promise<Params> 
   const cover = resolveMedia(project.cover);
   const highlights = project.highlights.filter(hasText);
   const steps = project.progress?.steps.filter((s) => hasText(s.label)) ?? [];
-  const still = coverStill(cover);
   const word = longestWord(project.title);
-
-  const creativeWork = {
-    '@context': 'https://schema.org',
-    '@type': 'CreativeWork',
-    name: project.title,
-    ...(hasText(project.subtitle) ? { alternativeHeadline: project.subtitle } : {}),
-    ...(hasText(project.pitch) ? { description: project.pitch } : {}),
-    url: absoluteUrl(`/projects/${project.slug}`),
-    contributor: hasText(project.role)
-      ? { '@type': 'Role', roleName: project.role, contributor: { '@type': 'Person', name: site.personal.name } }
-      : { '@type': 'Person', name: site.personal.name },
-    ...(still ? { image: absoluteUrl(still) } : {}),
-  };
 
   return (
     <>
       <article>
-        <JsonLd data={creativeWork} />
+        <JsonLd data={creativeWorkJsonLd(site, project, projectRevDate(project.slug))} />
         <div className="hm-wrap pj-top">
           <Link href="/projects" className="pj-back">
             <Icon icon={ArrowLeft} size={18} />
