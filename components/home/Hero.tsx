@@ -7,6 +7,7 @@ import Placeholder from '@/components/sheet/Placeholder';
 import Poster, { canOptimize } from '@/components/viewers/shared/Poster';
 import Headline from './hero/Headline';
 import HeroDrawing from './hero/HeroDrawing';
+import HeroMediaFallback from './HeroMediaFallback';
 import HeroVideo from './HeroVideo';
 import HeroModel from './hero/HeroModel';
 import { gpaText, hasText } from '@/lib/format';
@@ -105,16 +106,17 @@ function HeroVisual({ media }: { media: ResolvedMedia | null }) {
 /**
  * The hero visual by `settings.heroMode` (ARCHITECTURE.md 6), the one place the mode is read:
  * `drawing` is Raven in plan view with the thermal lens; `media` the owner's photo or video, with
- * the lens off. `model` shows the drawing until the owner's model hero joins here
- * (components/home/hero/HeroModel.tsx, as its own branch).
+ * the lens off, and the drawing in its place if the photo or the video's poster does not load
+ * (./HeroMediaFallback.tsx; the states boards, S.5). `model` shows the drawing until the owner's
+ * model hero joins here (components/home/hero/HeroModel.tsx, as its own branch).
  */
 function HeroArt({ settings }: { settings: Site['settings'] }) {
   switch (settings.heroMode) {
     case 'media':
       return (
-        <div className="hm-hero__art">
+        <HeroMediaFallback fallback={<HeroDrawing />}>
           <HeroVisual media={resolveMedia(settings.heroMedia)} />
-        </div>
+        </HeroMediaFallback>
       );
     case 'model':
       // The owner's model, or the drawing until a model file is uploaded (ARCHITECTURE.md 6).

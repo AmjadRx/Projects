@@ -2,12 +2,11 @@
  * The gallery strip's arithmetic (components/viewers/image/Gallery.tsx; motion sheet 6.4), pure for
  * tests. Motion+ Carousel measures the frames (useTicker's `itemPositions`: where each frame starts
  * and ends along the strip's list, in px) and how far the strip can travel (`maxInset`: null until
- * it has measured, 0 when every frame fits). An inset is how far the strip has moved to the left,
- * so at inset 0 the first frame starts at the column's edge; Carousel's own offset is the inset
- * negated on a left-to-right page.
+ * it has measured, 0 when every frame fits); the still strip that stands in for Carousel measures
+ * them the same way (stripMaxInset). An inset is how far the strip has moved to the left, so at
+ * inset 0 the first frame starts at the column's edge; Carousel's own offset is the inset negated
+ * on a left-to-right page.
  */
-import type { Transition } from 'motion/react';
-import { media } from '@/lib/motion';
 
 /** A frame along the strip, in px, as Carousel measures it (offsetLeft and offsetWidth). */
 export interface FramePosition {
@@ -17,6 +16,26 @@ export interface FramePosition {
 
 /** Measured positions are whole px: anything nearer than this is the same place. */
 export const SAME_PLACE = 0.5;
+
+/** How far one line of a wheel that counts in lines moves the strip, in px: Motion+ Carousel's own line height. */
+const WHEEL_LINE = 16;
+
+/**
+ * How far the strip can travel, as Motion+ Carousel's Ticker works it out with no loop: the frames'
+ * whole length, less the box's width (its offsetWidth, no wider than the window), plus the box's
+ * padding at both ends. 0 when every frame fits.
+ */
+export function stripMaxInset(
+  positions: readonly FramePosition[],
+  boxWidth: number,
+  paddingStart: number,
+  paddingEnd: number,
+): number {
+  const first = positions[0];
+  const last = positions[positions.length - 1];
+  if (!first || !last) return 0;
+  return Math.max(0, last.end - first.start - boxWidth + paddingStart + paddingEnd);
+}
 
 /** Where frame `index` starts, counted from the first frame's start. */
 function startOf(positions: readonly FramePosition[], index: number): number {
@@ -94,6 +113,12 @@ export function wheelAlong(event: { deltaX: number; deltaY: number; shiftKey: bo
   return Math.abs(along) < Math.abs(across) ? 0 : along;
 }
 
+/** wheelAlong in px, a wheel that counts in lines (deltaMode 1) read as Carousel reads it. */
+export function wheelPixels(event: { deltaX: number; deltaY: number; shiftKey: boolean; deltaMode: number }): number {
+  const along = wheelAlong(event);
+  return event.deltaMode === 1 ? along * WHEEL_LINE : along;
+}
+
 /**
  * Whether a move toward the last frame (`toward` above 0) or the first (below 0) would push a strip
  * resting at `inset` past the end it already rests at. When every frame fits, both ways are past
@@ -102,25 +127,4 @@ export function wheelAlong(event: { deltaX: number; deltaY: number; shiftKey: bo
 export function headsPastEnd(inset: number, maxInset: number | null, toward: number): boolean {
   if (maxInset === null || toward === 0) return false;
   return toward > 0 ? inset >= maxInset - SAME_PLACE : inset <= SAME_PLACE;
-}
-
-/**
- * How the strip moves (sheet 6.4): the snap spring for every move, and the stretch at the ends.
- * Without motion (sheet 8.1) every move takes no time and the strip stops at the ends.
- */
-export function stripMotion(motionOk: boolean): { transition: Transition; elastic: number } {
-  return motionOk
-    ? { transition: media.gallery.snap, elastic: media.gallery.overdrag }
-    : { transition: media.gallery.atOnce, elastic: 0 };
-}
-
-/**
- * Carousel keeps the transition object it gets on its first render for its own paging (a wheel
- * swipe), so the strip hands it one object for its whole life and swaps what that object says
- * when motion becomes allowed or not (the first render always allows it: useMotionOk() answers as
- * the server did until the page has hydrated).
- */
-export function swapTransition(target: Record<string, unknown>, source: Transition): void {
-  for (const key of Object.keys(target)) delete target[key];
-  Object.assign(target, source);
 }

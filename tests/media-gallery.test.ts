@@ -1,9 +1,11 @@
 /**
  * The gallery on Motion+ Carousel (components/viewers/image/Gallery.tsx and strip.ts; motion sheet
  * 6.4 and 8.1; DESIGN_DIRECTION.md 6.3 and 6.4): the strip's arithmetic between Carousel's
- * measurements and the frames, the numbers Carousel is given, the server's markup with the real
- * Carousel (the frames where they rest, nothing hidden, one labelled region, touch scrolling free),
- * the single figure, and the stylesheet. The behavior in a page is in media-gallery-strip.test.ts.
+ * measurements and the frames, the numbers Carousel is given, the server's markup (the still strip,
+ * laid out as the real Carousel lays itself out: the frames where they rest, nothing hidden, one
+ * region named by its heading or "Gallery", each frame named by its kind as the bundle's Gallery
+ * names it, touch scrolling free), the single figure, and the stylesheet. The behavior in a page is
+ * in media-gallery-strip.test.ts.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -17,13 +19,14 @@ import {
   headsPastEnd,
   nearestFrame,
   nearestRest,
-  stripMotion,
-  swapTransition,
+  stripMaxInset,
   wheelAlong,
+  wheelPixels,
   type FramePosition,
 } from '../components/viewers/image/strip';
 import type { ResolvedMedia } from '../lib/media';
 import { media, spring } from '../lib/motion';
+import { UI } from '../lib/strings';
 
 // The gallery reads the path through useMotionOk(); a public page.
 vi.mock('next/navigation', () => ({ usePathname: () => '/projects/raven' }));
@@ -105,6 +108,21 @@ describe('the strip arithmetic (strip.ts)', () => {
     expect(wheelAlong({ deltaX: 40, deltaY: 3, shiftKey: true })).toBe(0);
   });
 
+  it("counts a wheel in px, a wheel that counts in lines at Carousel's 16 px a line", () => {
+    expect(wheelPixels({ deltaX: 40, deltaY: 3, shiftKey: false, deltaMode: 0 })).toBe(40);
+    expect(wheelPixels({ deltaX: -3, deltaY: 1, shiftKey: false, deltaMode: 1 })).toBe(-48);
+    expect(wheelPixels({ deltaX: 3, deltaY: 40, shiftKey: false, deltaMode: 1 })).toBe(0);
+  });
+
+  it("works out the strip's travel as Carousel's Ticker does: the frames' length, less the box, plus its padding", () => {
+    // 1,672 px of frames in an 808 px box with 4 px of padding at each end: 872 px of travel.
+    expect(stripMaxInset(FRAMES, 808, 4, 4)).toBe(MAX);
+    expect(stripMaxInset(FRAMES, 800, 0, 0)).toBe(MAX);
+    // Every frame fits: no travel.
+    expect(stripMaxInset(FRAMES, 2000, 4, 4)).toBe(0);
+    expect(stripMaxInset([], 800, 0, 0)).toBe(0);
+  });
+
   it('knows a move that would push the strip past the end it rests at', () => {
     expect(headsPastEnd(0, MAX, -10)).toBe(true);
     expect(headsPastEnd(0, MAX, 10)).toBe(false);
@@ -127,24 +145,14 @@ describe('the numbers Carousel is given (lib/motion.ts media.gallery)', () => {
   it('moves with the snap spring and stretches a fifth of the travel past the ends', () => {
     expect(media.gallery.snap).toBe(spring.snap);
     expect(media.gallery.overdrag).toBe(0.2);
-    expect(stripMotion(true)).toEqual({ transition: spring.snap, elastic: 0.2 });
   });
 
   it('keeps the glide on record: Motion inertia, which Carousel has no option for', () => {
     expect(media.gallery.glide).toEqual({ power: 0.8, timeConstant: 325 });
   });
 
-  it('moves at once and stops at the ends without motion (sheet 8.1)', () => {
+  it('keeps the rule for the strip without motion on record: every move takes no time (sheet 8.1)', () => {
     expect(media.gallery.atOnce).toEqual({ duration: 0 });
-    expect(stripMotion(false)).toEqual({ transition: { duration: 0 }, elastic: 0 });
-  });
-
-  it('swaps what one transition object says, for the paging Carousel keeps from its first render', () => {
-    const held: Record<string, unknown> = { ...spring.snap };
-    swapTransition(held, media.gallery.atOnce);
-    expect(held).toEqual({ duration: 0 });
-    swapTransition(held, spring.snap);
-    expect(held).toEqual(spring.snap);
   });
 });
 
@@ -158,26 +166,62 @@ describe('the server markup, with the real Carousel', () => {
     store: 'repo',
   });
 
-  async function render(items: ResolvedMedia[]): Promise<string> {
+  async function render(items: ResolvedMedia[], labelledBy?: string): Promise<string> {
     const { default: Gallery } = await import('../components/viewers/image/Gallery');
-    return renderToString(createElement(Gallery, { items }));
+    return renderToString(createElement(Gallery, { items, labelledBy }));
   }
 
-  it('draws the frames in a strip as it rests, inside one labelled region, with the bar after it', async () => {
+  /** The words a frame's button is named by: the text of its parts not hidden from assistive technology. */
+  function buttonNames(html: string): string[] {
+    return [...html.matchAll(/<button type="button" class="ar-gal__frame"[^>]*>([\s\S]*?)<\/button>/g)].map(([, inner]) =>
+      inner
+        .replace(/<(\w+)[^>]*aria-hidden="true"[^>]*>[\s\S]*?<\/\1>/g, '')
+        .replace(/<[^>]+>/g, '')
+        .trim(),
+    );
+  }
+
+  /** A tag's inline style, as a map of property to value. */
+  function styleOf(tag: string | undefined): Record<string, string> {
+    const style = /style="([^"]*)"/.exec(tag ?? '')?.[1] ?? '';
+    return Object.fromEntries(
+      style
+        .split(';')
+        .filter(Boolean)
+        .map((part) => {
+          const at = part.indexOf(':');
+          return [part.slice(0, at).trim(), part.slice(at + 1).trim()];
+        }),
+    );
+  }
+
+  /** The layout of a strip's box, its list and its first item, as the server draws them. */
+  function stripLayout(html: string) {
+    const box = /<div[^>]* class="mm-gal"[^>]*>/.exec(html)?.[0];
+    const list = /<div[^>]* class="mm-gal"[^>]*><ul[^>]*>/.exec(html)?.[0].replace(/^<div[^>]*>/, '');
+    const item = /<li class="ticker-item"[^>]*>/.exec(html)?.[0];
+    return { draggable: /draggable="(\w+)"/.exec(box ?? '')?.[1], box: styleOf(box), list: styleOf(list), item: styleOf(item) };
+  }
+
+  it('draws the still strip as it rests, inside one labelled region, with the bar after it: no Carousel before scripts', async () => {
     const html = await render([photo(1), photo(2, 900, 1600), photo(3)]);
-    // The section is the gallery's region; Carousel's box is not a second one.
+    // The section is the gallery's region; the strip's box is not a second one.
     expect(html).toMatch(/^<section class="ar-gal" aria-label="Gallery" aria-roledescription="gallery">/);
     expect(html).not.toContain('role="region"');
     expect(html).not.toContain('aria-roledescription="carousel"');
-    // Carousel's box: clipped sideways, and a vertical swipe still scrolls the page.
+    // The box: clipped sideways, and a vertical swipe still scrolls the page.
     const box = /<div class="mm-gal"[^>]*style="([^"]*)"/.exec(html)?.[1] ?? '';
     expect(box).toContain('overflow-x:clip');
     expect(box).toContain('touch-action:pan-y');
-    // One item per frame, no copies (no loop), each frame its button.
+    // One item per frame, no copies (no loop), each frame its button, its place in the list said.
     expect(html.match(/class="ticker-item"/g)).toHaveLength(3);
     expect(html).not.toContain('clone-item');
+    expect(html).toContain('aria-posinset="2" aria-setsize="3"');
+    // Not Carousel's markup: its items carry aria-hidden="false", its list will-change.
+    expect(html).not.toContain('aria-hidden="false"');
+    expect(html).not.toContain('will-change');
     expect(html.match(/class="ar-gal__frame"/g)).toHaveLength(3);
-    expect(html).toContain('Open item 2 of 3');
+    expect(buttonNames(html)).toEqual(['Open photo 1 of 3', 'Open photo 2 of 3', 'Open photo 3 of 3']);
     // The bar: Previous phantom at the first frame, Next, and the counter.
     expect(html).toMatch(/<div class="ar-gal__bar"><button type="button" class="ar-iconbtn" aria-label="Previous" title="Previous" aria-disabled="true">/);
     expect(html).toMatch(/aria-label="Next" title="Next">/);
@@ -188,6 +232,25 @@ describe('the server markup, with the real Carousel', () => {
     expect(html).not.toContain('data-arrive');
   });
 
+  it("lays the still strip out as the real Carousel lays itself out, box, list and items, so either can take the other's place", async () => {
+    const { Carousel } = await import('motion-plus/react');
+    const still = stripLayout(await render([photo(1), photo(2), photo(3)]));
+    const items = [1, 2, 3].map((n) => createElement('span', { key: n }, `Frame ${n}`));
+    const real = stripLayout(
+      renderToString(createElement(Carousel, { className: 'mm-gal', items, loop: false, snap: 'loose', gap: 16, align: 'start' })),
+    );
+    expect(real.box.display, 'the real markup was read').toBe('flex');
+    // The box, and what Motion's drag gives it: no text selected, no callout, the page's vertical scroll.
+    expect(still.box).toEqual(real.box);
+    expect(still.draggable).toBe(real.draggable);
+    for (const property of ['display', 'position', 'flex-direction', 'justify-content', 'align-items', 'gap', 'list-style-type', 'margin', 'padding', 'width', 'height', 'max-width', 'max-height']) {
+      expect(still.list[property], `list ${property}`).toBe(real.list[property]);
+    }
+    for (const property of ['flex-grow', 'flex-shrink', 'position', 'height']) expect(still.item[property], `item ${property}`).toBe(real.item[property]);
+    // Carousel's list is unseen until it has measured itself; the stylesheet shows it from the start.
+    expect(real.list.opacity).toBe('0');
+  });
+
   it('draws one photo as a single figure: no strip, no drag, no bar, no counter', async () => {
     const html = await render([photo(1)]);
     expect(html).toMatch(/^<section class="ar-gal ar-gal--single" aria-label="Gallery">/);
@@ -196,7 +259,43 @@ describe('the server markup, with the real Carousel', () => {
     expect(html).not.toContain('touch-action');
     expect(html).not.toContain('ar-gal__bar');
     expect(html).toContain('<ul class="ar-gal__track"><li class="ar-gal__item"><button type="button" class="ar-gal__frame"');
-    expect(html).toContain('Open image');
+    expect(buttonNames(html)).toEqual(['Open photo']);
+  });
+
+  it('is named by the heading it sits under, as Project.dc.html names it, and by "Gallery" only without one', async () => {
+    const strip = await render([photo(1), photo(2)], 'rv-h');
+    expect(strip).toMatch(/^<section class="ar-gal" aria-labelledby="rv-h" aria-roledescription="gallery">/);
+    expect(strip).not.toContain('aria-label="Gallery"');
+    const single = await render([photo(1)], 'rv-h');
+    expect(single).toMatch(/^<section class="ar-gal ar-gal--single" aria-labelledby="rv-h">/);
+    expect(UI.viewers.gallery.label).toBe('Gallery');
+  });
+
+  it('names each frame by its kind, in the bundle Gallery\'s words; the kind\'s tag is not read twice', async () => {
+    const clip: ResolvedMedia = {
+      kind: 'video',
+      file: { src: '/dev/samples/clip.mp4', name: 'clip.mp4', ext: 'mp4', typeLabel: 'MP4 video', downloadHref: '/dev/samples/clip.mp4' },
+      alt: '',
+      poster: { src: '/dev/samples/clip-poster.webp', width: 1600, height: 900 },
+      width: 1600,
+      height: 900,
+      store: 'repo',
+    };
+    const model: ResolvedMedia = {
+      kind: 'model',
+      file: { src: '/dev/samples/part.glb', name: 'part.glb', ext: 'glb', typeLabel: '3D model', downloadHref: '' },
+      alt: '',
+      poster: { src: '/dev/samples/part-poster.webp', width: 1200, height: 1200 },
+      width: 1200,
+      height: 1200,
+      store: 'repo',
+    };
+    const html = await render([photo(1), clip, model]);
+    expect(buttonNames(html)).toEqual(['Open photo 1 of 3', 'Open video 2 of 3', 'Open 3D model 3 of 3']);
+    expect(html).toContain('<span class="ar-gal__kind" aria-hidden="true">Video</span>');
+    expect(html).toContain('<span class="ar-gal__kind" aria-hidden="true">3D model</span>');
+    expect((await render([clip])).includes('>Open video</span>')).toBe(true);
+    expect(UI.viewers.gallery.open('model', 1, 1)).toBe('Open 3D model');
   });
 });
 

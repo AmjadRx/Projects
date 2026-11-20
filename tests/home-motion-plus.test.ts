@@ -324,20 +324,19 @@ describe('PhoneCarousel', () => {
     };
   });
 
-  const carousel = (props: { start?: number; reduced?: boolean } = {}) =>
+  const carousel = (props: { start?: number } = {}) =>
     h(PhoneCarousel, {
       id: 'featured-work',
       items,
       start: props.start ?? 2,
       gap: 12,
-      reduced: props.reduced ?? false,
       label: 'Featured projects',
       kind: 'carousel',
       onApi: (api: Api) => apis.push(api),
       onDragStart: () => {},
     });
 
-  function mount(props: { start?: number; reduced?: boolean } = {}) {
+  function mount(props: { start?: number } = {}) {
     render(carousel(props));
   }
 
@@ -366,9 +365,10 @@ describe('PhoneCarousel', () => {
     expect(state.carousel!.className).toBe('hm-feat hm-feat--carousel hm-feat--from-start');
   });
 
-  it('under reduced motion it settles at once and does not stretch at the ends', () => {
-    mount({ reduced: true });
-    expect(state.carousel).toMatchObject({ transition: { duration: 0 }, dragElastic: 0 });
+  it('always moves with the snap spring and stretches at the ends: it is never there without motion (FeaturedStrip)', () => {
+    mount();
+    expect(state.carousel).toMatchObject({ transition: page.strip.snap, dragElastic: page.strip.overdrag });
+    expect(state.carousel).not.toHaveProperty('reduced');
   });
 
   it('reports its place, and again when it changes', () => {

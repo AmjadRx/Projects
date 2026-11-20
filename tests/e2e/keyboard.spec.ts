@@ -12,7 +12,23 @@ import type { Locator, Page } from '@playwright/test';
 import { UI } from '../../lib/strings';
 import { expect, test } from './support/fixtures';
 import { focusedElement, focusInside, open } from './support/page';
-import { DESKTOP, device, GALLERY_PAGES, PHONE, routeTitle, ROUTES, type Width } from './support/site';
+import { DESKTOP, device, GALLERY_PAGES, PHONE, projects, routeTitle, ROUTES, type Width } from './support/site';
+
+/**
+ * The name of the first gallery on a project page: the heading it sits under, as
+ * components/blocks/BlockRenderer.tsx gives it (Project.dc.html names each gallery by its heading),
+ * or "Gallery" with no heading before it.
+ */
+function galleryName(path: string): string {
+  const project = projects.find((p) => `/projects/${p.slug}` === path);
+  let heading = '';
+  for (const block of (project?.blocks ?? []) as { type?: unknown; text?: unknown; items?: unknown }[]) {
+    if (block.type === 'heading' && typeof block.text === 'string' && block.text.trim() !== '') heading = block.text;
+    const shown = (item: { src?: unknown } | null) => typeof item?.src === 'string' && item.src.trim() !== '';
+    if (block.type === 'gallery' && Array.isArray(block.items) && block.items.some(shown)) return heading || UI.viewers.gallery.label;
+  }
+  return UI.viewers.gallery.label;
+}
 
 /** Where focus is now, seen from `main`: inside it, after it, before it, or nowhere. */
 function focusFromMain(page: Page): Promise<string> {
@@ -100,9 +116,10 @@ test.describe('gallery lightbox, 1440 px', () => {
   for (const route of GALLERY_PAGES) {
     test(`${routeTitle(route)}: the lightbox traps focus and closes on Escape with focus back on the item`, async ({ page }) => {
       expect(await open(page, route.path), 'status').toBe(route.status);
-      const gallery = page.getByRole('region', { name: UI.viewers.gallery.label, exact: true }).first();
+      const gallery = page.getByRole('region', { name: galleryName(route.path), exact: true }).first();
       await gallery.scrollIntoViewIfNeeded();
-      const item = gallery.getByRole('button', { name: /Open (item 1 of \d+|image)/ }).first();
+      // The first item, named by its kind as the bundle's Gallery names it ("Open photo 1 of 3").
+      const item = gallery.getByRole('button', { name: /Open (photo|video|3D model)( 1 of \d+)?$/ }).first();
       await item.focus();
       await page.keyboard.press('Enter');
       const dialog = page.getByRole('dialog', { name: UI.viewers.gallery.label });

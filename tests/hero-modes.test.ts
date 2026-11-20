@@ -44,6 +44,8 @@ describe('the hero visual follows settings.heroMode (ARCHITECTURE.md 6)', () => 
     const html = hero({ heroMode: 'media' });
     expect(html).toContain('hm-hero__media');
     expect(html).toMatch(/<img\b/);
+    // The slot (HeroMediaFallback) that gives way to the drawing if the picture does not load.
+    expect(html).toContain('<div class="hm-hero__art"><div class="ar-well hm-hero__media"');
     for (const part of ['hm-hero__art--drawing', 'hd-svg', 'hd-ring', 'hd-th', GO]) expect(html, part.slice(0, 40)).not.toContain(part);
     // The section's own script stays: the headline's start state and give-up key off its mark.
     expect(scripts(html)).toBe(1);

@@ -12,7 +12,7 @@ import Poster, { canOptimize } from '../shared/Poster';
 import type { GalleryProps } from '../types';
 import { ARRIVAL_STYLE, LoadingWell, usePhotoArrival } from './arrival';
 import styles from './image.module.css';
-import { stillOf } from './still';
+import { itemKind, stillOf } from './still';
 import { LazyLightbox, useLightbox } from './useLightbox';
 
 /**
@@ -34,7 +34,7 @@ export default function PhotoWells({ items }: GalleryProps) {
       <ul className={cn(styles.wells, count === 1 && styles.one)} aria-label={UI.viewers.gallery.label}>
         {items.map((item, index) => (
           <li key={`${item.file.src}-${index}`} className={styles.wellItem}>
-            <Well item={item} sizes={sizes} label={UI.viewers.gallery.openItem(index + 1, count)} onOpen={(from) => open(index, from)} />
+            <Well item={item} sizes={sizes} label={UI.viewers.gallery.open(itemKind(item), index + 1, count)} onOpen={(from) => open(index, from)} />
           </li>
         ))}
       </ul>

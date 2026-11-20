@@ -15,9 +15,9 @@ import {
 } from 'react';
 import Icon from '@/components/sheet/Icon';
 import { startPanelRise } from '@/components/site/risePanels';
-import { useReducedMotion } from '@/components/viewers/shared/hooks';
 import { page } from '@/lib/motion';
-import { motionOk } from '@/lib/useMotionOk';
+import { useMotionPaused } from '@/lib/motionPause';
+import { motionOk, useMotionOk } from '@/lib/useMotionOk';
 import { inWindow, useBrowserLayoutEffect, useFrameWidth, useNearView, useOnScreen } from './nearView';
 import type { PhoneCarouselProps, StripApi } from './PhoneCarousel';
 import SwipeDots from './SwipeDots';
@@ -63,6 +63,11 @@ function scrollStripTo(el: HTMLElement | null, index: number, behavior: ScrollBe
  * the strip is out of the window: the Carousel draws nothing until it has measured itself, and a
  * strip in view may be under a finger. A strip that is in view stays as it is (it scrolls, snaps
  * and answers the buttons by itself) until it has left the window.
+ * - Under reduced motion, and while the visitor has paused motion, the Carousel never loads or
+ *   mounts: the strip stays, which follows the finger, moves by the buttons and the keys at once
+ *   under reduced motion (sheet 8.1), and keeps every card. Either setting turned on with the
+ *   Carousel there gives the strip its place back at once, on the Carousel's card, with focus kept;
+ *   turned off again, the Carousel comes back as above, once the strip is out of the window.
  * - Previous, Next and the arrow keys move one card (motion sheet 6.4), so a drag is never the only
  *   way. The buttons always show (docs/V3_PLAN.md D-67); at either end the unavailable one is
  *   phantom.
@@ -82,11 +87,14 @@ export default function FeaturedStrip({ id, items, labels }: { id: string; items
   const many = count > 1;
   const frameWidth = useFrameWidth(box);
   const swipe = frameWidth !== null && frameWidth <= page.strip.maxWidth && many;
-  const reduced = useReducedMotion();
+  const moving = useMotionOk();
+  const paused = useMotionPaused();
+  /** The Carousel may come: a phone's strip, with motion allowed and not paused. */
+  const carouselOk = swipe && moving && !paused;
   const [Carousel, setCarousel] = useState<ComponentType<PhoneCarouselProps> | null>(null);
-  const coming = useNearView(box, page.strip.load, page.strip.load, swipe && Carousel === null);
-  const near = useNearView(box, page.strip.near, page.strip.far, swipe);
-  const onScreen = useOnScreen(box, swipe);
+  const coming = useNearView(box, page.strip.load, page.strip.load, carouselOk && Carousel === null);
+  const near = useNearView(box, page.strip.near, page.strip.far, carouselOk);
+  const onScreen = useOnScreen(box, carouselOk);
   const [mode, setMode] = useState<'strip' | 'carousel'>('strip');
   const [api, setApi] = useState<StripApi | null>(null);
   /** On the scrolling strip: the card in view. */
@@ -98,14 +106,14 @@ export default function FeaturedStrip({ id, items, labels }: { id: string; items
   const gap = useRef(0);
   const rise = useRef(false);
   const dragged = useRef(false);
-  const wanted = swipe && near && Carousel !== null && (mode === 'carousel' || onScreen === false);
+  const wanted = carouselOk && near && Carousel !== null && (mode === 'carousel' || onScreen === false);
   /** The carousel, once it has measured itself and said where it is. */
   const live = mode === 'carousel' && api !== null && api.pages > 0 ? api : null;
   const latest = useRef(live);
   latest.current = live;
 
   useEffect(() => {
-    if (!swipe || !coming || Carousel) return undefined;
+    if (!carouselOk || !coming || Carousel) return undefined;
     let current = true;
     import('./PhoneCarousel').then(
       (mod) => {
@@ -118,7 +126,7 @@ export default function FeaturedStrip({ id, items, labels }: { id: string; items
     return () => {
       current = false;
     };
-  }, [swipe, coming, Carousel]);
+  }, [carouselOk, coming, Carousel]);
 
   /** Before the strip and the carousel trade places: the card that holds focus keeps it, and shows. */
   const keepFocus = () => {
@@ -145,7 +153,7 @@ export default function FeaturedStrip({ id, items, labels }: { id: string; items
   }, [wanted, mode]);
 
   /** Scrolls the strip to a card: smoothly, or at once under reduced motion (sheet 8.1). */
-  const scrollStrip = (index: number) => scrollStripTo(strip.current, index, reduced ? 'auto' : 'smooth');
+  const scrollStrip = (index: number) => scrollStripTo(strip.current, index, moving ? 'smooth' : 'auto');
 
   // Once they have traded places: back from the carousel, the strip shows at once the card the
   // carousel showed last; and the card that held focus has it again.
@@ -294,13 +302,10 @@ export default function FeaturedStrip({ id, items, labels }: { id: string; items
       >
         {mode === 'carousel' && Carousel ? (
           <Carousel
-            // Reduced motion changes how it moves: it starts afresh, on the same card.
-            key={reduced ? 'still' : 'moving'}
             id={id}
             items={items}
             start={last.current}
             gap={gap.current}
-            reduced={reduced}
             label={labels.region}
             kind={labels.kind}
             onApi={onApi}

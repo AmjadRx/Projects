@@ -32,11 +32,13 @@ import VideoBlock from './VideoBlock';
  * at all, not even its wrapper (lib/blocks.ts). Heading levels come from what precedes each block:
  * a `heading` block sits at `ctx.level`, and a list heading after it one level deeper
  * (docs/V3_PLAN.md D-67). A spec table is named for screen readers by the heading before it, or by
- * `ctx.label` (the project's title) when none precedes it.
+ * `ctx.label` (the project's title) when none precedes it; a gallery by that heading too (its id),
+ * or by its own word ("Gallery") when none precedes it.
  */
 export default function BlockRenderer({ blocks, ctx }: { blocks: Block[]; ctx: BlockContext }) {
   let headingSeen = false;
   let lastHeading = '';
+  let lastHeadingId = '';
   const out: ReactNode[] = [];
   const repository = siteRepository();
 
@@ -54,6 +56,7 @@ export default function BlockRenderer({ blocks, ctx }: { blocks: Block[]; ctx: B
       case 'heading':
         headingSeen = true;
         lastHeading = block.text;
+        lastHeadingId = `${ctx.idPrefix}${block.id}`;
         out.push(<HeadingBlock key={key} id={block.id} text={block.text} ctx={ctx} />);
         return;
       case 'text':
@@ -63,7 +66,7 @@ export default function BlockRenderer({ blocks, ctx }: { blocks: Block[]; ctx: B
         out.push(wrap(<ImageBlock media={block.media} />));
         return;
       case 'gallery':
-        out.push(wrap(<GalleryBlock items={block.items} />));
+        out.push(wrap(<GalleryBlock items={block.items} labelledBy={lastHeadingId || undefined} />));
         return;
       case 'video':
         out.push(wrap(<VideoBlock media={block.media} scrub={block.scrub} />));
