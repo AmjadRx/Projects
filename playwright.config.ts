@@ -14,8 +14,9 @@ import { defineConfig } from '@playwright/test';
  * Before the first test, tests/e2e/global-setup.ts warms that server's image optimizer: it fetches
  * every /_next/image address a page can ask for, since `next start` leaves every later request for
  * an address waiting when the first one was dropped (a test that closes its page while a picture
- * loads), and tests/e2e/support/fixtures.ts fails a test that got a picture made for it, an address
- * the warm-up missed. Against E2E_BASE_URL nothing is warmed.
+ * loads). tests/e2e/support/fixtures.ts fails a test whose page asks the optimizer for a picture
+ * the warm-up did not make, judged when the request is sent, answered or not. Against E2E_BASE_URL
+ * nothing is warmed or checked.
  *
  * Environment:
  * - E2E_PORT: the server's port (3702 by default). When something already answers there, the run
