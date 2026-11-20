@@ -208,6 +208,7 @@ test.describe('print, 1440 px', () => {
       const pdf = await readPdf(await page.pdf({ format: 'Letter', preferCSSPageSize: true, printBackground: true }));
       expect(pdf.pages, 'pages').toBeGreaterThanOrEqual(1);
       expect(pdf.sizes.every(([w, h]) => w === LETTER[0] && h === LETTER[1]), `every page US Letter: ${JSON.stringify(pdf.sizes)}`).toBe(true);
+      expect(view.h1, 'the page has a heading').toBeTruthy();
       expect(letters(pdf.text.join(' ')), 'the page heading on paper').toContain(letters(view.h1 ?? ''));
     });
   }

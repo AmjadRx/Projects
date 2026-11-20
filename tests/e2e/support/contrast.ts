@@ -6,34 +6,45 @@
  * text give its background.
  *
  * - The text: every visible text node not hidden from assistive technology (aria-hidden, inert),
- *   with its own color (the text fill, else `color`; an SVG text's fill), its opacity down the
- *   tree, its size and weight. Text cut away by a box that clips it (a screen reader's own label,
- *   a strip's next card) and text under another layer (the sticky nav) are left out where they
- *   cannot be seen. A disabled control's words are exempt (WCAG 1.4.3, inactive components).
- * - The background: the pixels inside each line box of the text, in a screenshot taken with all
- *   text transparent (color, text fill, text stroke, text shadow, decorations, SVG text fill), read
- *   at the scale of the text: a hairline two pixels thin or less (a grid line, the horizon line, a
- *   table's rule) or a single star core is not the ground a word is read against, while a band, a
- *   glow, the dawn or a photo under glass is (backgroundAt). The statistic is conservative: for
- *   light text on a dark ground the 95th percentile of that luminance, for dark text on a light
- *   ground the 5th, so anything that covers more than a twentieth of the text decides it. Where the
- *   window's edge or a layer in front (the sticky nav) hides part of a line in passing, the
- *   twentieth is still of the whole line: a star behind the strip that shows does not decide a line
- *   it would not decide whole, while a glow or a photo under all of that strip still does.
+ *   with its own color (`color`; an SVG text's fill), its opacity down the tree, its size and
+ *   weight. Text cut away by a box that clips it (a screen reader's own label, a strip's next card)
+ *   and text under another layer (the sticky nav) are left out where they cannot be seen. A disabled
+ *   control's words are exempt (WCAG 1.4.3, inactive components).
+ * - Read afresh at every look (readText), in the same task as it is placed: the page changes as it
+ *   scrolls. The tools ticker and the phone's featured carousel take the place of the server's
+ *   markup near the view and give it back beyond it, and a readout's count ends by setting its value
+ *   as plain text again, so the text read at the top is not all the text further down. A piece of
+ *   text is known across looks by its key (TextItem.key), and the run keeps every look's verdict on
+ *   it (Tally); text that showed somewhere but was never judged anywhere is reported too.
+ * - The background: the pixels inside each line box of the text, in a screenshot taken with the
+ *   text's own paint transparent (TRANSPARENT_TEXT), read at the scale of the text: a hairline two
+ *   pixels thin or less (a grid line, the horizon line, a table's rule) or a single star core is not
+ *   the ground a word is read against, while a band, a glow, the dawn or a photo under glass is
+ *   (backgroundAt). The statistic is conservative: for light text on a dark ground the 95th
+ *   percentile of that luminance, for dark text on a light ground the 5th, so anything that covers
+ *   more than a twentieth of the text decides it. Where the window's edge or a layer in front (the
+ *   sticky nav) hides part of a line in passing, the twentieth is still of the whole line: a star
+ *   behind the strip that shows does not decide a line it would not decide whole, while a glow or a
+ *   photo under all of that strip still does.
  * - The ratio: the text's color (composited over that background where it is translucent) against
  *   the background, at least 4.5 to 1, or 3 to 1 for large text (24 px, or 18.66 px and bold).
  *
- * The page functions here run in the browser (page.evaluate) and keep what they learn in
- * `window.__e2eContrast` between calls; the rest runs in Node.
+ * The page functions here run in the browser (page.evaluate) and keep the last look in
+ * `window.__e2eContrast`; the rest runs in Node.
  */
 import type { Page } from '@playwright/test';
 import { isLargeText, linear, luminance, over, parseColor, ratio, requiredRatio, type Rgb } from './color';
-import type { Raster } from './png';
+import { decodePng, type Raster } from './png';
 
-/** Everything the page paints as text, made transparent (layout does not change). */
+/**
+ * The text's own paint, made transparent: the glyphs' fill and stroke, shadows, decorations,
+ * emphasis marks, the caret, and SVG text. Layout does not change, and `color` keeps its value, so
+ * readText reads the color each piece of text is painted in while the style is on (ownTextFill
+ * checks that no text takes a fill color of its own). What else the page paints in its text's
+ * color (an icon, a border) stays in the picture, as it stays behind the words for a visitor.
+ */
 export const TRANSPARENT_TEXT = `
 *, *::before, *::after, *::marker, *::placeholder, *::first-line, *::first-letter {
-  color: transparent !important;
   -webkit-text-fill-color: transparent !important;
   -webkit-text-stroke-color: transparent !important;
   text-shadow: none !important;
@@ -41,13 +52,19 @@ export const TRANSPARENT_TEXT = `
   text-emphasis-color: transparent !important;
   caret-color: transparent !important;
 }
-svg text, svg tspan, svg textPath { fill: transparent !important; stroke: transparent !important; }
+svg text, svg tspan, svg textPath { fill-opacity: 0 !important; stroke-opacity: 0 !important; }
 `;
 
-/** One piece of text: a text node, as the page knows it. */
+/** One piece of text: a text node, as the page knows it at one look. */
 export interface TextItem {
-  /** Its place in the page's list. */
+  /** Its place in this look's list. */
   i: number;
+  /**
+   * The same piece of text across looks: its element's tag, its words, and its place among the
+   * pieces with that tag and those words in the page's order (`span "CATIA" #1`). Not its classes,
+   * which a page may change as it scrolls.
+   */
+  key: string;
   /** The color its glyphs are painted in, as computed. */
   color: string;
   /** Its opacity, multiplied down from the root. */
@@ -76,66 +93,86 @@ export interface Placement {
 }
 
 /**
- * In the page: finds every piece of text to check, keeps the nodes in window.__e2eContrast, and
- * returns what Node needs to know about each. Call before the text is made transparent.
+ * In the page: every piece of text to check as the page is now, and where each one shows, as boxes
+ * on the screen: its line boxes, cut by the window and by every box that clips it, and left out where
+ * another layer lies over it (each line is tested in pieces about 40 px wide). Read and placed in one
+ * task, so nothing the page does can come between the two. `only` limits the placing to some keys.
+ * The nodes are kept in window.__e2eContrast for stillThere().
  */
-export function collectText(): TextItem[] {
+export function readText(only: string[] | null): { items: TextItem[]; placements: Placement[] } {
   const SKIP = 'script, style, noscript, template, title, [aria-hidden="true"], [inert]';
-  const state = { nodes: [] as Text[], els: [] as Element[], clips: [] as Element[][] };
+  const styles = new Map<Element, CSSStyleDeclaration>();
+  const styleOf = (e: Element) => {
+    let s = styles.get(e);
+    if (!s) styles.set(e, (s = getComputedStyle(e)));
+    return s;
+  };
+  const opacities = new Map<Element, number>();
+  const opacityOf = (e: Element | null): number => {
+    if (!e) return 1;
+    let o = opacities.get(e);
+    if (o === undefined) opacities.set(e, (o = Number(styleOf(e).opacity) * opacityOf(e.parentElement)));
+    return o;
+  };
+  // The boxes that clip an element, nearest first: the element itself and its ancestors up to the
+  // body that cut what overflows them.
+  const clipping = new Map<Element, Element[]>();
+  const clipsOf = (e: Element | null): Element[] => {
+    if (!e || e === document.documentElement || e === document.body) return [];
+    let c = clipping.get(e);
+    if (!c) {
+      const s = styleOf(e);
+      const cuts =
+        s.display !== 'contents' &&
+        (s.overflowX !== 'visible' || s.overflowY !== 'visible' || s.clipPath !== 'none' || (s.clip !== '' && s.clip !== 'auto') || /\b(paint|strict|content)\b/.test(s.contain));
+      const above = clipsOf(e.parentElement);
+      c = cuts ? [e, ...above] : above;
+      clipping.set(e, c);
+    }
+    return c;
+  };
+
+  const state = { nodes: [] as Text[], els: [] as Element[], clips: [] as Element[][], placed: [] as number[] };
   const items: TextItem[] = [];
+  const seenBefore = new Map<string, number>();
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   for (let node = walker.nextNode() as Text | null; node; node = walker.nextNode() as Text | null) {
     const words = (node.nodeValue ?? '').replace(/\s+/g, ' ').trim();
     if (!words) continue;
     const el = node.parentElement;
     if (!el || el.closest(SKIP)) continue;
-    const style = getComputedStyle(el);
+    const style = styleOf(el);
     if (style.visibility !== 'visible') continue;
-    const svg = el instanceof SVGElement;
-    const color = svg ? style.fill : style.webkitTextFillColor || style.color;
-    let opacity = 1;
-    for (let e: Element | null = el; e; e = e.parentElement) opacity *= Number(getComputedStyle(e).opacity);
+    const opacity = opacityOf(el);
     if (opacity < 0.01) continue;
-    const clips: Element[] = [];
-    for (let e: Element | null = el; e && e !== document.documentElement && e !== document.body; e = e.parentElement) {
-      const s = getComputedStyle(e);
-      if (s.display === 'contents') continue;
-      const clipped =
-        s.overflowX !== 'visible' || s.overflowY !== 'visible' || s.clipPath !== 'none' || (s.clip !== '' && s.clip !== 'auto') || /\b(paint|strict|content)\b/.test(s.contain);
-      if (clipped) clips.push(e);
-    }
+    const tag = el.tagName.toLowerCase();
+    const id = `${tag} "${words}"`;
+    const n = (seenBefore.get(id) ?? 0) + 1;
+    seenBefore.set(id, n);
     const disabled = el.closest(':disabled, [aria-disabled="true"]');
     const classes = typeof el.className === 'string' ? el.className.split(/\s+/).filter(Boolean).slice(0, 2) : [];
     state.nodes.push(node);
     state.els.push(el);
-    state.clips.push(clips);
+    state.clips.push(clipsOf(el));
     items.push({
       i: items.length,
-      color,
+      key: `${id} #${n}`,
+      color: el instanceof SVGElement ? style.fill : style.color,
       opacity,
       fontSize: Number.parseFloat(style.fontSize) || 16,
       fontWeight: Number(style.fontWeight) || 400,
-      describe: `${el.tagName.toLowerCase()}${classes.map((c) => `.${c}`).join('')} "${words.slice(0, 48)}${words.length > 48 ? '...' : ''}"`,
+      describe: `${tag}${classes.map((c) => `.${c}`).join('')} "${words.slice(0, 48)}${words.length > 48 ? '...' : ''}"`,
       exempt: disabled ? 'a disabled control (inactive components are exempt from 1.4.3)' : null,
     });
   }
   (window as unknown as { __e2eContrast: typeof state }).__e2eContrast = state;
-  return items;
-}
 
-/**
- * In the page: where each piece of text shows now, as boxes on the screen: its line boxes, cut by
- * the window and by every box that clips it, and left out where another layer lies over it (each
- * line is tested in pieces about 40 px wide). `only` limits it to some pieces.
- */
-export function measureText(only: number[] | null): Placement[] {
-  const state = (window as unknown as { __e2eContrast: { nodes: Text[]; els: Element[]; clips: Element[][] } }).__e2eContrast;
   const width = document.documentElement.clientWidth;
   const height = window.innerHeight;
   const range = document.createRange();
   const seeThrough = (e: Element) => {
     if (/^(img|video|canvas|iframe|svg|object|embed|picture|input|textarea|select)$/i.test(e.tagName)) return false;
-    const s = getComputedStyle(e);
+    const s = styleOf(e);
     const bg = s.backgroundColor;
     const clear = bg === 'transparent' || /rgba?\([^)]*[,/]\s*0\)$/.test(bg.replace(/\s+/g, ' '));
     return clear && s.backgroundImage === 'none' && (!s.backdropFilter || s.backdropFilter === 'none');
@@ -153,32 +190,27 @@ export function measureText(only: number[] | null): Placement[] {
     }
     return false;
   };
-  const out: Placement[] = [];
-  const indices = only ?? state.nodes.map((_, i) => i);
+  const wanted = only ? new Set(only) : null;
+  const indices = items.filter((item) => !wanted || wanted.has(item.key)).map((item) => item.i);
   // The layers over the page: every fixed or sticky element in front of the content (the sticky
   // nav with the heat rule along its foot, the sheet frame's bands), as the boxes of its parts
-  // that paint. The sky behind everything is not one.
+  // that paint. The sky behind everything is not one. Found again at every look, as the text is.
   const layers: { owner: Element; box: DOMRect }[] = [];
-  // Which elements are fixed or sticky does not change as the page scrolls, nor which elements
-  // hold the text: found once a page.
-  const holder = state as unknown as { owners?: Element[]; holders?: Set<Element> };
-  holder.owners ??= Array.from(document.body.querySelectorAll('*')).filter((el) => {
-    const s = getComputedStyle(el);
+  const owners = Array.from(document.body.querySelectorAll('*')).filter((el) => {
+    const s = styleOf(el);
     return (s.position === 'fixed' || s.position === 'sticky') && !el.closest('.ar-sky') && !(Number(s.zIndex) < 0);
   });
-  if (!holder.holders) {
-    holder.holders = new Set<Element>();
-    for (const el of state.els) for (let e: Element | null = el; e && !holder.holders.has(e); e = e.parentElement) holder.holders.add(e);
-  }
+  const holders = new Set<Element>();
+  for (const el of state.els) for (let e: Element | null = el; e && !holders.has(e); e = e.parentElement) holders.add(e);
   // A layer's parts that paint nothing and hold no text (the sheet frame's border box over the
   // whole window) let the hit tests through, as they let the eye through.
   const clear: Element[] = [];
-  for (const el of holder.owners) {
+  for (const el of owners) {
     if (layers.some((layer) => layer.owner.contains(el))) continue;
     for (const part of [el, ...Array.from(el.querySelectorAll('*'))]) {
-      if (part.getClientRects().length === 0 || getComputedStyle(part).visibility === 'hidden') continue;
+      if (part.getClientRects().length === 0 || styleOf(part).visibility === 'hidden') continue;
       if (!seeThrough(part)) layers.push({ owner: el, box: part.getBoundingClientRect() });
-      else if (!holder.holders.has(part)) clear.push(part);
+      else if (!holders.has(part)) clear.push(part);
     }
   }
   /** A box less another: what is left of it, in up to four boxes. */
@@ -208,12 +240,14 @@ export function measureText(only: number[] | null): Placement[] {
     document.head.append(hit);
   }
   for (const part of clear) part.setAttribute('data-e2e-clear', '');
+  const placements: Placement[] = [];
   try {
-    for (const i of indices) out.push(...place(i));
+    for (const i of indices) placements.push(...place(i));
   } finally {
     for (const part of clear) part.removeAttribute('data-e2e-clear');
   }
-  return out;
+  state.placed = placements.map((placement) => placement.i);
+  return { items, placements };
 
   /** Where one piece of text shows: no entry, or one with its boxes. */
   function place(i: number): Placement[] {
@@ -285,6 +319,30 @@ export function measureText(only: number[] | null): Placement[] {
   }
 }
 
+/** In the page: every piece of text the last look placed (readText) is still in the page. */
+export function stillThere(): boolean {
+  const state = (window as unknown as { __e2eContrast?: { nodes: Text[]; placed: number[] } }).__e2eContrast;
+  return Boolean(state) && state!.placed.every((i) => state!.nodes[i].isConnected);
+}
+
+/**
+ * In the page, before TRANSPARENT_TEXT: the pieces of text painted in a fill color of their own
+ * (-webkit-text-fill-color) rather than in their `color`, described. readText reads `color`, so the
+ * check is right only while this is empty; SVG text, read by its fill, is left out.
+ */
+export function ownTextFill(): string[] {
+  const out = new Set<string>();
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    const el = node.parentElement;
+    if (!el || el instanceof SVGElement || !(node.nodeValue ?? '').trim()) continue;
+    const style = getComputedStyle(el);
+    const fill = style.webkitTextFillColor.replace(/\s+/g, '');
+    if (fill && fill !== style.color.replace(/\s+/g, '')) out.add(`${el.tagName.toLowerCase()} "${(node.nodeValue ?? '').trim().slice(0, 40)}": fill ${fill}, color ${style.color}`);
+  }
+  return [...out];
+}
+
 /** The statistic of the pixels under a piece of text. */
 export interface Background {
   /** Pixels read. */
@@ -353,6 +411,13 @@ function backgroundAt(shot: Shot, x: number, y: number): number {
 
 const BINS = 2048;
 
+/** The area of some boxes. */
+function areaOf(segments: Segment[]): number {
+  let area = 0;
+  for (const [x0, y0, x1, y1] of segments) area += Math.max(0, x1 - x0) * Math.max(0, y1 - y0);
+  return area;
+}
+
 /**
  * The background under the boxes, from a screenshot with the text transparent, read at the scale
  * of the text (backgroundAt): light text (lighter than the background's median) takes the 95th
@@ -363,8 +428,7 @@ const BINS = 2048;
  */
 export function sampleBackground(shot: Shot, segments: Segment[], textLuminance: number, whole = 0): Background | null {
   const { raster } = shot;
-  let area = 0;
-  for (const [x0, y0, x1, y1] of segments) area += Math.max(0, x1 - x0) * Math.max(0, y1 - y0);
+  const area = areaOf(segments);
   if (area === 0) return null;
   // The share of what shows that a twentieth of the whole text is.
   const shown = Math.min(1, area / Math.max(area, whole));
@@ -443,6 +507,220 @@ export function judge(item: TextItem, shot: Shot, segments: Segment[], whole = 0
     background,
   };
 }
+
+/** Why a piece of text that showed got no verdict there (judge gave null), for messages. */
+export function unjudgedBecause(item: TextItem, placement: Placement): string {
+  const color = parseColor(item.color);
+  if (!color) return `its color, ${item.color}, cannot be read`;
+  if (color.alpha * item.opacity < 0.01) return `it is transparent (${item.color}, opacity ${item.opacity.toFixed(2)})`;
+  const area = areaOf(placement.segments);
+  return `${Math.round((100 * area) / Math.max(area, placement.whole))} percent of its lines showed, under a twentieth`;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Looking at a page: one look, every look down the page, and what they found
+// ---------------------------------------------------------------------------------------------
+
+/** Takes a screenshot of the window. */
+export type Shoot = () => Promise<Raster>;
+
+/**
+ * The DevTools protocol's own screenshot, PNG encoded for speed, decoded: the window as it is, with
+ * none of the waits page.screenshot() adds, for the many screenshots of one page.
+ */
+export async function shooter(page: Page): Promise<Shoot> {
+  const cdp = await page.context().newCDPSession(page);
+  return async () => {
+    const { data } = await cdp.send('Page.captureScreenshot', { format: 'png', optimizeForSpeed: true });
+    return decodePng(Buffer.from(data, 'base64'));
+  };
+}
+
+/** One look at the window: the text on the page, where each piece shows, and the pixels under it. */
+export interface Look {
+  items: TextItem[];
+  placements: Placement[];
+  shot: Shot;
+}
+
+/** How many times a look is taken again when the page replaces text it placed before the screenshot. */
+const LOOK_TRIES = 3;
+
+/**
+ * Reads the text and where it shows (readText), then photographs the window (the text transparent).
+ * Where the page replaced a piece of text it had placed in the moment between the two (a strip
+ * trading places with its moving form as it nears the view), it looks again, up to three times.
+ * `only` limits the placing to some keys.
+ */
+export async function look(page: Page, shoot: Shoot, only: string[] | null = null): Promise<Look> {
+  for (let tries = 1; ; tries += 1) {
+    const { items, placements } = await page.evaluate(readText, only);
+    const shot = prepareShot(await shoot());
+    if (await page.evaluate(stillThere)) return { items, placements, shot };
+    if (tries >= LOOK_TRIES) throw new Error(`the page replaced text it showed while the window was photographed, ${LOOK_TRIES} times running`);
+    await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+  }
+}
+
+/** Where the window stood for a look: the scroll position, the distance to the next one, and the dawn's strength. */
+export interface Position {
+  y: number;
+  next: number;
+  dawn: number | null;
+}
+
+/** A verdict, and the position it was given at. */
+export interface Judged {
+  position: Position;
+  verdict: Verdict;
+}
+
+/** One piece of text across every look at a page. */
+export interface Track {
+  key: string;
+  /** As the last look found it: its element and words, its color, size and opacity. */
+  item: TextItem;
+  /** Each position where it showed, and why it got no verdict there when it got none. */
+  shown: { position: Position; unjudged: string | null }[];
+  /** Its verdict at each position where it got one. */
+  judged: Judged[];
+}
+
+/** What every look at a page found, by piece of text (TextItem.key). */
+export class Tally {
+  readonly tracks = new Map<string, Track>();
+
+  /** Notes one look: the text that showed, and its verdicts (judge, by the piece's place in the look). */
+  add(position: Position, found: Pick<Look, 'items' | 'placements'>, verdicts: Map<number, Verdict>): void {
+    for (const placement of found.placements) {
+      const item = found.items[placement.i];
+      let track = this.tracks.get(item.key);
+      if (!track) this.tracks.set(item.key, (track = { key: item.key, item, shown: [], judged: [] }));
+      track.item = item;
+      const verdict = verdicts.get(placement.i);
+      track.shown.push({ position, unjudged: verdict ? null : unjudgedBecause(item, placement) });
+      if (verdict) track.judged.push({ position, verdict });
+    }
+  }
+
+  /** The text that is not exempt and got a verdict somewhere. */
+  checked(): Track[] {
+    return [...this.tracks.values()].filter((track) => !track.item.exempt && track.judged.length > 0);
+  }
+
+  /** The text that showed somewhere but got no verdict anywhere, exempt text apart. */
+  unjudged(): Track[] {
+    return [...this.tracks.values()].filter((track) => !track.item.exempt && track.judged.length === 0);
+  }
+}
+
+/** A track's lowest verdict. */
+export function worstOf(track: Track): Judged | null {
+  return track.judged.reduce<Judged | null>((worst, judged) => (!worst || judged.verdict.ratio < worst.verdict.ratio ? judged : worst), null);
+}
+
+/** Every position where a track failed, lowest ratio first. */
+export function failuresOf(track: Track): Judged[] {
+  return track.judged.filter((judged) => judged.verdict.ratio < judged.verdict.required).sort((a, b) => a.verdict.ratio - b.verdict.ratio);
+}
+
+/** The pieces of text that failed over the brightest sky, as the real hours left them (confirmOverHours). */
+export interface HourCheck {
+  /** Each piece that fails over a real hour: the position and the verdict, and the first such hour found. */
+  confirmed: Map<string, { judged: Judged; hour: number }>;
+  /** Each piece that could not be judged at some hour where it was checked: those hours, and where. */
+  unread: Map<string, string[]>;
+}
+
+/**
+ * Checks each piece of text that failed over the brightest sky against each of `hours` real stills,
+ * at every position where it failed, until it fails over one: `judgeAt` judges the given keys at a
+ * position over one hour's still. Each piece is checked first where it was worst (its lowest
+ * ratio), then everywhere else it failed; the pieces at one position are checked together, hour by
+ * hour, and a piece found failing is not checked again. A piece in neither map of the result passed
+ * over every hour at every position where it failed: it failed only over their combination.
+ */
+export async function confirmOverHours(
+  failing: Track[],
+  hours: number,
+  judgeAt: (position: Position, hour: number, keys: string[]) => Promise<Map<string, Verdict>>,
+): Promise<HourCheck> {
+  const confirmed = new Map<string, { judged: Judged; hour: number }>();
+  const unread = new Map<string, string[]>();
+  for (const round of [(failed: Judged[]) => failed.slice(0, 1), (failed: Judged[]) => failed.slice(1)]) {
+    const byPosition = new Map<number, { position: Position; keys: string[] }>();
+    for (const track of failing) {
+      for (const { position } of round(failuresOf(track))) {
+        const at = byPosition.get(position.y) ?? { position, keys: [] };
+        at.keys.push(track.key);
+        byPosition.set(position.y, at);
+      }
+    }
+    for (const { position, keys } of [...byPosition.values()].sort((a, b) => a.position.y - b.position.y)) {
+      let open = keys.filter((key) => !confirmed.has(key));
+      for (let hour = 0; hour < hours && open.length > 0; hour += 1) {
+        const verdicts = await judgeAt(position, hour, open);
+        for (const key of open) {
+          const verdict = verdicts.get(key);
+          if (!verdict) unread.set(key, [...(unread.get(key) ?? []), `hour ${String(hour).padStart(2, '0')} at ${position.y} px`]);
+          else if (verdict.ratio < verdict.required) confirmed.set(key, { judged: { position, verdict }, hour });
+        }
+        open = open.filter((key) => !confirmed.has(key));
+      }
+    }
+  }
+  return { confirmed, unread };
+}
+
+/** Every verdict of one look, by the piece's place in it. */
+export function judgeLook({ items, placements, shot }: Look): Map<number, Verdict> {
+  const out = new Map<number, Verdict>();
+  for (const placement of placements) {
+    const verdict = judge(items[placement.i], shot, placement.segments, placement.whole);
+    if (verdict) out.set(placement.i, verdict);
+  }
+  return out;
+}
+
+/**
+ * Looks at the whole page: the top, then `step` px at a time down to its end (scrollPositions), the
+ * dawn at each position set as placeAt says, the text read afresh at each (look). Call it with
+ * TRANSPARENT_TEXT on. Returns what each piece of text showed and how it was judged, and the
+ * positions.
+ */
+export async function scanPage(page: Page, shoot: Shoot, { step, dawn }: { step: number; dawn: Dawn | null }): Promise<{ tally: Tally; positions: number[] }> {
+  const { scrollable } = await pageLength(page);
+  const positions = scrollPositions(scrollable, step);
+  const tally = new Tally();
+  for (const [k, wanted] of positions.entries()) {
+    const next = k + 1 < positions.length ? positions[k + 1] - wanted : 0;
+    const placed = await page.evaluate(placeAt, { y: wanted, next, dawn });
+    const found = await look(page, shoot);
+    tally.add({ y: placed.y, next, dawn: placed.dawn }, found, judgeLook(found));
+  }
+  return { tally, positions };
+}
+
+/**
+ * Waits until no readout is counting. A value that counts (components/sheet/ReadoutValue.tsx,
+ * data-roll) shows no digits of its own while AnimateNumber, hidden from assistive technology, draws
+ * them over it, and is its plain text again once the count is over; the count runs once a visit,
+ * when its row first comes into view (components/sheet/readoutCount.ts). After visitWholePage every
+ * row has been in view, so each count has run, or will give up and set its value, within a couple
+ * of seconds; a value still counting after that fails, named.
+ */
+export async function waitForCounts(page: Page): Promise<void> {
+  const done = await page
+    .waitForFunction(() => !document.querySelector('[data-roll]'), undefined, { polling: 100, timeout: 10_000 })
+    .then(() => true)
+    .catch(() => false);
+  if (done) return;
+  const counting = await page.evaluate(() =>
+    Array.from(document.querySelectorAll('[data-roll]')).map((el) => `${el.tagName.toLowerCase()} "${(el.textContent ?? '').trim()}" (${el.getAttribute('data-roll')})`),
+  );
+  throw new Error(`readouts still counting 10 s after the whole page was in view: ${counting.join(', ')}`);
+}
+
 /**
  * Where to look: the top, then a step at a time down to the end of the page (always the last
  * position, where the dawn is at its strongest).
@@ -457,6 +735,12 @@ export function scrollPositions(scrollable: number, step: number): number[] {
 // ---------------------------------------------------------------------------------------------
 // The sky, held still and at its brightest
 // ---------------------------------------------------------------------------------------------
+
+/** The dawn's strength at the top and at the end of the page (holdDawn), Blueprint only. */
+export interface Dawn {
+  min: number;
+  max: number;
+}
 
 /**
  * In the page, before its scripts: no WebGL2, so the sky's host chooses the Still tier
@@ -524,7 +808,7 @@ export async function showStill({ widthClass, url }: { widthClass: string; url: 
  * the dawn, cut to one row just above the horizon and stretched downward. Blueprint only;
  * Whiteprint has no dawn.
  */
-export function holdDawn(): { min: number; max: number } | null {
+export function holdDawn(): Dawn | null {
   const sky = document.querySelector<HTMLElement>('.ar-sky');
   const still = sky?.querySelector<HTMLElement>('.ar-sky__still');
   const dawn = sky?.querySelector<HTMLElement>('.ar-sky__dawn');
@@ -579,7 +863,7 @@ export function holdDawn(): { min: number; max: number } | null {
  *   Above the horizon the dawn only dims upward, so the text's worst there is where it is now.
  * Then waits for two frames. Returns the scroll position reached and the dawn's strength.
  */
-export async function placeAt({ y, next, dawn }: { y: number; next: number; dawn: { min: number; max: number } | null }): Promise<{ y: number; dawn: number | null }> {
+export async function placeAt({ y, next, dawn }: { y: number; next: number; dawn: Dawn | null }): Promise<{ y: number; dawn: number | null }> {
   window.scrollTo({ top: y, left: 0, behavior: 'instant' });
   let strength: number | null = null;
   if (dawn) {

@@ -4,6 +4,15 @@
  */
 import type { Page } from '@playwright/test';
 
+/**
+ * The rule the checks call a requestAnimationFrame loop by: a span of LOOP_SPAN_MS milliseconds
+ * with a callback in more than LOOP_FRAMES frames. A loop shows 15 frames or more in such a span at
+ * 60 Hz, and still four or five on a machine so busy that it draws 18 frames a second; one-off
+ * calls take a frame or two.
+ */
+export const LOOP_SPAN_MS = 250;
+export const LOOP_FRAMES = 2;
+
 interface FrameMeterApi {
   start(): void;
   stop(): FrameActivity;

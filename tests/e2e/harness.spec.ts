@@ -13,26 +13,45 @@
  * - the GPA rule reports each wrong form, and the resume rule each name a resume can be stored as;
  * - the contrast check (./support/contrast.ts) reports dim text and passes bright text,
  *   reads a glow under a word but not a hairline, and leaves out text under the sticky nav, and its
- *   statistic takes a twentieth of a whole line where only part of it shows; the touch check
- *   reports a listener that cancels a finger's drag, and the scroll it stops; the PNG
- *   reader gives a screenshot's pixels back; the PDF reader counts a printout's pages and reads them.
+ *   statistic takes a twentieth of a whole line where only part of it shows; its transparent style
+ *   paints none of the text's own paint and leaves each color to read, and text painted in a fill
+ *   color of its own is reported; its page scan judges words the page swaps in as it scrolls, and
+ *   names words that showed but were never judged; its check against the hourly stills looks at
+ *   every position where a piece of text failed, its worst first; the touch check reports a
+ *   listener that cancels a finger's drag, and the scroll it stops; the PNG reader gives a
+ *   screenshot's pixels back; the PDF reader counts a printout's pages and reads them.
  * The faults are added to the page in the browser only; nothing in the site changes.
  */
 import type { Page } from '@playwright/test';
 import { describeViolations, runAxe } from './support/axe';
 import { luminance } from './support/color';
-import { collectText, judge, measureText, prepareShot, sampleBackground, TRANSPARENT_TEXT, withoutWebGL, type Segment } from './support/contrast';
+import {
+  confirmOverHours,
+  judge,
+  ownTextFill,
+  prepareShot,
+  readText,
+  sampleBackground,
+  scanPage,
+  shooter,
+  TRANSPARENT_TEXT,
+  withoutWebGL,
+  type Position,
+  type Segment,
+  type Track,
+  type Verdict,
+} from './support/contrast';
 import { expect, test } from './support/fixtures';
 import { gpaProblems } from './support/gpa';
 import { overflow } from './support/layout';
-import { frameActivity, installFrameMeter, REST_STEP, restScan, runningAnimations } from './support/motion';
+import { frameActivity, installFrameMeter, LOOP_FRAMES, LOOP_SPAN_MS, REST_STEP, restScan, runningAnimations } from './support/motion';
 import { open, readableText, settle, visitWholePage } from './support/page';
 import { letters, readPdf } from './support/pdf';
 import { decodePng } from './support/png';
 import { namedLikeResume } from './support/resume';
 import { DESKTOP, device, PHONE } from './support/site';
 import { flashes, recordTheme, themeLog } from './support/theme';
-import { cancelled, dragUp, recordCancels } from './support/touch';
+import { cancelled, dragUp, recordCancels, scrollRest } from './support/touch';
 
 /** A quiet page with no load sequence, for the faults to go into. */
 const PAGE = '/contact';
@@ -204,7 +223,8 @@ test.describe('harness, 390 px', () => {
         loop();
         document.querySelector('main')?.animate([{ opacity: 0.5 }, { opacity: 1 }], { duration: 20_000 });
       });
-      expect((await frameActivity(page, 500)).frames).toBeGreaterThan(10);
+      // A loop by the rule the checks apply (support/motion.ts), however fast this machine draws.
+      expect((await frameActivity(page, LOOP_SPAN_MS)).frames).toBeGreaterThan(LOOP_FRAMES);
       expect((await runningAnimations(page)).join('\n')).toContain('Web Animation on main');
     });
 
@@ -321,9 +341,9 @@ test.describe('harness, the contrast check and its readers, 1440 px', () => {
 
   /** Every piece of text on the page now, judged against the window as it is, by its words. */
   async function verdicts(page: Page) {
-    const items = await page.evaluate(collectText);
     const style = await page.addStyleTag({ content: TRANSPARENT_TEXT });
-    const placements = await page.evaluate(measureText, null);
+    // Read with the style on, as the check reads every page.
+    const { items, placements } = await page.evaluate(readText, null);
     const shot = prepareShot(decodePng(await page.screenshot()));
     await style.evaluate((e) => e.parentNode?.removeChild(e));
     const out = new Map<string, number>();
@@ -385,6 +405,104 @@ test.describe('harness, the contrast check and its readers, 1440 px', () => {
     expect(found.has('Undernavmarkzq'), 'text under the nav is not judged').toBe(false);
   });
 
+  test('the transparent style paints none of the text, leaves each color to read, and a fill color of its own is reported', async ({ page }) => {
+    expect(await open(page, PAGE)).toBe(200);
+    // Each way text is painted, on a flat ground in the page's flow.
+    const GROUND = [11, 31, 69];
+    const marks = ['Plainmarkzq', 'Linkmarkzq', 'Shadowmarkzq', 'Strokemarkzq', 'Listmarkzq', 'Buttonmarkzq', 'Svgmarkzq'];
+    await put(
+      page,
+      [
+        `<div style="background:rgb(${GROUND.join(',')});padding:12px 20px;font-size:20px;line-height:30px">`,
+        '<p style="margin:0;color:#ffffff">Plainmarkzq</p>',
+        '<p style="margin:0"><a href="#e2e" style="color:#ffd27f;text-decoration:underline 2px">Linkmarkzq</a></p>',
+        '<p style="margin:0;color:#ffffff;text-shadow:0 0 6px #ffffff, 2px 2px 0 #ff0000">Shadowmarkzq</p>',
+        '<p style="margin:0;color:#ffffff;-webkit-text-stroke:2px #ff0000">Strokemarkzq</p>',
+        '<ul style="margin:0;padding:0;color:#ffffff;list-style-position:inside"><li>Listmarkzq</li></ul>',
+        '<button type="button" style="all:unset;color:#ffffff">Buttonmarkzq</button>',
+        '<svg width="240" height="30" style="display:block"><text x="0" y="22" fill="#ffffff" font-size="20">Svgmarkzq</text></svg>',
+        '</div>',
+      ].join(''),
+    );
+    await page.locator('[data-e2e-fault]').evaluate((e) => e.scrollIntoView({ block: 'center', behavior: 'instant' }));
+    expect(await page.evaluate(ownTextFill), 'no text here takes a fill color of its own').toEqual([]);
+    const before = await page.evaluate(readText, null);
+    const style = await page.addStyleTag({ content: TRANSPARENT_TEXT });
+    const after = await page.evaluate(readText, null);
+    const raster = decodePng(await page.screenshot());
+    await style.evaluate((e) => e.parentNode?.removeChild(e));
+    for (const mark of marks) {
+      const was = before.items.find((item) => item.describe.includes(mark));
+      const now = after.items.find((item) => item.describe.includes(mark));
+      expect(now?.color, `${mark}: its color, read with the style on`).toBe(was?.color);
+      const placement = after.placements.find((p) => p.i === now?.i);
+      expect(placement, `${mark} shows`).toBeTruthy();
+      // Every pixel of its line boxes is the ground: no fill, stroke, shadow or underline left.
+      const painted: string[] = [];
+      for (const [x0, y0, x1, y1] of placement!.segments) {
+        for (let y = y0; y < y1; y += 1) {
+          for (let x = x0; x < x1; x += 1) {
+            const at = (y * raster.width + x) * 4;
+            const pixel = [raster.data[at], raster.data[at + 1], raster.data[at + 2]];
+            if (pixel.some((c, k) => Math.abs(c - GROUND[k]) > 2)) painted.push(`${x},${y}: ${pixel.join(',')}`);
+          }
+        }
+      }
+      expect(painted.slice(0, 5), `${mark}: pixels of its line boxes painted with the style on`).toEqual([]);
+    }
+    // A fill color of the text's own would be painted instead of its color, which the check reads.
+    await put(page, '<p style="color:#ffffff;-webkit-text-fill-color:#ff0000">Fillmarkzq</p>');
+    expect((await page.evaluate(ownTextFill)).join('\n')).toContain('Fillmarkzq');
+  });
+
+  test('the page scan judges words the page swaps in as it scrolls, and names words that showed but were never judged', async ({ page }) => {
+    await page.addInitScript(withoutWebGL);
+    expect(await open(page, PAGE)).toBe(200);
+    // Below a window and a half of page: bright words that the page replaces with dim ones once they
+    // come near the view, and puts back once they are far again, as the tools ticker trades places
+    // with its moving form; then words painted transparent wherever they show, as a readout that
+    // never ended its count would be.
+    await put(
+      page,
+      [
+        '<div style="height:1400px"></div>',
+        '<div style="background:#0b1f45;padding:20px">',
+        '<p id="e2e-swap" style="margin:0;font-size:17px;line-height:24px;color:#ffffff">Servermarkzq</p>',
+        '<p style="margin:0;font-size:17px;line-height:24px;color:transparent">Stuckmarkzq</p>',
+        '</div>',
+      ].join(''),
+    );
+    await page.evaluate(() => {
+      const holder = document.getElementById('e2e-swap');
+      if (!holder) return;
+      new IntersectionObserver(
+        ([entry]) => {
+          const swapped = holder.textContent === 'Swappedmarkzq';
+          if (entry.isIntersecting && !swapped) {
+            holder.style.color = '#2b3a55';
+            holder.replaceChildren(document.createTextNode('Swappedmarkzq'));
+          } else if (!entry.isIntersecting && swapped) {
+            holder.style.color = '#ffffff';
+            holder.replaceChildren(document.createTextNode('Servermarkzq'));
+          }
+        },
+        { rootMargin: '100px 0px' },
+      ).observe(holder);
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    });
+    await page.addStyleTag({ content: TRANSPARENT_TEXT });
+    const { tally } = await scanPage(page, await shooter(page), { step: 180, dawn: null });
+    const track = (mark: string) => [...tally.tracks.values()].find((t) => t.item.describe.includes(mark));
+    const swapped = track('Swappedmarkzq');
+    expect(swapped?.judged.length, 'the words swapped in near the view are judged').toBeGreaterThan(0);
+    expect(Math.min(...swapped!.judged.map((j) => j.verdict.ratio)), 'dim words on the dark ground').toBeLessThan(4.5);
+    expect(
+      tally.unjudged().map((t) => t.item.describe),
+      'words that showed but were never judged',
+    ).toEqual([expect.stringContaining('Stuckmarkzq')]);
+    expect(track('Stuckmarkzq')?.shown[0].unjudged).toMatch(/transparent/);
+  });
+
   test('the PDF reader counts the pages of a printout and reads their words and size', async ({ page }) => {
     await page.setContent('<p>Firstpagezq</p><p style="break-before:page">Secondpagezq</p>');
     const pdf = await readPdf(await page.pdf({ format: 'Letter' }));
@@ -428,6 +546,49 @@ test('the contrast statistic takes a twentieth of the whole line where only part
   expect(sampleBackground(glow, [[20, 28, 30, 30]], text, whole), 'a sliver: 20 of 3,200 px').toBeNull();
 });
 
+test('the check against the hourly stills looks at every position where a piece of text failed, its worst first', async () => {
+  const at = (y: number): Position => ({ y, next: 100, dawn: 0.1 });
+  const verdict = (ratio: number): Verdict => ({
+    ratio,
+    required: 4.5,
+    large: false,
+    text: [169, 190, 223],
+    background: { pixels: 800, percentile: 95, shown: 1, rgb: [74, 91, 121], luminance: 0.1 },
+  });
+  /** A piece of text that failed over the brightest sky at these positions, with these ratios. */
+  const track = (key: string, failed: [number, number][]): Track => ({
+    key,
+    item: { i: 0, key, color: 'rgb(169, 190, 223)', opacity: 1, fontSize: 15, fontWeight: 400, describe: key, exempt: null },
+    shown: failed.map(([y]) => ({ position: at(y), unjudged: null })),
+    judged: failed.map(([y, ratio]) => ({ position: at(y), verdict: verdict(ratio) })),
+  });
+  // Worst at 100 px, where it passes over every hour; it fails over hour 07 at 500 px.
+  const elsewhere = track('a "Elsewheremarkzq" #1', [
+    [100, 3.0],
+    [500, 4.0],
+  ]);
+  // Fails only over the hours' combination.
+  const combined = track('a "Combinedmarkzq" #1', [[100, 3.5]]);
+  // Not there to judge over hour 03 at 100 px, and passes over every other hour.
+  const unseen = track('a "Unseenmarkzq" #1', [[100, 4.2]]);
+  const calls: string[] = [];
+  const { confirmed, unread } = await confirmOverHours([elsewhere, combined, unseen], 24, async (position, hour, keys) => {
+    calls.push(`${position.y}:${hour}`);
+    const out = new Map<string, Verdict>();
+    for (const key of keys) {
+      if (key === unseen.key && hour === 3) continue;
+      out.set(key, verdict(key === elsewhere.key && position.y === 500 && hour === 7 ? 4.2 : 5));
+    }
+    return out;
+  });
+  expect(calls[0], 'each piece first where it was worst').toBe('100:0');
+  expect(confirmed.get(elsewhere.key), 'a failure over a real hour away from its worst position').toMatchObject({ hour: 7, judged: { position: { y: 500 } } });
+  expect(calls.filter((call) => call.startsWith('500:')), 'hour by hour until one fails').toHaveLength(8);
+  expect(confirmed.has(combined.key) || unread.has(combined.key), 'failed only over the combination of the hours').toBe(false);
+  expect(confirmed.has(unseen.key)).toBe(false);
+  expect(unread.get(unseen.key), 'kept, as nothing cleared it at that hour').toEqual(['hour 03 at 100 px']);
+});
+
 test.describe('harness, the touch check, 390 px', () => {
   test.use(device(PHONE));
 
@@ -437,13 +598,15 @@ test.describe('harness, the touch check, 390 px', () => {
     await dragUp(page, 195, 600);
     await expect.poll(() => page.evaluate(() => window.scrollY), { message: 'a free drag scrolls' }).toBeGreaterThan(150);
     expect(await cancelled(page)).toEqual([]);
+    // Back to the top once the first drag's scroll has ended, and at rest there before the next.
+    await scrollRest(page);
     await page.evaluate(() => {
       window.scrollTo(0, 0);
       window.addEventListener('touchmove', (event) => event.preventDefault(), { passive: false });
     });
+    expect(await scrollRest(page), 'at rest at the top before the cancelled drag').toBe(0);
     await dragUp(page, 195, 600);
-    await page.waitForTimeout(500);
-    expect(await page.evaluate(() => window.scrollY), 'a cancelled drag does not scroll').toBe(0);
+    expect(await scrollRest(page), 'a cancelled drag does not scroll').toBe(0);
     expect(await cancelled(page)).toContain('touchmove');
   });
 });

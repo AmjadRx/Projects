@@ -10,13 +10,9 @@
  */
 import type { BrowserContext } from '@playwright/test';
 import { expect, newVisitor, test } from './support/fixtures';
-import { installFrameMeter, restScan, type RestReading } from './support/motion';
+import { installFrameMeter, LOOP_FRAMES, LOOP_SPAN_MS as SPAN_MS, restScan, type RestReading } from './support/motion';
 import { open, readableText, visitWholePage, waitForReady } from './support/page';
 import { DESKTOP, device, PHONE, routeTitle, ROUTES } from './support/site';
-
-/** A span of this many milliseconds with a callback in more than LOOP_FRAMES frames holds a loop. */
-const SPAN_MS = 250;
-const LOOP_FRAMES = 2;
 
 /**
  * What is wrong at each place of a scan, with the places next to each other that share a problem

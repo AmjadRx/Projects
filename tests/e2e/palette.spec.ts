@@ -166,7 +166,11 @@ test.describe('command palette, 1440 px', () => {
     await field(page).fill('zqxjv');
     await expect(options(page)).toHaveCount(0);
     await expect(dialog(page).getByRole('listbox')).toBeHidden();
-    await expect(dialog(page).getByText(UI.palette.noMatch('zqxjv', index.pages), { exact: true })).toBeVisible();
+    // The message the dialog shows. Its status line reads the same words out a moment later, once
+    // typing pauses, which tests/palette-dom.test.ts proves.
+    const empty = dialog(page).locator('.ar-cmdk__empty');
+    await expect(empty).toBeVisible();
+    await expect(empty).toHaveText(UI.palette.noMatch('zqxjv', index.pages));
     await expect(field(page)).toHaveAttribute('aria-expanded', 'false');
     await expect(field(page)).not.toHaveAttribute('aria-activedescendant', /./);
   });

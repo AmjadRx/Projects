@@ -4,8 +4,14 @@
  * color-contrast undecided over the sky and its glass. On every public route, in both themes, at
  * 390, 768, 1024 and 1440 px, at the top of the page and every fifth of a window down to its end,
  * each visible piece of text is checked against the pixels under it (./support/contrast.ts says
- * how: the text painted transparent, the 95th or 5th percentile of the background's luminance,
- * 4.5 to 1 or 3 to 1 for large text).
+ * how: the text read afresh at every position, its own paint made transparent, the 95th or 5th
+ * percentile of the background's luminance, 4.5 to 1 or 3 to 1 for large text).
+ *
+ * The page, at rest: the whole page is brought into view first (visitWholePage), and the readouts'
+ * count, which runs once as their row first comes into view, has ended (waitForCounts). What the
+ * page swaps as it scrolls (the tools ticker and the phone's featured carousel, which take the place
+ * of the server's markup near the view) is read wherever it shows, and text that showed somewhere
+ * but was never judged anywhere fails the test.
  *
  * The sky, held still and at its worst (the sky moves; these choices make the check repeatable):
  * - The tier. The live sky's tier depends on the machine (a GPU gives Full or Light, a software
@@ -24,8 +30,9 @@
  *   one of 24, and the live sky turns through every hour. Blueprint is checked over the brightest
  *   sky of the day: for each width class, every pixel the brightest it is in any of the 24 hourly
  *   stills. That is never darker than any hour; a piece of text that fails over it is then checked
- *   against each of the 24 stills in turn, and fails only if it fails over a real one (the message
- *   names the hour). Whiteprint has one still a class, with no stars and no dawn.
+ *   against each of the 24 stills in turn, at every position where it failed, and fails if it fails
+ *   over a real one anywhere (the message names the hour). Whiteprint has one still a class, with
+ *   no stars and no dawn.
  * - The dawn, which strengthens with scroll (place 7 of the ramp). At each position it is set to
  *   the strength it reaches at the next one, and text that will cross the horizon before then is
  *   checked against the dawn's brightest row, carried down over the ground (support/contrast.ts
@@ -42,24 +49,30 @@ import { blueprintStillUrl, type StillClass } from '../../lib/theme';
 import { hex } from './support/color';
 import {
   brightestOf,
-  collectText,
+  confirmOverHours,
+  failuresOf,
   holdDawn,
-  judge,
-  measureText,
+  judgeLook,
+  look,
+  ownTextFill,
   pageLength,
   placeAt,
-  prepareShot,
-  scrollPositions,
+  scanPage,
+  shooter,
   showStill,
   stillClassNow,
   TRANSPARENT_TEXT,
+  waitForCounts,
   withoutWebGL,
-  type TextItem,
+  worstOf,
+  type Dawn,
+  type Judged,
+  type Shoot,
+  type Track,
   type Verdict,
 } from './support/contrast';
 import { expect, test } from './support/fixtures';
 import { open, visitWholePage } from './support/page';
-import { decodePng, type Raster } from './support/png';
 import { device, routeTitle, ROUTES, THEMES, WIDTHS, type Theme, type Width } from './support/site';
 
 /** Positions a fifth of a window apart. */
@@ -71,18 +84,16 @@ const BRIGHTEST = '/__e2e__/sky/brightest-';
 /** The brightest sky of each width class, made once in each worker. */
 const brightest = new Map<string, Promise<Buffer>>();
 
-interface Worst {
-  item: TextItem;
-  verdict: Verdict;
-  /** Where it was worst: the scroll position, the distance to the next position, and the dawn's strength. */
-  y: number;
-  next: number;
-  dawn: number | null;
-  /** The first of the 24 hourly stills it also fails over, when checked against them, and its verdict there. */
-  hour?: { step: number; verdict: Verdict };
+/** A piece of text under AA, as the run reports it. */
+interface Failure {
+  track: Track;
+  /** The verdict reported, and the position it was given at. */
+  judged: Judged;
+  /** The sky it was given over, for the message. */
+  where: string;
+  /** The hourly still it fails over (Blueprint), shown again for the evidence. */
+  hour?: number;
 }
-
-const fails = (verdict: Verdict) => verdict.ratio < verdict.required;
 
 /** 95 as "95th", 2.5 as "2.5th", 91 as "91st". */
 function ordinal(n: number): string {
@@ -91,70 +102,59 @@ function ordinal(n: number): string {
   return `${n}${teen ? 'th' : (['th', 'st', 'nd', 'rd'][n % 10] ?? 'th')}`;
 }
 
-function line(route: string, theme: Theme, width: Width, worst: Worst, sky: string): string {
-  const { item, verdict } = worst.hour?.verdict ? { item: worst.item, verdict: worst.hour.verdict } : worst;
+/** An hour of the stills, as "07". */
+const hh = (step: number) => String(step).padStart(2, '0');
+
+function line(route: string, theme: Theme, width: Width, { track: { item }, judged: { position, verdict }, where }: Failure): string {
   const bg = verdict.background;
-  const dawn = worst.dawn === null ? '' : `, dawn ${worst.dawn.toFixed(3)}`;
-  const where = worst.hour ? `${sky}, and over the still of hour ${String(worst.hour.step).padStart(2, '0')} too` : sky;
+  const dawn = position.dawn === null ? '' : `, dawn ${position.dawn.toFixed(3)}`;
   const shown = bg.shown < 0.995 ? `, ${Math.round(bg.shown * 100)} percent of its lines showing` : '';
   return (
-    `${route}, ${theme}, ${width} px, scrolled to ${worst.y} px${dawn}: ${item.describe}: ` +
+    `${route}, ${theme}, ${width} px, scrolled to ${position.y} px${dawn}: ${item.describe}: ` +
     `text ${hex(verdict.text)}${item.opacity < 1 ? ` (opacity ${item.opacity.toFixed(2)})` : ''} ${verdict.large ? 'large' : `${item.fontSize}px`} ` +
     `on ${hex(bg.rgb)} (the ${ordinal(bg.percentile)} percentile of ${bg.pixels} px${shown}, luminance ${bg.luminance.toFixed(4)}): ` +
     `${verdict.ratio.toFixed(2)} to 1, needs ${verdict.required} (${where})`
   );
 }
 
-/** Takes a screenshot of the window. */
-type Shoot = () => Promise<Raster>;
-
-/**
- * The DevTools protocol's own screenshot, PNG encoded for speed, decoded: the window as it is, with
- * none of the waits page.screenshot() adds, for the many screenshots of one page.
- */
-async function shooter(page: Page): Promise<Shoot> {
-  const cdp = await page.context().newCDPSession(page);
-  return async () => {
-    const { data } = await cdp.send('Page.captureScreenshot', { format: 'png', optimizeForSpeed: true });
-    return decodePng(Buffer.from(data, 'base64'));
-  };
-}
-
-/** Photographs the window with the text transparent and checks the pieces placed in it. */
-async function check(page: Page, shoot: Shoot, items: TextItem[], only: number[] | null): Promise<Map<number, Verdict>> {
-  const placements = await page.evaluate(measureText, only);
-  const shot = prepareShot(await shoot());
-  const out = new Map<number, Verdict>();
-  for (const placement of placements) {
-    const verdict = judge(items[placement.i], shot, placement.segments, placement.whole);
-    if (verdict) out.set(placement.i, verdict);
-  }
-  return out;
+/** A piece of text that showed but got no verdict at any position, for the report. */
+function unjudgedLine(route: string, theme: Theme, width: Width, track: Track): string {
+  const at = track.shown.map(({ position }) => position.y);
+  const why = [...new Set(track.shown.map(({ unjudged }) => unjudged))].join('; ');
+  return `${route}, ${theme}, ${width} px: ${track.item.describe} showed at ${at.length} position(s) (${at.slice(0, 6).join(', ')}${at.length > 6 ? ', ...' : ''} px) and was judged at none: ${why}`;
 }
 
 /**
- * Checks each piece that failed over the brightest sky against the real hourly stills, hour by hour,
- * at the position where it was worst, until it fails over one (that hour is kept with it). Returns
- * the pieces that fail over a real hour; one that passes over all 24 failed only over their
- * combination, which no visitor sees.
+ * Checks each piece of text that failed over the brightest sky against the real hourly stills, at
+ * every position where it failed there, its worst first, hour by hour, until it fails over one:
+ * that hour and that position are what the run reports (support/contrast.ts confirmOverHours). One
+ * that passes over all 24 at every such position failed only over their combination, which no
+ * visitor sees, and is dropped. One that could not be judged at some hour and position (the page
+ * showed it in another form there, or not at all) is kept, as failing over the brightest sky, since
+ * nothing cleared it.
  */
-async function overTheHours(page: Page, shoot: Shoot, items: TextItem[], failing: Worst[], widthClass: StillClass, dawn: { min: number; max: number } | null): Promise<Worst[]> {
-  const byPosition = new Map<number, Worst[]>();
-  for (const worst of failing) byPosition.set(worst.y, [...(byPosition.get(worst.y) ?? []), worst]);
-  for (const [y, group] of byPosition) {
-    await page.evaluate(placeAt, { y, next: group[0].next, dawn });
-    let open = group;
-    for (let step = 0; step < STILL_STEPS && open.length > 0; step += 1) {
-      await page.evaluate(showStill, { widthClass, url: blueprintStillUrl(widthClass, step) });
-      const verdicts = await check(page, shoot, items, open.map((w) => w.item.i));
-      for (const worst of open) {
-        const verdict = verdicts.get(worst.item.i);
-        if (verdict && fails(verdict)) worst.hour = { step, verdict };
-      }
-      open = open.filter((worst) => !worst.hour);
+async function overTheHours(page: Page, shoot: Shoot, failing: Track[], widthClass: StillClass, dawn: Dawn | null, sky: string): Promise<Failure[]> {
+  let placed: number | null = null;
+  const { confirmed, unread } = await confirmOverHours(failing, STILL_STEPS, async (position, hour, keys) => {
+    if (placed !== position.y) {
+      await page.evaluate(placeAt, { y: position.y, next: position.next, dawn });
+      placed = position.y;
+    }
+    await page.evaluate(showStill, { widthClass, url: blueprintStillUrl(widthClass, hour) });
+    const found = await look(page, shoot, keys);
+    return new Map([...judgeLook(found)].map(([i, verdict]): [string, Verdict] => [found.items[i].key, verdict]));
+  });
+  const out: Failure[] = [];
+  for (const track of failing) {
+    const hit = confirmed.get(track.key);
+    const missed = unread.get(track.key);
+    if (hit) out.push({ track, judged: hit.judged, hour: hit.hour, where: `over the ${widthClass} still of hour ${hh(hit.hour)}, and over ${sky}` });
+    else if (missed) {
+      const list = `${missed.slice(0, 3).join(', ')}${missed.length > 3 ? `, and ${missed.length - 3} more` : ''}`;
+      out.push({ track, judged: failuresOf(track)[0], where: `${sky}; not cleared by the hourly stills, since it could not be judged at ${list}` });
     }
   }
-  return failing.filter((worst) => worst.hour);
+  return out;
 }
 
 /**
@@ -170,23 +170,37 @@ const fileName = (theme: Theme, width: Width, route: string) => `${theme}-${widt
 /**
  * Screenshots of the page as it shows at the first three positions where text failed, with its
  * text, attached to the test (and written to E2E_CONTRAST_DIR with the text-free ones the check
- * read, when it is set).
+ * read, when it is set), each over the sky it failed over: the hour's still where an hour was found.
  */
-async function evidence(page: Page, testInfo: TestInfo, name: string, transparent: { evaluate(fn: (e: Element) => void): Promise<void> }, failures: Worst[], dawn: { min: number; max: number } | null) {
-  const positions = [...new Set(failures.map((f) => f.y))].slice(0, 3).map((y) => ({ y, next: failures.find((f) => f.y === y)?.next ?? 0 }));
+async function evidence(
+  page: Page,
+  testInfo: TestInfo,
+  name: string,
+  transparent: { evaluate(fn: (e: Element) => void): Promise<void> },
+  failures: Failure[],
+  dawn: Dawn | null,
+  stillFor: (failure: Failure) => { widthClass: string; url: string } | null,
+) {
+  const shots: Failure[] = [];
+  for (const failure of failures) if (!shots.some((f) => f.judged.position.y === failure.judged.position.y) && shots.length < 3) shots.push(failure);
+  const show = async (failure: Failure, next: number) => {
+    const still = stillFor(failure);
+    if (still) await page.evaluate(showStill, still);
+    await page.evaluate(placeAt, { y: failure.judged.position.y, next, dawn });
+  };
   if (EVIDENCE_DIR) {
-    for (const { y, next } of positions) {
-      await page.evaluate(placeAt, { y, next, dawn });
-      fs.writeFileSync(path.join(EVIDENCE_DIR, `${name}-${y}-background.png`), await page.screenshot());
+    for (const failure of shots) {
+      await show(failure, failure.judged.position.next);
+      fs.writeFileSync(path.join(EVIDENCE_DIR, `${name}-${failure.judged.position.y}-background.png`), await page.screenshot());
     }
   }
   await transparent.evaluate((e) => e.remove());
-  for (const { y } of positions) {
+  for (const failure of shots) {
     // As a visitor sees it there: the dawn at that position's own strength, nothing carried.
-    await page.evaluate(placeAt, { y, next: 0, dawn });
+    await show(failure, 0);
     const shot = await page.screenshot();
-    await testInfo.attach(`failure at ${y} px`, { body: shot, contentType: 'image/png' });
-    if (EVIDENCE_DIR) fs.writeFileSync(path.join(EVIDENCE_DIR, `${name}-${y}.png`), shot);
+    await testInfo.attach(`failure at ${failure.judged.position.y} px`, { body: shot, contentType: 'image/png' });
+    if (EVIDENCE_DIR) fs.writeFileSync(path.join(EVIDENCE_DIR, `${name}-${failure.judged.position.y}.png`), shot);
   }
 }
 
@@ -211,6 +225,7 @@ for (const theme of THEMES) {
           expect(await open(page, route.path), 'status').toBe(route.status);
           await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
           await visitWholePage(page);
+          await waitForCounts(page);
           // The Still tier, and no live scene over it.
           await expect(page.locator('html')).toHaveAttribute('data-sky-tier', 'still');
           await expect(page.locator('.ar-sky__live.is-ready')).toHaveCount(0);
@@ -229,59 +244,63 @@ for (const theme of THEMES) {
             sky = `the brightest of the 24 hourly ${widthClass} stills`;
           }
 
-          const items = await page.evaluate(collectText);
-          expect(items.length, 'text found on the page').toBeGreaterThan(0);
+          expect(await page.evaluate(ownTextFill), 'text painted in a fill color of its own (the check reads each piece of text by its color)').toEqual([]);
           const transparent = await page.addStyleTag({ content: TRANSPARENT_TEXT });
           const dawn = theme === 'blueprint' ? await page.evaluate(holdDawn) : null;
           if (theme === 'blueprint') expect(dawn, 'the dawn layer (Blueprint)').not.toBeNull();
 
-          const { scrollable, height } = await pageLength(page);
+          const { height } = await pageLength(page);
           const shoot = await shooter(page);
-          const positions = scrollPositions(scrollable, Math.max(40, Math.round(height * STEP)));
-          const worst = new Map<number, Worst>();
-          const seen = new Set<number>();
-          for (const [k, wanted] of positions.entries()) {
-            const next = k + 1 < positions.length ? positions[k + 1] - wanted : 0;
-            const placed = await page.evaluate(placeAt, { y: wanted, next, dawn });
-            for (const [i, verdict] of await check(page, shoot, items, null)) {
-              seen.add(i);
-              const before = worst.get(i);
-              if (!before || verdict.ratio < before.verdict.ratio) worst.set(i, { item: items[i], verdict, y: placed.y, next, dawn: placed.dawn });
-            }
-          }
+          const { tally, positions } = await scanPage(page, shoot, { step: Math.max(40, Math.round(height * STEP)), dawn });
 
-          const checked = [...worst.values()].filter((w) => !w.item.exempt);
-          let failures = checked.filter((w) => fails(w.verdict));
-          if (theme === 'blueprint' && widthClass && failures.length > 0) failures = await overTheHours(page, shoot, items, failures, widthClass, dawn);
-          const lowest = [...checked].sort((a, b) => a.verdict.ratio - b.verdict.ratio)[0];
+          const checked = tally.checked();
+          const failing = checked.filter((track) => failuresOf(track).length > 0);
+          let failures: Failure[] = failing.map((track) => ({ track, judged: failuresOf(track)[0], where: sky }));
+          if (theme === 'blueprint' && widthClass && failing.length > 0) failures = await overTheHours(page, shoot, failing, widthClass, dawn, sky);
+          const unjudged = tally.unjudged();
+          const lowest = checked
+            .map((track) => ({ track, worst: worstOf(track)! }))
+            .sort((a, b) => a.worst.verdict.ratio - b.worst.verdict.ratio)[0];
           const name = fileName(theme, width, route.path);
           const summary = JSON.stringify(
-              {
-                route: route.path,
-                theme,
-                width,
-                sky,
-                positions: positions.length,
-                texts: items.length,
-                checked: checked.length,
-                exempt: [...worst.values()].filter((w) => w.item.exempt).map((w) => w.item.describe),
-                lowest: lowest ? { ratio: Number(lowest.verdict.ratio.toFixed(2)), required: lowest.verdict.required, text: lowest.item.describe, y: lowest.y } : null,
-                failures: failures.map((f) => line(route.path, theme, width, f, sky)),
-                segments: failures.map((f) => ({ text: f.item.describe, y: f.y })),
-              },
-              null,
-              2,
-            );
+            {
+              route: route.path,
+              theme,
+              width,
+              sky,
+              positions: positions.length,
+              texts: tally.tracks.size,
+              checked: checked.length,
+              exempt: [...tally.tracks.values()].filter((track) => track.item.exempt).map((track) => track.item.describe),
+              lowest: lowest
+                ? { ratio: Number(lowest.worst.verdict.ratio.toFixed(2)), required: lowest.worst.verdict.required, text: lowest.track.item.describe, y: lowest.worst.position.y }
+                : null,
+              failures: failures.map((failure) => line(route.path, theme, width, failure)),
+              unjudged: unjudged.map((track) => unjudgedLine(route.path, theme, width, track)),
+              positionsFailed: failures.map((failure) => ({ text: failure.track.item.describe, y: failure.judged.position.y, hour: failure.hour ?? null })),
+            },
+            null,
+            2,
+          );
           await testInfo.attach('contrast.json', { contentType: 'application/json', body: summary });
           if (EVIDENCE_DIR) {
             fs.mkdirSync(EVIDENCE_DIR, { recursive: true });
             fs.writeFileSync(path.join(EVIDENCE_DIR, `${name}.json`), summary);
           }
-          if (failures.length > 0) await evidence(page, testInfo, name, transparent, failures, dawn);
+          if (failures.length > 0) {
+            const stillFor = (failure: Failure) =>
+              theme !== 'blueprint' || !widthClass
+                ? null
+                : { widthClass, url: failure.hour === undefined ? `${BRIGHTEST}${widthClass}.png` : blueprintStillUrl(widthClass, failure.hour) };
+            await evidence(page, testInfo, name, transparent, failures, dawn, stillFor);
+          }
 
-          expect(seen.size, 'pieces of text seen on screen at some position').toBeGreaterThan(0);
+          expect(tally.tracks.size, 'pieces of text seen on screen at some position').toBeGreaterThan(0);
+          expect
+            .soft(unjudged.map((track) => unjudgedLine(route.path, theme, width, track)), `${unjudged.length} piece(s) of text that showed but were never judged`)
+            .toEqual([]);
           expect(
-            failures.map((f) => line(route.path, theme, width, f, sky)),
+            failures.map((failure) => line(route.path, theme, width, failure)),
             `${failures.length} piece(s) of text under AA over the sky (of ${checked.length} checked)`,
           ).toEqual([]);
         });
