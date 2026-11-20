@@ -168,6 +168,41 @@ export const UI = {
     /** The line in the empty drawing well above the heading. */
     well: 'No sheet at this address',
   },
+  /**
+   * The command palette (ARCHITECTURE.md 5, "Also new"; the bundle's Nav and CommandPalette, and the
+   * Palette boards): the nav's button that opens it, the dialog and its field, the result groups and
+   * the line beside each result, the keys under the list, the empty state, and the count that screen
+   * readers hear. The nav's words reach the button from the server; the palette reads the rest.
+   */
+  palette: {
+    /** The nav button: its name (the bundle's words), its word from 1280 px, and the shortcut it shows. */
+    open: 'Search pages and projects',
+    search: 'Search',
+    shortcut: 'Ctrl K',
+    /** The dialog's name, which is also the field's name and its placeholder. */
+    label: 'Search pages, projects and sections',
+    /** The list of results, for assistive technology. */
+    results: 'Results',
+    close: 'Close',
+    groups: { pages: 'Pages', projects: 'Projects', sections: 'Sections' },
+    /** The line beside a result: a page, a section of a project page (a project shows its sheet). */
+    page: 'Page',
+    section: 'Section',
+    /** A section's name: its project's title, then its heading ("Raven: Roadmap"). */
+    sectionOf: (project: string, heading: string) => `${project}: ${heading}`,
+    /** The keys under the list (hidden from assistive technology, which hears the combobox). */
+    keys: { up: '↑', down: '↓', move: 'to move', enter: 'Enter', go: 'to open', esc: 'Esc', close: 'to close' },
+    /**
+     * Nothing matches: what to try instead, with the nav's page names when there are any. Shown in
+     * place of the list, and said politely in place of the count.
+     */
+    noMatch: (query: string, pages: readonly string[]) =>
+      pages.length > 0
+        ? `No match for "${query}". Try a project name or a page: ${pages.join(', ')}.`
+        : `No match for "${query}". Try a project name.`,
+    /** Said politely after the results change, when there are any. */
+    count: (n: number) => (n === 1 ? '1 result' : `${n} results`),
+  },
   heroCaption: 'Raven, tri-tiltrotor eVTOL. Illustration, not measured data.',
   /**
    * The generated Open Graph images (lib/og/): the label of the home image's title block cell,
