@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { devPagesEnabled } from '@/lib/devPages';
 import SkyHarness, { type HarnessProps } from '@/components/sky/dev/SkyHarness';
 
 /**
  * The sky's harness (`/dev-sky`): the live scene alone, with no chrome and no host, at a size and
  * with options from the query, for the still images (scripts/render-stills.mjs) and for looking at
- * the scene while it is built. Outside the (site) group, so the sky host is not mounted here. It
- * renders notFound() in production builds, so it never ships.
+ * the scene while it is built. Outside the (site) group, so the sky host is not mounted here. A
+ * production deployment answers not found (lib/devPages.ts), so it never ships.
  *
  *   theme      blueprint (default) or whiteprint
  *   tier       full (default) or light
@@ -49,7 +50,7 @@ function point(search: Search, key: string): [number, number] | null {
 }
 
 export default function DevSkyPage({ searchParams }: { searchParams: Search }) {
-  if (process.env.NODE_ENV === 'production') notFound();
+  if (!devPagesEnabled()) notFound();
   const progress = number(searchParams, 'progress');
   const props: HarnessProps = {
     theme: one(searchParams, 'theme') === 'whiteprint' ? 'whiteprint' : 'blueprint',

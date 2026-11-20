@@ -1,0 +1,985 @@
+/*
+ * The printed page (ARCHITECTURE.md 5, "Also new": a project page prints as a clean drawing sheet
+ * with the title block, on white, without nav or motion). Loaded last from app/layout.tsx; every
+ * rule is for print only.
+ *
+ * Every public page prints legibly on white paper in the same inks whichever theme is on screen:
+ * no sky, nav, menu, command palette, footer controls, motion, or other interactive chrome (buttons
+ * that only act on screen go too), and panels, figures, cards and table rows stay whole on a page.
+ * Links print as their words in the line color, as the Print board draws them; nothing is added
+ * after them. The paper is narrower than the screen layouts it shares rules with (a Letter or A4
+ * page is under 768 px wide), so section 6 sets cards, panels and tables in the denser forms the
+ * tablet and desktop layouts use.
+ *
+ * A project page (the article .pj-sheet) prints as the canvas's Print board draws it: one Letter
+ * landscape sheet (1056 x 816 px at 96 px an inch) inside the drawing frame, built from the screen
+ * page's own components. Left, the owner's name, the title, the subtitle and the pitch, the view
+ * (the cover with its dimensions drawn) and the notes (the highlights). Right, the revision table
+ * at the top, the specifications under it, and the title block at the foot. The page address
+ * prints in the frame's bottom band. Prose blocks, the progress strip, the roadmap, the gallery,
+ * the back link and the pager stay on screen (the board's note). The owner's name, the address and
+ * the word over the notes come from the page's data-print-* attributes, so the words stay in
+ * content/ and lib/strings.ts.
+ *
+ * The inks are the Print board's (the --print-* tokens in app/tokens.css): near-black Prussian ink
+ * on white, and on the sheet nothing under 12 px and 40 px clear at every edge. The browser is
+ * asked to print backgrounds (print-color-adjust), because the drafting marks are drawn with them:
+ * the short lines before labels and list items, the timeline, the maturity scale's fill. Every
+ * surface is paper, so nothing else prints, and the thermal ramp shows only in the maturity scale
+ * (DESIGN_DIRECTION.md 2.4, place 2).
+ */
+
+@media print {
+  /* ---------- 1. Paper and inks, the same in both themes ---------- */
+
+  html,
+  html[data-theme='blueprint'],
+  html[data-theme='whiteprint'] {
+    color-scheme: light;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    --sheet: var(--print-paper);
+    --sheet-2: var(--print-paper);
+    --sheet-3: var(--print-raised);
+    --night: var(--print-paper);
+    --on-night: var(--print-ink);
+    --ink: var(--print-ink);
+    --ink-dim: var(--print-ink-dim);
+    --ink-mute: var(--print-ink-mute);
+    --line: var(--print-line);
+    --rule: var(--print-rule);
+    --grid-minor: transparent;
+    --grid-major: transparent;
+    --action: var(--print-paper);
+    --on-action: var(--print-ink);
+    --sky-zenith: var(--print-paper);
+    --sky-mid: var(--print-paper);
+    --sky-low: var(--print-paper);
+    --ground: var(--print-paper);
+    --glass: var(--print-paper);
+    --glass-filter: none;
+    --shadow-card: none;
+    --night-line: var(--print-line);
+    background: var(--print-paper);
+  }
+  body,
+  .ar-frame,
+  .ar-page {
+    background: var(--print-paper) !important;
+    color: var(--ink);
+  }
+
+  /* ---------- 2. Nothing moves ---------- */
+
+  /* Every animation and transition stops in its final state, and whatever waits for a script to
+     show it (a panel below the fold, the hero's strokes and headline, a photo on its way) is shown. */
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    text-shadow: none !important;
+    box-shadow: none !important;
+  }
+  .ar-card,
+  .ar-card-frame,
+  .hm-ticker li,
+  .hm-ticker ul,
+  .hm-feat > ul,
+  .ar-gal__track > ul {
+    transform: none !important;
+  }
+  .hm-hero__title,
+  .hm-hero__line,
+  .mm-photo,
+  .mm-poster,
+  .hm-model__poster,
+  .ar-well > img {
+    opacity: 1 !important;
+  }
+  .hd-draw {
+    stroke-dasharray: none !important;
+    stroke-dashoffset: 0 !important;
+  }
+  .hd-dash {
+    mask: none !important;
+  }
+
+  /* ---------- 3. The interactive chrome stays on screen ---------- */
+
+  .ar-skip,
+  .ar-sky,
+  .ar-nav,
+  .ar-mmenu,
+  .ar-heat,
+  .ar-sheetframe,
+  .ar-cmdk,
+  .ar-lightbox,
+  .mm-lb,
+  dialog,
+  [role='dialog'],
+  .ar-foot__pause,
+  .ar-foot__credits,
+  .ar-filter,
+  .ar-btn,
+  .ar-iconbtn,
+  .ar-theme,
+  .ar-card__rim,
+  .ar-card__glint,
+  .ar-dim__zoom,
+  .ar-dim__mark,
+  .st-photo__open,
+  .st-photo__mark,
+  .ar-ph__retry,
+  .ar-ph__bar,
+  .ar-well__bar,
+  .ar-mv__bar,
+  .ar-gal__bar,
+  .ar-gal__nav,
+  .hm-swipe,
+  .hm-hero__actions,
+  .hm-hero--scrim::before,
+  .hd-th,
+  .hd-ring,
+  .hd-scan,
+  .hd-split,
+  .st-contact__actions,
+  .st-contact__resume,
+  .st-copied,
+  .st-404__actions,
+  .pj-back,
+  .pj-pager,
+  .pj-index__head .pj-sub,
+  .hm-head > .ar-link--standalone,
+  .hm-about__text > .ar-link--standalone,
+  .ar-readout__go,
+  .hm-now__go,
+  .hm-index__go,
+  .st-links__go,
+  .ar-card__open,
+  .ticker-item[aria-hidden='true'],
+  video,
+  canvas,
+  iframe {
+    display: none !important;
+  }
+
+  /* ---------- 4. The page on the paper ---------- */
+
+  @page {
+    margin: 14mm 14mm 16mm;
+  }
+
+  .hm {
+    display: block;
+    min-height: 0;
+    overflow: visible;
+  }
+  .hm-body,
+  .hm-main {
+    display: block;
+    padding: 0 !important;
+  }
+  .hm-wrap {
+    max-width: none;
+    padding: 0 !important;
+  }
+  .hm-sec,
+  .st-sec {
+    padding-top: var(--space-6);
+  }
+  .st-page,
+  .pj-index {
+    padding-top: 0;
+  }
+  .hm-foot {
+    padding-top: var(--space-7);
+    break-inside: avoid;
+  }
+
+  /* Titles at a size for paper. */
+  .st-title,
+  .pj-title {
+    font-size: 40px;
+  }
+  .hm-hero__title {
+    font-size: 44px;
+  }
+
+  /* What reads as one piece stays on one page; a heading stays with what follows it. */
+  .ar-card,
+  .ar-well,
+  .ar-mv,
+  .ar-tb,
+  .ar-ms,
+  .ar-readouts,
+  .ar-road__stage,
+  .ar-callout,
+  .ar-badge,
+  .ar-dim,
+  figure,
+  img,
+  tr,
+  blockquote,
+  .hm-pillar,
+  .hm-now__list,
+  .hm-index__list > li,
+  .ar-tl__item,
+  .st-edu__item,
+  .st-hon > li,
+  .st-facts,
+  .st-contact__main,
+  .st-links,
+  .ar-foot {
+    break-inside: avoid;
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  .hm-label,
+  .ar-tl__dates,
+  thead {
+    break-after: avoid;
+  }
+  thead {
+    display: table-header-group;
+  }
+  p,
+  li {
+    orphans: 3;
+    widows: 3;
+  }
+
+  /* Glass is paper with its rule; the blur and the fill have nothing to show through. */
+  .ar-glass,
+  .ar-glassy,
+  .ar-card,
+  .ar-readouts,
+  .ar-tb,
+  .ar-dim__row,
+  .ar-badge,
+  .ar-mv,
+  .ar-foot,
+  .st-contact__main,
+  .st-contact__grid--joined::before {
+    background: var(--print-paper) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+  .ar-foot {
+    border-top: 1px solid var(--rule);
+  }
+
+  /* Media wells: the photo on the paper; an empty well is its outline and its words. */
+  .ar-well,
+  .ar-mv__well,
+  .ar-gal__frame {
+    background: var(--print-paper) !important;
+    border: 1px solid var(--rule);
+  }
+  .ar-ph {
+    background: none;
+  }
+
+  /* Links print as their words in the line color. */
+  a {
+    color: var(--line);
+  }
+
+  /* ---------- 5. A project page: one drawing sheet, Letter landscape (the Print board) ---------- */
+
+  @page sheet {
+    size: 11in 8.5in;
+    margin: 0;
+  }
+  .ar-frame:has(.pj-sheet) {
+    page: sheet;
+  }
+  .ar-frame:has(.pj-sheet) .hm-foot {
+    display: none !important;
+  }
+
+  /* The drawing frame: a trim line 40 px in, the zone band, the frame line 56 px in. */
+  .ar-frame:has(.pj-sheet) .ar-sheetframe {
+    display: block !important;
+    position: fixed;
+    inset: 40px;
+    z-index: 0;
+    border: 1px solid var(--ink-mute);
+  }
+  .ar-frame:has(.pj-sheet) .ar-sheetframe__band {
+    display: none;
+  }
+  .ar-frame:has(.pj-sheet) .ar-sheetframe__border {
+    border: 1.5px solid var(--ink);
+  }
+  .ar-frame:has(.pj-sheet) .ar-sheetframe__cols > li,
+  .ar-frame:has(.pj-sheet) .ar-sheetframe__rows > li {
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--ink-mute);
+  }
+  .ar-frame:has(.pj-sheet) .ar-sheetframe__cols > li + li::before,
+  .ar-frame:has(.pj-sheet) .ar-sheetframe__rows > li + li::before,
+  .ar-frame:has(.pj-sheet) .ar-sheetframe__rows > li::after {
+    content: none;
+  }
+  .ar-frame:has(.pj-sheet) .ar-sheetframe__cols > li + li {
+    border-left: 1px solid var(--ink-mute);
+  }
+  .ar-frame:has(.pj-sheet) .ar-sheetframe__rows > li + li {
+    border-top: 1px solid var(--ink-mute);
+  }
+
+  /* The sheet's working area: 912 x 672 px from 72 px in, a 456 px view column and a 432 px data
+     column. Rows: the heading, the pitch, the view (the height that is left), the notes beside the
+     title block. The data column's tables span the first three rows. */
+  .pj-sheet {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 456px 432px;
+    grid-template-rows: auto auto minmax(120px, 1fr) auto;
+    column-gap: 24px;
+    width: 912px;
+    height: 672px;
+    margin: 72px 0 0 72px;
+    break-inside: avoid;
+    font-family: var(--font-sans);
+    color: var(--ink);
+  }
+  .pj-sheet .pj-top,
+  .pj-sheet .pj-grid,
+  .pj-sheet .pj-intro {
+    display: contents;
+  }
+  .pj-sheet .pj-grid > *,
+  .pj-sheet .pj-blocks > * {
+    margin: 0;
+  }
+  .pj-sheet .pj-progress,
+  .pj-sheet .pj-blocks > :not([data-block='specTable']):not([data-block='log']) {
+    display: none !important;
+  }
+
+  /* The page address, in the frame's bottom band. */
+  .pj-sheet::after {
+    content: attr(data-print-address);
+    position: fixed;
+    right: 64px;
+    bottom: 41px;
+    height: 14px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 14px;
+    color: var(--ink-mute);
+  }
+
+  /* Left: the owner's name over the title (a drafting label: a short line, then the words), the
+     subtitle, the pitch. */
+  .pj-sheet .pj-head {
+    grid-column: 1;
+    grid-row: 1;
+    display: block;
+    max-width: none;
+    margin: 0;
+  }
+  .pj-sheet .pj-head::before,
+  .pj-sheet .pj-hl::before {
+    display: block;
+    padding-left: 34px;
+    background: linear-gradient(var(--line), var(--line)) left center / 24px 1px no-repeat;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.4;
+    letter-spacing: 0.04em;
+    color: var(--ink-dim);
+  }
+  .pj-sheet .pj-head::before {
+    content: attr(data-print-owner);
+  }
+  .pj-sheet .pj-title {
+    margin: 6px 0 0;
+    font-size: 36px;
+    line-height: 1.02;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    font-variation-settings: 'wdth' 118;
+  }
+  .pj-sheet .pj-head .pj-sub {
+    margin: 4px 0 0;
+    max-width: none;
+    font-size: 15px;
+    line-height: 1.4;
+    font-weight: 500;
+    color: var(--ink-dim);
+  }
+  .pj-sheet .pj-pitch {
+    grid-column: 1;
+    grid-row: 2;
+    margin: 8px 0 0;
+    max-width: none;
+    font-size: 13px;
+    line-height: 1.5;
+    font-weight: 500;
+    color: var(--ink);
+    text-wrap: pretty;
+  }
+
+  /* The view: the cover, taking the height the notes leave. */
+  .pj-sheet .pj-cover {
+    grid-column: 1;
+    grid-row: 3;
+    display: flex;
+    flex-direction: column;
+    min-height: 120px;
+    margin-top: 14px;
+  }
+  .pj-sheet .pj-cover > .ar-dim,
+  .pj-sheet .pj-cover > .ar-mv {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .pj-sheet .pj-cover .ar-well,
+  .pj-sheet .pj-cover .ar-mv__well {
+    flex: 1 1 auto;
+    min-height: 0;
+    aspect-ratio: auto;
+    border-radius: 0;
+    border: 1px solid var(--ink-mute);
+  }
+  .pj-sheet .pj-cover .ar-mv {
+    border: 0;
+  }
+  .pj-sheet .pj-cover .ar-mv__cap {
+    display: none;
+  }
+  .pj-sheet .pj-cover .ar-ph__text {
+    font-size: 12px;
+  }
+
+  /* The dimensions, drawn over the cover from the row of readouts the page always carries, so they
+     need no script and fit the view at any size: along the top, down the right side with a leader
+     to its plate, and along the foot with the plate above, where the screen draws them
+     (components/sheet/callouts.tsx). Each is drawn with borders: the line, an extension tick at
+     each end, and an arrowhead pointing out at each end; the plate is the label and the value in
+     a box on the paper. */
+  .pj-sheet .ar-dim:not(.ar-dim--nophoto) .ar-dim__svg,
+  .pj-sheet .ar-dim:not(.ar-dim--nophoto) .ar-dim__plates {
+    display: none !important;
+  }
+  .pj-sheet .ar-dim:not(.ar-dim--nophoto) .ar-dim__row {
+    display: block !important;
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none !important;
+  }
+  .pj-sheet .ar-dim:not(.ar-dim--nophoto) .ar-dim__row > li {
+    position: absolute;
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: center;
+    align-items: center;
+    gap: 0;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+  }
+  .pj-sheet .ar-dim:not(.ar-dim--nophoto) .ar-dim__row > li::before,
+  .pj-sheet .ar-dim:not(.ar-dim--nophoto) .ar-dim__row > li::after,
+  .pj-sheet .ar-dim:not(.ar-dim--nophoto) .ar-dim__row > li > span::before {
+    content: '';
+    position: absolute;
+    border: 0 solid var(--line);
+  }
+  .pj-sheet .ar-dim:not(.ar-dim--nophoto) .ar-dim__row > li > span {
+    position: static;
+    padding: 3px 7px;
+    border: 1px solid var(--line);
+    background-color: var(--print-paper);
+    white-space: nowrap;
+  }
+  .pj-sheet .ar-dim:not(.ar-dim--nophoto) .ar-dim__row .ar-dim__label {
+    padding-right: 3px;
+    border-right: 0;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+    color: var(--ink-dim);
+  }
+  .pj-sheet .ar-dim:not(.ar-dim--nophoto) .ar-dim__row .ar-dim__value {
+    padding-left: 3px;
+    border-left: 0;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 16px;
+    color: var(--ink);
+  }
+
+  /* Along the top and along the foot. */
+  .pj-sheet .ar-dim:not(.ar-dim--nophoto) .ar-dim__row > li:nth-child(odd) {
+    left: 5%;
+    right: 5%;
+    height: 0;
+  }
+  .pj-sheet .ar-dim:not(.ar-dim--nophoto) .ar-dim__row > li:nth-child(1) {
+    top: 13%;
+  }
+  .pj-sheet .ar-dim:not(.ar-dim--nophoto) .ar-dim__row > li:nth-child(3) {
+    top: 91%;
+    right: 36%;
+    align-items: flex-end;
+  }
+  .pj-sheet .ar-dim:not(.ar-dim--nophoto) .ar-dim__row > li:nth-child(3) > span {
+    margin-bottom: 8px;
+  }
+  .pj-sheet .ar-dim:not(.ar-dim--nophoto) .ar-dim__row > li:nth-child(odd)::before {
+    left: 0;
+    right: 0;
+    top: -0.75px;
+    border-top-width: 1.5px;
+  }
+  .pj-sheet .ar-dim:not(.ar-dim--nophoto) .ar-dim__row > li:nth-child(odd)::after {
+    left: 0;
+    right: 0;
+    top: -9px;
+    height: 18px;
+    border-left-width: 1.5px;
+    border-right-width: 1.5px;
+  }
+  .pj-sheet .ar-dim:not(.ar-dim--nophoto) .ar-dim__row > li:nth-child(odd) > .ar-dim__label::before {
+    left: 0;
+    top: -4px;
+    border-color: transparent var(--line) transparent transparent;
+    border-width: 4px 9px 4px 0;
+  }
+  .pj-sheet .ar-dim:not(.ar-dim--nophoto) .ar-dim__row > li:nth-child(odd) > .ar-dim__value::before {
+    right: 0;
+    top: -4px;
+    border-color: transparent transparent transparent var(--line);
+    border-width: 4px 0 4px 9px;
+  }
+
+  /* Down the right side: the plate to the left of the line, joined to it by a 14 px leader. */
+  .pj-sheet .ar-dim:not(.ar-dim--nophoto) .ar-dim__row > li:nth-child(2) {
+    right: 5.5%;
+    top: 30%;
+    bottom: 16%;
+    width: 0;
+    justify-content: flex-start;
+  }
+  .pj-sheet .ar-dim:not(.ar-dim--nophoto) .ar-dim__row > li:nth-child(2) > .ar-dim__value {
+    margin-right: 14px;
+  }
+  .pj-sheet .ar-dim:not(.ar-dim--nophoto) .ar-dim__row > li:nth-child(2)::before {
+    top: 0;
+    bottom: 0;
+    left: -0.75px;
+    border-left-width: 1.5px;
+  }
+  .pj-sheet .ar-dim:not(.ar-dim--nophoto) .ar-dim__row > li:nth-child(2)::after {
+    top: 0;
+    bottom: 0;
+    left: -9px;
+    width: 18px;
+    border-top-width: 1.5px;
+    border-bottom-width: 1.5px;
+  }
+  .pj-sheet .ar-dim:not(.ar-dim--nophoto) .ar-dim__row > li:nth-child(2) > .ar-dim__label::before {
+    top: 0;
+    left: -4px;
+    border-color: transparent transparent var(--line) transparent;
+    border-width: 0 4px 9px 4px;
+  }
+  .pj-sheet .ar-dim:not(.ar-dim--nophoto) .ar-dim__row > li:nth-child(2) > .ar-dim__value::before {
+    bottom: 0;
+    left: -4px;
+    border-color: var(--line) transparent transparent transparent;
+    border-width: 9px 4px 0 4px;
+  }
+  .pj-sheet .ar-dim:not(.ar-dim--nophoto) .ar-dim__row > li:nth-child(2) > .ar-dim__value::after {
+    content: '';
+    position: absolute;
+    left: -14px;
+    width: 14px;
+    top: 50%;
+    border-top: 1.5px solid var(--line);
+  }
+
+  /* A cover with nothing to draw on (no photo, or a video or model cover): the row of readouts under it. */
+  .pj-sheet .pj-cover .ar-dim__row {
+    margin-top: 8px;
+    padding: 0 0 0 10px;
+  }
+  .pj-sheet .pj-cover .ar-dim__row > li {
+    padding: 6px 10px 6px 0;
+  }
+  .pj-sheet .pj-cover .ar-dim__row > li + li {
+    padding-left: 10px;
+  }
+  .pj-sheet .pj-cover .ar-dim__row .ar-dim__value {
+    font-size: 15px;
+  }
+  .pj-sheet .pj-cover .ar-dim__row .ar-dim__label {
+    font-size: 12px;
+    color: var(--ink-dim);
+  }
+
+  /* The notes: the highlights under a drafting label, a short line before each. */
+  .pj-sheet .pj-hl {
+    grid-column: 1;
+    grid-row: 4;
+    margin: 14px 0 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+  }
+  .pj-sheet .pj-hl::before {
+    content: attr(data-print-label);
+    margin-bottom: 6px;
+  }
+  .pj-sheet .pj-hl li {
+    display: grid;
+    grid-template-columns: 22px minmax(0, 1fr);
+    column-gap: 8px;
+    padding: 0;
+    border: 0;
+    font-size: 12.5px;
+    line-height: 1.4;
+    color: var(--ink);
+    text-wrap: pretty;
+  }
+  .pj-sheet .pj-hl li + li {
+    margin-top: 3px;
+    border: 0;
+  }
+  .pj-sheet .pj-hl li::before {
+    content: '';
+    align-self: start;
+    width: 10px;
+    margin-top: 8.5px;
+    border-top: 1px solid var(--line);
+  }
+
+  /* Right: the revision table, the specifications, and the title block at the foot. */
+  .pj-sheet .pj-blocks {
+    grid-column: 2;
+    grid-row: 1 / 4;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-height: 0;
+  }
+  .pj-sheet .pj-blocks > [data-block='log'] {
+    order: -1;
+  }
+  .pj-sheet .pj-log > .hm-label {
+    display: none;
+  }
+  .pj-sheet .pj-log .ar-glass,
+  .pj-sheet .pj-spec {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+  }
+  .pj-sheet .ar-rev {
+    border-bottom: 1px solid var(--ink-mute);
+  }
+  .pj-sheet .ar-rev__rev-col {
+    width: 36px;
+  }
+  .pj-sheet .ar-rev__date-col {
+    width: 92px;
+  }
+  .pj-sheet .ar-th-caps {
+    padding: 0 10px 4px 0;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--ink-mute);
+    border-bottom-color: var(--ink-mute);
+  }
+  .pj-sheet .ar-rev td {
+    padding: 3px 10px 3px 0;
+  }
+  .pj-sheet .ar-rev__rev,
+  .pj-sheet .ar-rev__date {
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .pj-sheet .ar-rev__title {
+    font-size: 13px;
+    line-height: 1.4;
+    font-weight: 600;
+  }
+  .pj-sheet .ar-rev__text,
+  .pj-sheet .ar-rev__media,
+  .pj-sheet .ar-rev__photo {
+    display: none;
+  }
+  .pj-sheet .ar-spec {
+    border-top: 1px solid var(--ink-mute);
+    border-bottom: 1px solid var(--ink-mute);
+  }
+  .pj-sheet .ar-spec th {
+    width: 108px;
+    padding: 3px 10px 3px 0;
+    font-size: 12px;
+    line-height: 1.35;
+    font-weight: 500;
+    color: var(--ink-dim);
+  }
+  .pj-sheet .ar-spec td {
+    padding: 3px 0;
+    font-size: 12px;
+    line-height: 1.35;
+    color: var(--ink);
+  }
+  /* A table the content heads with a heading block (Bronco Racing's two cars) keeps that heading
+     on paper: the caption the screen gives it for screen readers. A table with no heading before
+     it is named for its project, which the sheet already says. */
+  .pj-sheet .pj-blocks > .pj-h2 ~ [data-block='specTable'] caption {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0 0 4px;
+    padding: 0;
+    overflow: visible;
+    clip: auto;
+    clip-path: none;
+    white-space: normal;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.4;
+    letter-spacing: 0.04em;
+    color: var(--ink-dim);
+  }
+
+  /* The title block, laid out as a drawing's: project and sheet; role; dates, status and rev;
+     maturity; links. A field the content leaves out leaves its place to the next. */
+  .pj-sheet .pj-rail {
+    grid-column: 2;
+    grid-row: 4;
+    align-self: end;
+    margin: 0;
+    padding-top: 14px;
+  }
+  .pj-sheet .ar-tb {
+    position: static;
+    grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr) minmax(0, 1fr);
+    border: 1.5px solid var(--ink);
+    border-radius: 0;
+  }
+  .pj-sheet .ar-tb__cell {
+    grid-column: auto;
+    padding: 5px 8px;
+    border: 0;
+    border-top: 1px solid var(--rule);
+  }
+  .pj-sheet .ar-tb__cell--project {
+    grid-column: 1 / span 2;
+    border-top: 0;
+  }
+  .pj-sheet .ar-tb__cell--sheet {
+    grid-column: 3;
+    border-top: 0;
+    border-left: 1px solid var(--rule);
+  }
+  .pj-sheet .ar-tb__cell--role,
+  .pj-sheet .ar-tb__cell--maturity,
+  .pj-sheet .ar-tb__cell--links {
+    grid-column: 1 / -1;
+  }
+  .pj-sheet .ar-tb__cell--status.ar-tb__cell--wide {
+    grid-column: span 2;
+  }
+  .pj-sheet .ar-tb__cell--dates + .ar-tb__cell--status,
+  .pj-sheet .ar-tb__cell--rev {
+    border-left: 1px solid var(--rule);
+  }
+  .pj-sheet .ar-tb dt {
+    font-size: 12px;
+    line-height: 1.35;
+    letter-spacing: 0.08em;
+    color: var(--ink-mute);
+  }
+  .pj-sheet .ar-tb dd {
+    margin-top: 1px;
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--ink);
+  }
+  .pj-sheet .ar-tb__cell--project dd {
+    font-size: 18px;
+    line-height: 1.2;
+  }
+  .pj-sheet .ar-tb .ar-ms {
+    margin-top: 4px;
+  }
+  .pj-sheet .ar-ms__box {
+    height: 10px;
+  }
+  .pj-sheet .ar-ms__label {
+    margin-top: 4px;
+    font-size: 12.5px;
+    line-height: 1.4;
+    color: var(--ink-dim);
+  }
+  .pj-sheet .ar-tb__links .ar-link--standalone,
+  .pj-sheet .ar-tb__text {
+    min-height: 0;
+    font-size: 12.5px;
+  }
+
+  /* ---------- 6. The other pages, in the denser forms of the wider layouts ---------- */
+
+  /* Home: the hero's words beside the line drawing (no lens, no thermal view, no scan band). */
+  .hm-hero {
+    min-height: 0;
+    padding: 0 0 var(--space-6);
+    align-items: flex-start;
+  }
+  .hm-hero__grid {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    column-gap: var(--space-6);
+    align-items: center;
+  }
+  .hm-hero__copy {
+    display: grid;
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .hm-hero__rest {
+    margin-top: 0;
+  }
+  .hm-hero__art {
+    grid-column: 2;
+    grid-row: 1;
+    order: 0;
+  }
+
+  /* Readouts three across, as from a 768 px frame. */
+  .ar-readouts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .ar-readouts > li:nth-child(n) {
+    border-left: 0;
+    border-top: 0;
+  }
+  .ar-readouts > li:not(:nth-child(3n + 1)) {
+    border-left: 1px solid var(--rule);
+  }
+  .ar-readouts > li:nth-child(n + 4) {
+    border-top: 1px solid var(--rule);
+  }
+
+  /* Pillars, featured cards, project cards and education in two columns. */
+  .hm-pillars,
+  .hm-feat,
+  .pj-cards,
+  .st-edu {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4);
+    margin: 0;
+    padding: 0;
+    overflow: visible !important;
+  }
+  .hm-feat .hm-feat__item {
+    flex: none;
+    width: auto;
+  }
+  .hm-feat--carousel > ul {
+    display: contents !important;
+  }
+
+  /* The tools strip prints as the still list of its words. */
+  .hm-ticker {
+    overflow: visible;
+  }
+  .hm-ticker__view {
+    overflow: visible !important;
+    -webkit-mask-image: none !important;
+    mask-image: none !important;
+  }
+  .hm-ticker__view > ul,
+  .hm-ticker__list {
+    flex-wrap: wrap !important;
+    width: auto !important;
+  }
+  .hm-ticker li,
+  .hm-ticker__item {
+    min-height: 0;
+    padding-top: var(--space-1);
+    padding-bottom: var(--space-1);
+  }
+
+  /* About: the paragraphs beside the headshot and the facts. */
+  .st-about {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    column-gap: var(--space-6);
+    align-items: start;
+  }
+
+  /* The bill of materials (/about) and the merged revision table (/log) as tables, as from a
+     768 px frame. (The project sheet sets its own revision table, in section 5.) */
+  .ar-bom,
+  .st-log .ar-rev {
+    display: table;
+  }
+  .ar-bom thead,
+  .st-log .ar-rev thead {
+    display: table-header-group;
+  }
+  .ar-bom tbody,
+  .st-log .ar-rev tbody {
+    display: table-row-group;
+  }
+  .ar-bom tr,
+  .ar-bom tr.ar-bom__row,
+  .st-log .ar-rev tr,
+  .st-log .ar-rev tbody tr.ar-rev__row {
+    display: table-row;
+    padding: 0;
+  }
+  .ar-bom th,
+  .ar-bom td,
+  .st-log .ar-rev th,
+  .st-log .ar-rev td {
+    display: table-cell;
+  }
+  .ar-bom__row td {
+    padding: var(--space-2) var(--space-4) var(--space-2) 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .ar-bom__row td.ar-bom__proof {
+    margin-top: 0;
+  }
+  .st-log .ar-rev td,
+  .st-log .ar-rev td.ar-rev__cell-desc,
+  .st-log .ar-rev td.ar-rev__cell-proj {
+    margin-top: 0;
+    padding: var(--space-3) var(--space-4) var(--space-3) 0;
+  }
+  .st-log .ar-rev tbody tr + tr td {
+    border-top: 1px solid var(--rule);
+  }
+
+  /* Honors with the year beside each, as from a 768 px frame. */
+  .st-hon > li {
+    grid-template-columns: 136px minmax(0, 1fr);
+    column-gap: var(--space-5);
+  }
+
+  /* Sheet not found: the block on the page, not a screen's height. */
+  .st-404 {
+    min-height: 0;
+    padding-top: var(--space-6);
+  }
+}

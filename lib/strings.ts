@@ -167,7 +167,11 @@ export const UI = {
     projects: 'See all projects',
     /** The line in the empty drawing well above the heading. */
     well: 'No sheet at this address',
+    /** The line under the heading, the NotFound board's words. */
+    line: 'There is no sheet at this address.',
   },
+  /** The printed project sheet (app/print.css; the Print board): the drafting label over the highlights. */
+  print: { notes: 'Notes' },
   heroCaption: 'Raven, tri-tiltrotor eVTOL. Illustration, not measured data.',
   viewers: {
     loadViewer: 'Load viewer',

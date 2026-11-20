@@ -17,6 +17,10 @@ import TextLink from './TextLink';
  * known (docs/V3_PLAN.md D-09). STATUS then takes the row's full width.
  *
  * `rail` makes it sticky in the right rail from 1024 px (the project page's desktop layout).
+ *
+ * Each cell also names its field (ar-tb__cell--sheet, --role, --dates, --status, --rev, --maturity,
+ * --links), so the printed sheet can lay the cells out as a drawing's title block whichever of them
+ * the content leaves out (app/print.css).
  */
 export default function TitleBlock({
   project,
@@ -49,30 +53,30 @@ export default function TitleBlock({
         <dt>{UI.titleBlock.project}</dt>
         <dd>{project.title}</dd>
       </div>
-      <div className="ar-tb__cell ar-tb__cell--end">
+      <div className="ar-tb__cell ar-tb__cell--sheet ar-tb__cell--end">
         <dt>{UI.titleBlock.sheet}</dt>
         <dd className="ar-tb__caps">
           {sheet} {UI.titleBlock.of.toUpperCase()} {sheets}
         </dd>
       </div>
       {hasText(project.role) ? (
-        <div className="ar-tb__cell ar-tb__cell--wide">
+        <div className="ar-tb__cell ar-tb__cell--role ar-tb__cell--wide">
           <dt>{UI.titleBlock.role}</dt>
           <dd>{project.role}</dd>
         </div>
       ) : null}
       {hasText(project.timeframe) ? (
-        <div className="ar-tb__cell ar-tb__cell--wide">
+        <div className="ar-tb__cell ar-tb__cell--dates ar-tb__cell--wide">
           <dt>{UI.titleBlock.dates}</dt>
           <dd>{project.timeframe}</dd>
         </div>
       ) : null}
-      <div className={cn('ar-tb__cell', !rev && 'ar-tb__cell--wide')}>
+      <div className={cn('ar-tb__cell ar-tb__cell--status', !rev && 'ar-tb__cell--wide')}>
         <dt>{UI.titleBlock.status}</dt>
         <dd>{statusText(project)}</dd>
       </div>
       {rev ? (
-        <div className="ar-tb__cell ar-tb__cell--end">
+        <div className="ar-tb__cell ar-tb__cell--rev ar-tb__cell--end">
           <dt>{UI.titleBlock.rev}</dt>
           <dd>
             <time dateTime={rev}>{rev}</time>
@@ -80,7 +84,7 @@ export default function TitleBlock({
         </div>
       ) : null}
       {maturity ? (
-        <div className="ar-tb__cell ar-tb__cell--wide">
+        <div className="ar-tb__cell ar-tb__cell--maturity ar-tb__cell--wide">
           <dt>{UI.maturity.label}</dt>
           <dd>
             <MaturityScale maturity={maturity} variant="full" />
@@ -88,7 +92,7 @@ export default function TitleBlock({
         </div>
       ) : null}
       {links.length > 0 ? (
-        <div className="ar-tb__cell ar-tb__cell--wide">
+        <div className="ar-tb__cell ar-tb__cell--links ar-tb__cell--wide">
           <dt>{UI.titleBlock.links}</dt>
           <dd>
             <ul className="ar-tb__links">
