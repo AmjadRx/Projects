@@ -1,8 +1,10 @@
 /**
  * The hiding rules, checked on real build output (ARCHITECTURE.md 4 and 15, item 2;
  * docs/V3_PLAN.md D-06, D-07, D-08, D-14): a field left empty, an empty cover, and
- * `visible: false` leave no trace in the HTML, the RSC payloads, the JSON-LD, the sitemap, or the
- * metadata.
+ * `visible: false` leave no trace in the HTML, the RSC payloads, the JSON-LD, the sitemap, the
+ * metadata, or the Open Graph images (a hidden project has no image route at all; every visible
+ * page names an image the build drew). The icon, /favicon.ico, the manifest, and robots.txt are
+ * checked on the same build.
  *
  * The test copies content/ into a temporary folder, changes it the way an owner would in the
  * admin, builds the site from it with `next build` into its own output folder, and searches every
@@ -142,10 +144,45 @@ function walk(dir: string, out: string[] = []): string[] {
   return out;
 }
 
-/** Prerendered pages and route bodies: HTML, RSC payloads, the sitemap and robots bodies, and headers. */
-function servedFiles(): string[] {
-  return walk(appOut).filter((f) => /\.(html|rsc|body|meta)$/.test(f));
+const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+
+/** True for a route body that is an image (the Open Graph images, the icons, /favicon.ico). */
+function isImageBody(file: string): boolean {
+  if (!file.endsWith('.body')) return false;
+  const head = fs.readFileSync(file).subarray(0, 8);
+  return head.equals(PNG_SIGNATURE) || head.subarray(0, 4).equals(Buffer.from([0, 0, 1, 0]));
 }
+
+/**
+ * Prerendered pages and route bodies: HTML, RSC payloads, the sitemap, robots, and manifest
+ * bodies, and headers. Image bodies are left out of these text searches (their words are drawn
+ * as outlines, so no marker could be found in their bytes, and random bytes could match a short
+ * one); the tests below check the image routes themselves.
+ */
+function servedFiles(): string[] {
+  return walk(appOut).filter((f) => /\.(html|rsc|body|meta)$/.test(f) && !isImageBody(f));
+}
+
+/** The PNG's width and height. */
+function pngSize(file: string): { width: number; height: number } {
+  const bytes = fs.readFileSync(file);
+  expect(bytes.subarray(0, 8).equals(PNG_SIGNATURE), file).toBe(true);
+  return { width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) };
+}
+
+/** A meta tag's content in a page, by its property or name. */
+function metaContent(page: string, key: string): string | undefined {
+  const match = new RegExp(`<meta (?:property|name)="${key}" content="([^"]*)"`).exec(page);
+  return match?.[1].replace(/&amp;/g, '&');
+}
+
+/** The build output file of an address on the site (a route's body). */
+function outputOf(url: string): string {
+  const pathname = new URL(url, SITE).pathname.replace(/^\//, '');
+  return path.join(appOut, `${pathname}.body`);
+}
+
+const VISIBLE_ROUTES = ['/', '/projects', '/about', '/experience', '/log', '/contact'];
 
 /** Everything a visitor can receive, client chunks included (searched only for unique markers). */
 function outputFiles(): string[] {
@@ -195,6 +232,9 @@ describe('hiding rules on build output', () => {
 
   it('gives a hidden project no page and no trace in any output file', () => {
     expect(fs.existsSync(path.join(appOut, 'projects', `${HIDDEN_SLUG}.html`))).toBe(false);
+    // No Open Graph image either: no output under its slug at all.
+    expect(fs.existsSync(path.join(appOut, 'projects', HIDDEN_SLUG))).toBe(false);
+    expect([...walk(appOut), ...walk(path.join(dist, 'static'))].filter((f) => f.includes(HIDDEN_SLUG))).toEqual([]);
     const markers = [HIDDEN_SLUG, HIDDEN_TITLE, HIDDEN_PITCH, HIDDEN_LOG_TITLE, 'Fixturedomain', 'Fixture callout'];
     const coverForms = [HIDDEN_COVER, encodeURIComponent(HIDDEN_COVER)];
     const leaks: string[] = [];
@@ -212,7 +252,7 @@ describe('hiding rules on build output', () => {
     expect(sitemap).not.toContain(HIDDEN_SLUG);
     expect(sitemap).toContain('/projects/raven</loc>');
     expect(sitemap).toContain('/log</loc>');
-    expect(sitemap).not.toContain('/dev/');
+    expect(sitemap).not.toMatch(/\/dev\/|\/dev-|\/admin|\/api/);
   });
 
   it('refuses an emptied GPA or phone while a copy remains, in the check and in the build (D-14)', () => {
@@ -258,7 +298,7 @@ describe('hiding rules on build output', () => {
     }
   });
 
-  it('gives an empty cover the placeholder and no image in the metadata or JSON-LD', () => {
+  it('gives an empty cover the placeholder, and no cover image in the metadata or JSON-LD', () => {
     const emptyCovers = fs
       .readdirSync(path.join(root, 'content', 'projects'))
       .map((name) => readJson(path.join(root, 'content', 'projects', name)))
@@ -268,10 +308,73 @@ describe('hiding rules on build output', () => {
     for (const slug of emptyCovers) {
       const page = html(`/projects/${slug}`);
       expect(page, slug).toContain('Photo to come');
-      expect(page, slug).not.toMatch(/<meta property="og:image"/);
-      expect(page, slug).not.toMatch(/<meta name="twitter:image"/);
+      // The share image is the project's generated sheet, never a media file.
+      for (const key of ['og:image', 'twitter:image']) {
+        expect(metaContent(page, key), `${slug} ${key}`).toMatch(new RegExp(`^${SITE}/projects/${slug}/opengraph-image-[a-z0-9]+\\?v=[0-9a-f]{10}$`));
+      }
+      expect(page, slug).not.toContain(`${SITE}/media/`);
       for (const block of jsonLdBlocks(page)) expect(block.image, slug).toBeUndefined();
     }
+  });
+
+  it('draws an Open Graph image for the home page and each visible project, and every page names one the build drew', () => {
+    const visible = fs
+      .readdirSync(path.join(root, 'content', 'projects'))
+      .map((name) => readJson(path.join(root, 'content', 'projects', name)))
+      .filter((p) => p.visible)
+      .map((p) => p.slug as string);
+    for (const route of [...VISIBLE_ROUTES, ...visible.map((slug) => `/projects/${slug}`)]) {
+      const page = html(route);
+      const image = metaContent(page, 'og:image');
+      expect(image, route).toBeDefined();
+      expect(metaContent(page, 'twitter:image'), route).toBe(image);
+      expect(metaContent(page, 'twitter:card'), route).toBe('summary_large_image');
+      expect(metaContent(page, 'og:image:width'), route).toBe('1200');
+      expect(metaContent(page, 'og:image:height'), route).toBe('630');
+      const alt = metaContent(page, 'og:image:alt') ?? '';
+      expect(alt, route).not.toBe('');
+      expect(metaContent(page, 'twitter:image:alt'), route).toBe(alt);
+      // The image is a file of this build, 1200 by 630 (the query only versions the address).
+      expect(pngSize(outputOf(image!)), route).toEqual({ width: 1200, height: 630 });
+      expect(fs.readFileSync(outputOf(image!).replace(/\.body$/, '.meta'), 'utf8'), route).toContain('image/png');
+    }
+    // The site's pages share the home image.
+    for (const route of VISIBLE_ROUTES) expect(metaContent(html(route), 'og:image'), route).toBe(metaContent(html('/'), 'og:image'));
+  });
+
+  it('serves the icon, the Apple icon, /favicon.ico, and the manifest from the build, and links them from every page', () => {
+    expect(pngSize(path.join(appOut, 'icon.body'))).toEqual({ width: 32, height: 32 });
+    expect(pngSize(path.join(appOut, 'apple-icon.body'))).toEqual({ width: 180, height: 180 });
+    const ico = fs.readFileSync(path.join(appOut, 'favicon.ico.body'));
+    expect([ico.readUInt16LE(0), ico.readUInt16LE(2), ico.readUInt16LE(4)]).toEqual([0, 1, 3]);
+    expect(fs.readFileSync(path.join(appOut, 'favicon.ico.meta'), 'utf8')).toContain('image/x-icon');
+    const manifest = JSON.parse(fs.readFileSync(path.join(appOut, 'manifest.webmanifest.body'), 'utf8'));
+    expect(manifest).toMatchObject({ start_url: '/', display: 'browser', icons: [{ src: '/icon' }, { src: '/apple-icon' }] });
+    for (const route of [...VISIBLE_ROUTES, '/projects/raven']) {
+      const page = html(route);
+      expect(page, route).toMatch(/<link rel="icon" href="\/icon\?[0-9a-f]+" type="image\/png" sizes="32x32"\/>/);
+      expect(page, route).toMatch(/<link rel="apple-touch-icon" href="\/apple-icon\?[0-9a-f]+" type="image\/png" sizes="180x180"\/>/);
+      expect(page, route).toContain('<link rel="manifest" href="/manifest.webmanifest"');
+    }
+  });
+
+  it('keeps the image and font code on the server: no browser chunk carries it', () => {
+    // Strings from lib/og/: the WOFF2 decoder, the font roles, the instancer, and the renderer's loader.
+    const serverOnly = ['WOFF2: not a WOFF2 file', 'Archivo Headline', 'gvar: a tuple names', 'next/dist/compiled/@vercel/og'];
+    const chunks = walk(path.join(dist, 'static')).filter((f) => f.endsWith('.js'));
+    expect(chunks.length).toBeGreaterThan(0);
+    const found = chunks.flatMap((file) => {
+      const text = fs.readFileSync(file, 'utf8');
+      return serverOnly.filter((s) => text.includes(s)).map((s) => `${path.relative(dist, file)}: ${s}`);
+    });
+    expect(found).toEqual([]);
+  });
+
+  it('names no private path in robots.txt, and points to the sitemap', () => {
+    const robots = fs.readFileSync(path.join(appOut, 'robots.txt.body'), 'utf8');
+    expect(robots).toContain('Allow: /');
+    expect(robots).toContain(`Sitemap: ${SITE}/sitemap.xml`);
+    expect(robots).not.toMatch(/admin|\/api|\/dev|Disallow/);
   });
 
   it('leaves an empty photo out of the home page and its JSON-LD', () => {

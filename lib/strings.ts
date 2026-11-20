@@ -169,6 +169,11 @@ export const UI = {
     well: 'No sheet at this address',
   },
   heroCaption: 'Raven, tri-tiltrotor eVTOL. Illustration, not measured data.',
+  /**
+   * The generated Open Graph images (lib/og/): the label of the home image's title block cell,
+   * which holds the owner's name. The project images use the title block's own labels above.
+   */
+  seo: { name: 'Name' },
   viewers: {
     loadViewer: 'Load viewer',
     tapToLoad: 'Tap to load',

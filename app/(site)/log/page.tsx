@@ -5,12 +5,13 @@ import TextLink from '@/components/sheet/TextLink';
 import { mergedLog } from '@/lib/log';
 import { resolveMedia } from '@/lib/media-server';
 import { pageMetadata } from '@/lib/meta';
+import { homeMetaImage } from '@/lib/og/meta';
 import { navLabel, siteData } from '@/lib/site';
 import { UI } from '@/lib/strings';
 
 export function generateMetadata(): Metadata {
   const { site } = siteData();
-  return pageMetadata(site, { title: navLabel(site, '/log', 'Build log'), description: site.seo.description, path: '/log' });
+  return pageMetadata(site, { title: navLabel(site, '/log', 'Build log'), description: site.seo.description, path: '/log', image: homeMetaImage(site) });
 }
 
 /**
