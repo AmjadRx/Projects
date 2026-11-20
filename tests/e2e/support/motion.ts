@@ -33,8 +33,15 @@ export function installFrameMeter(): void {
     if (on) {
       calls += 1;
       if (callers.length < 3) {
-        const stack = String(new Error().stack ?? '').split('\n').slice(2, 5);
-        callers.push(stack.map((line) => line.trim()).join(' < '));
+        // The page's own frames only: the meter's wrappers have no file of their own (<anonymous>).
+        const stack = String(new Error().stack ?? '')
+          .split('\n')
+          .slice(2)
+          .map((line) => line.trim())
+          .filter((line) => line.startsWith('at ') && !line.includes('<anonymous>'))
+          .slice(0, 3)
+          .join(' < ');
+        if (stack && !callers.includes(stack)) callers.push(stack);
       }
     }
     return native((time) => {
@@ -101,16 +108,57 @@ export async function runningAnimations(page: Page): Promise<string[]> {
 }
 
 /**
- * The scroll positions to rest at: the top, then one window further each time to the bottom, at
- * most `max` places in all (always the top and the bottom).
+ * How far apart a rest scan rests, in window heights: a quarter window, the narrowest band in which
+ * the site keeps something running near the view. The phone's featured strip (lib/motion.ts
+ * page.strip) mounts its Carousel only while the strip is out of the window but within a quarter
+ * window of it, and the tools ticker (page.ticker) works by the same margins. Resting at least this
+ * often lands at least once in any band that wide, wherever the page's height puts it.
  */
-export async function restPositions(page: Page, max = 10): Promise<number[]> {
-  const { height, window: view } = await page.evaluate(() => ({
-    height: (document.scrollingElement ?? document.documentElement).scrollHeight,
-    window: window.innerHeight,
-  }));
-  const bottom = Math.max(0, height - view);
-  const count = Math.min(max, Math.ceil(bottom / view) + 1);
-  if (count <= 1) return [0];
-  return Array.from({ length: count }, (_, index) => Math.round((bottom * index) / (count - 1)));
+export const REST_STEP = 0.25;
+
+/**
+ * The most places a rest scan takes (50 windows of page at REST_STEP). A longer page fails the scan
+ * instead of being sampled more thinly; at about 300 ms a place, 200 places fit the test timeout.
+ */
+export const MAX_REST_PLACES = 200;
+
+export interface RestReading {
+  /** Where the window rested, in px from the top of the page. */
+  top: number;
+  /** The animations running there, before or after the span. */
+  running: string[];
+  /** requestAnimationFrame activity over the span. */
+  activity: FrameActivity;
+}
+
+/**
+ * Rests the window at every place from the top of the page to its bottom, REST_STEP apart, for
+ * `spanMs` each: scrolls there at once, waits two frames (whatever the scroll starts has started),
+ * then notes the animations running and the requestAnimationFrame activity over the span. The
+ * bottom is read again at each place, so a page that grows while it is scrolled is covered to its
+ * end. Needs installFrameMeter.
+ */
+export async function restScan(page: Page, spanMs: number): Promise<RestReading[]> {
+  const step = await page.evaluate((share) => Math.max(1, Math.floor(window.innerHeight * share)), REST_STEP);
+  const readings: RestReading[] = [];
+  for (let wanted = 0; ; wanted += step) {
+    if (readings.length >= MAX_REST_PLACES) {
+      throw new Error(
+        `The page is too long to rest at every quarter window (more than ${MAX_REST_PLACES} places); the scan stops instead of resting more thinly. Raise MAX_REST_PLACES and the test's timeout if the page is meant to be this long.`,
+      );
+    }
+    const top = await page.evaluate(async (y) => {
+      const scroller = document.scrollingElement ?? document.documentElement;
+      window.scrollTo({ top: Math.min(y, Math.max(0, scroller.scrollHeight - window.innerHeight)), left: 0, behavior: 'instant' });
+      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+      return window.scrollY;
+    }, wanted);
+    const before = await runningAnimations(page);
+    const activity = await frameActivity(page, spanMs);
+    const after = await runningAnimations(page);
+    readings.push({ top, running: [...new Set([...before, ...after])], activity });
+    const bottom = await page.evaluate(() => Math.max(0, (document.scrollingElement ?? document.documentElement).scrollHeight - window.innerHeight));
+    if (top >= bottom || wanted >= bottom) break;
+  }
+  return readings;
 }

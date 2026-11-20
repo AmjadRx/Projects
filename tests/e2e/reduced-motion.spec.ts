@@ -1,23 +1,69 @@
 /**
  * Reduced motion removes all animation and loses no content (ARCHITECTURE.md 15, item 7), on every
  * route at the phone's and the desktop's width:
- * - nothing runs at rest: once the page has loaded, and again with each part of the page in view,
- *   no animation is running and no requestAnimationFrame loop goes on (a callback in more than two
- *   frames of a 500 ms span counts as a loop; one-off calls take a frame or two);
+ * - nothing runs at rest: once the page has loaded, and again at every place down the page a
+ *   quarter window apart (./support/motion.ts restScan), no animation is running and no
+ *   requestAnimationFrame loop goes on (a callback in more than two frames of a 250 ms span counts
+ *   as a loop, which shows 15 frames or more even at 60 Hz; one-off calls take a frame or two);
  * - the page holds the same text as with motion on, leaving out what is hidden from assistive
  *   technology (the copies a moving strip keeps for its loop, for one).
  */
 import type { BrowserContext } from '@playwright/test';
 import { expect, newVisitor, test } from './support/fixtures';
-import { frameActivity, installFrameMeter, restPositions, runningAnimations } from './support/motion';
-import { open, readableText, twoFrames, visitWholePage, waitForReady } from './support/page';
+import { installFrameMeter, restScan, type RestReading } from './support/motion';
+import { open, readableText, visitWholePage, waitForReady } from './support/page';
 import { DESKTOP, device, PHONE, routeTitle, ROUTES } from './support/site';
 
 /** A span of this many milliseconds with a callback in more than LOOP_FRAMES frames holds a loop. */
-const SPAN_MS = 500;
+const SPAN_MS = 250;
 const LOOP_FRAMES = 2;
-/** The most places down the page to rest at (the top and the bottom always among them). */
-const REST_PLACES = 8;
+
+/**
+ * What is wrong at each place of a scan, with the places next to each other that share a problem
+ * named once, as a stretch of the page ("scrolled from 2321 to 4431 px, 11 places: ...").
+ */
+function restFindings(readings: RestReading[]): string[] {
+  const problems = (reading: RestReading) => {
+    const found: { key: string; text: string }[] = [];
+    if (reading.running.length > 0) {
+      const text = `running: ${reading.running.join('; ')}`;
+      found.push({ key: text, text });
+    }
+    const { frames, calls, callers } = reading.activity;
+    if (frames > LOOP_FRAMES) {
+      found.push({
+        key: 'loop',
+        text: `requestAnimationFrame callbacks in ${frames} frames of ${SPAN_MS} ms (${calls} calls), from ${callers.join(' | ') || 'callbacks requested before the span'}`,
+      });
+    }
+    return found;
+  };
+  const stretches: { from: number; to: number; places: number; texts: string[] }[] = [];
+  /** The stretches that reach the place before this one, by problem. */
+  const going = new Map<string, (typeof stretches)[number]>();
+  for (const reading of readings) {
+    const now = problems(reading);
+    for (const key of [...going.keys()]) if (!now.some((problem) => problem.key === key)) going.delete(key);
+    for (const problem of now) {
+      const stretch = going.get(problem.key);
+      if (stretch) {
+        stretch.to = reading.top;
+        stretch.places += 1;
+        stretch.texts.push(problem.text);
+      } else {
+        const started = { from: reading.top, to: reading.top, places: 1, texts: [problem.text] };
+        stretches.push(started);
+        going.set(problem.key, started);
+      }
+    }
+  }
+  return stretches.map(({ from, to, places, texts }) => {
+    const where = from === 0 && to === 0 ? 'at the top, after load' : from === to ? `scrolled to ${from} px` : `scrolled from ${from} to ${to} px, ${places} places`;
+    const counts = texts.map((text) => /in (\d+) frames/.exec(text)?.[1]).filter(Boolean);
+    const span = counts.length > 1 ? ` (frames per span: ${counts.join(', ')})` : '';
+    return `${where}: ${texts[0]}${span}`;
+  });
+}
 
 /** The page's text as assistive technology meets it, once every part of the page has been in view. */
 async function textOf(context: BrowserContext, path: string): Promise<{ status: number; text: string }> {
@@ -61,23 +107,7 @@ for (const width of [PHONE, DESKTOP]) {
         expect(response?.status(), 'status').toBe(route.status);
         // Ready (fonts, hydration), but not waiting for animations: none may be running.
         await waitForReady(page);
-        const findings: string[] = [];
-        for (const top of await restPositions(page, REST_PLACES)) {
-          await page.evaluate((y) => window.scrollTo({ top: y, left: 0, behavior: 'instant' }), top);
-          await twoFrames(page);
-          const place = top === 0 ? 'at the top, after load' : `scrolled to ${top} px`;
-          const before = await runningAnimations(page);
-          const frames = await frameActivity(page, SPAN_MS);
-          const after = await runningAnimations(page);
-          const running = [...new Set([...before, ...after])];
-          if (running.length > 0) findings.push(`${place}: running: ${running.join('; ')}`);
-          if (frames.frames > LOOP_FRAMES) {
-            findings.push(
-              `${place}: requestAnimationFrame callbacks in ${frames.frames} frames of ${SPAN_MS} ms (${frames.calls} calls), from ${frames.callers.join(' | ') || 'callbacks requested before the span'}`,
-            );
-          }
-        }
-        expect(findings).toEqual([]);
+        expect(restFindings(await restScan(page, SPAN_MS))).toEqual([]);
       });
 
       test(`${routeTitle(route)}: the same text as with motion on`, async ({ browser, baseURL }) => {

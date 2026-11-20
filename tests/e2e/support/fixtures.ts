@@ -18,7 +18,7 @@ export const VERCEL_ANALYTICS = /\/_vercel\/(insights|speed-insights)\//;
  * Vercel's analytics scripts are served only by Vercel, under /_vercel/; `next start` answers 404
  * for them, which the browser reports as a console error on every page. The suite serves an empty
  * script in their place: the page then behaves as on Vercel, and no test visit is counted in the
- * owner's analytics. A routed browser no longer asks for /favicon.ico by itself, though, so the
+ * owner's analytics. A browser context with routing on never asks for /favicon.ico, though, so the
  * console tests (console.spec.ts) turn the stand-in off and leave the browser as it is.
  */
 export async function standInForAnalytics(context: BrowserContext): Promise<void> {

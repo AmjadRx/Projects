@@ -28,8 +28,10 @@ for (const theme of THEMES) {
         expect(flashes(await themeLog(page), theme), 'first visit').toEqual([]);
         await page.reload({ waitUntil: 'load' });
         expect(flashes(await themeLog(page), theme), 'reload').toEqual([]);
-        // Hydration and everything after it leave the theme as it is.
+        // Hydration and everything after it leave the theme as it is: no change at all, not even
+        // one that is undone (the recorder keeps every change after the body began).
         await settle(page);
+        expect(flashes(await themeLog(page), theme), 'after hydration').toEqual([]);
         await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
       });
 
@@ -51,6 +53,18 @@ async function shows(page: Page, theme: Theme): Promise<void> {
   await expect(html).not.toHaveAttribute('data-theme-fade');
 }
 
+/**
+ * The next visit after a choice, recorded from the start: `theme` from the first paint, and still
+ * no change once hydration and everything after it are done.
+ */
+async function keeps(page: Page, theme: Theme, visit: () => Promise<unknown>): Promise<void> {
+  await page.addInitScript(recordTheme);
+  await visit();
+  expect(flashes(await themeLog(page), theme), 'the next visit, while it loads').toEqual([]);
+  await settle(page);
+  expect(flashes(await themeLog(page), theme), 'the next visit, after hydration').toEqual([]);
+}
+
 test.describe('theme toggle, 1440 px', () => {
   test.use(device(DESKTOP));
 
@@ -59,9 +73,7 @@ test.describe('theme toggle, 1440 px', () => {
     await page.getByRole('button', { name: UI.site.whiteprintTheme, exact: true }).click();
     await shows(page, 'whiteprint');
     expect((await context.cookies()).find((cookie) => cookie.name === THEME_COOKIE)?.value).toBe('whiteprint');
-    await page.addInitScript(recordTheme);
-    await page.goto('/projects', { waitUntil: 'load' });
-    expect(flashes(await themeLog(page), 'whiteprint')).toEqual([]);
+    await keeps(page, 'whiteprint', () => page.goto('/projects', { waitUntil: 'load' }));
   });
 
   test.describe('from Whiteprint', () => {
@@ -72,9 +84,7 @@ test.describe('theme toggle, 1440 px', () => {
       await page.getByRole('button', { name: UI.site.blueprintTheme, exact: true }).click();
       await shows(page, 'blueprint');
       expect((await context.cookies()).find((cookie) => cookie.name === THEME_COOKIE)?.value).toBe('blueprint');
-      await page.addInitScript(recordTheme);
-      await page.reload({ waitUntil: 'load' });
-      expect(flashes(await themeLog(page), 'blueprint')).toEqual([]);
+      await keeps(page, 'blueprint', () => page.reload({ waitUntil: 'load' }));
     });
   });
 });
@@ -89,8 +99,6 @@ test.describe('theme toggle, 390 px', () => {
     await menu.getByRole('button', { name: UI.site.whiteprint, exact: true }).click();
     await shows(page, 'whiteprint');
     expect((await context.cookies()).find((cookie) => cookie.name === THEME_COOKIE)?.value).toBe('whiteprint');
-    await page.addInitScript(recordTheme);
-    await page.reload({ waitUntil: 'load' });
-    expect(flashes(await themeLog(page), 'whiteprint')).toEqual([]);
+    await keeps(page, 'whiteprint', () => page.reload({ waitUntil: 'load' }));
   });
 });

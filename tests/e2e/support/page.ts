@@ -5,7 +5,7 @@
  * never through requestAnimationFrame, which the frame meter (./motion.ts) counts; the frame waits
  * run outside the meter's spans.
  */
-import { test, type Locator, type Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 const POLL = 100;
 
@@ -73,6 +73,11 @@ export async function waitForAnimations(page: Page, timeout = 15_000): Promise<v
  * so everything that waits for the view has come: lazy pictures, the gallery's strip, and the
  * panels that rise as they come into view (components/site/risePanels.ts marks them data-ar-rise
  * until they have risen). Then waits for every animation that ends.
+ *
+ * A panel that is drawn (it has a box) and still waits, unseen, once the whole page has been in view
+ * fails the test: it stays at opacity 0 (app/motion-chrome.css), so its content is never shown, and
+ * axe would take it for hidden and skip it. (Under reduced motion a waiting panel shows in full, so
+ * only an unseen one counts.)
  */
 export async function visitWholePage(page: Page): Promise<void> {
   await page.evaluate(async () => {
@@ -88,12 +93,28 @@ export async function visitWholePage(page: Page): Promise<void> {
     await twoFrames();
   });
   const risen = await page
-    .waitForFunction(() => document.querySelectorAll('[data-ar-rise]').length === 0, undefined, { polling: POLL, timeout: 10_000 })
+    .waitForFunction(
+      () =>
+        Array.from(document.querySelectorAll('[data-ar-rise]')).every(
+          (panel) => panel.getClientRects().length === 0 || getComputedStyle(panel).opacity !== '0',
+        ),
+      undefined,
+      { polling: POLL, timeout: 10_000 },
+    )
     .then(() => true)
     .catch(() => false);
   if (!risen) {
-    const waiting = await page.evaluate(() => document.querySelectorAll('[data-ar-rise]').length);
-    test.info().annotations.push({ type: 'warning', description: `${waiting} panel(s) never rose into view after the page was scrolled through` });
+    const waiting = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('[data-ar-rise]'))
+        .filter((panel) => panel.getClientRects().length > 0 && getComputedStyle(panel).opacity === '0')
+        .map((panel) => {
+          const classes = typeof panel.className === 'string' ? panel.className.split(/\s+/).filter(Boolean).slice(0, 2) : [];
+          const text = (panel.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 40);
+          const top = Math.round(panel.getBoundingClientRect().top + window.scrollY);
+          return `${panel.tagName.toLowerCase()}${classes.map((c) => `.${c}`).join('')} at ${top} px${text ? ` "${text}"` : ''}`;
+        }),
+    );
+    expect(waiting, 'panels still waiting to rise (invisible) after the whole page was in view').toEqual([]);
   }
   await waitForAnimations(page);
   await page.evaluate(() => window.scrollTo({ top: 0, left: 0, behavior: 'instant' }));

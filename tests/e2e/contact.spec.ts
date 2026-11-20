@@ -9,21 +9,21 @@ import path from 'node:path';
 import { UI } from '../../lib/strings';
 import { expect, test } from './support/fixtures';
 import { open } from './support/page';
+import { namedLikeResume } from './support/resume';
 import { DESKTOP, device, routeTitle, ROUTES, site } from './support/site';
 
 const email = site.personal.email.trim();
 const phone = site.personal.phone.trim();
 const digits = (text: string) => text.replace(/\D/g, '');
 
-/** A file or page named like a resume or a CV. */
-const RESUME_NAME = /(^|[^a-z])(resume|r%c3%a9sum%c3%a9|résumé|cv|curriculum[-_ ]?vitae)([^a-z]|$)/i;
-
-/** The links of a page that lead to a resume file or page: anything but an email or a phone link named like one. */
+/**
+ * The links of a page that lead to a resume file or page (./support/resume.ts): anything but an
+ * email or a phone link, and Next's own built files, named like one.
+ */
 function resumeLinks(hrefs: string[]): string[] {
   return hrefs.filter((href) => {
-    if (/^(mailto|tel):/i.test(href)) return false;
-    const address = href.split(/[?#]/)[0];
-    return RESUME_NAME.test(address) || RESUME_NAME.test(decodeURIComponent(address));
+    if (/^(mailto|tel):/i.test(href) || href.startsWith('/_next/')) return false;
+    return namedLikeResume(href.split(/[?#]/)[0]);
   });
 }
 
@@ -101,8 +101,9 @@ test.describe('contact page', () => {
     for (const address of ['/resume', '/resume.pdf', '/Resume.pdf', '/cv', '/cv.pdf', '/media/site/resume.pdf', '/media/resume.pdf']) {
       expect((await request.get(address)).status(), address).toBe(404);
     }
-    const publicFiles = filesUnder(path.join(__dirname, '..', '..', 'public'));
-    expect(publicFiles.filter((file) => RESUME_NAME.test(path.basename(file))), 'files in public/ named like a resume').toEqual([]);
+    // The files the server serves as they are, /media (the admin's uploads) among them, with the folders they sit in.
+    const publicFiles = filesUnder(path.join(__dirname, '..', '..', 'public')).map((file) => file.split(path.sep).join('/'));
+    expect(publicFiles.filter(namedLikeResume), 'files in public/ named like a resume').toEqual([]);
   });
 });
 

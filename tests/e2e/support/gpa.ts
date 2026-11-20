@@ -1,7 +1,9 @@
 /**
- * The GPA rule (ARCHITECTURE.md 4 and 15, item 2; CLAUDE.md, Site content): the only GPA is the
- * major GPA, always printed as its label and value together, "Major GPA 3.65"; the value never
- * appears without its label, and the word "cumulative" never sits beside it.
+ * The GPA rule (ARCHITECTURE.md 4 and 15, item 2; CONTENT_RULES.md; CLAUDE.md, Site content): the
+ * only GPA is the major GPA, always printed exactly as its label and value together, "Major GPA
+ * 3.65": the value never appears without its label, nothing extends the value (3.654, 3.650, a
+ * scale such as /4.0 or "out of 4"), "overall" never names it, and the word "cumulative" never sits
+ * beside it.
  */
 import type { Page } from '@playwright/test';
 
@@ -58,6 +60,15 @@ export function gpaSources(page: Page): Promise<TextSource[]> {
   });
 }
 
+/** What may not follow the value: more digits, a decimal, or a scale (3.654, 3.650, 3.65/4.0, 3.65 out of 4). */
+const EXTENDED = /^(?:\d|\.\d|\s*\/\s*\d|\s+(?:out\s+)?of\s+\d)/i;
+/**
+ * A word right before the label that makes it the whole GPA rather than the major one. Only these
+ * two: the visible text runs a list's fields together, and a field before the GPA may well end in
+ * a word such as "quarter" or "term".
+ */
+const QUALIFIED = /\b(?:overall|cumulative)\s*$/i;
+
 /** Each place in a text where the GPA breaks the rule, quoted with a little of what is around it. */
 export function gpaProblems({ source, text }: TextSource): string[] {
   const problems: string[] = [];
@@ -67,6 +78,8 @@ export function gpaProblems({ source, text }: TextSource): string[] {
     const at = match.index ?? 0;
     const start = at - gpaAt;
     if (start < 0 || text.slice(start, start + GPA.length) !== GPA) problems.push(`${source}: GPA not as "${GPA}": ${quote(at)}`);
+    else if (EXTENDED.test(text.slice(start + GPA.length))) problems.push(`${source}: more than "${GPA}" (the value goes on): ${quote(at)}`);
+    else if (QUALIFIED.test(text.slice(Math.max(0, start - 20), start))) problems.push(`${source}: "${GPA}" named as another GPA: ${quote(at)}`);
   }
   for (const match of text.matchAll(new RegExp(VALUE.replace('.', '\\.'), 'g'))) {
     const at = match.index ?? 0;

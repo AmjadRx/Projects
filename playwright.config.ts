@@ -11,7 +11,11 @@ import { defineConfig } from '@playwright/test';
  * then `next start`. Like every npm command here, the build needs MOTION_TOKEN in the environment.
  *
  * Environment:
- * - E2E_PORT: the server's port (3702 by default).
+ * - E2E_PORT: the server's port (3702 by default). When something already answers there, the run
+ *   stops with an error rather than test it in this tree's place (it may be another tree's server,
+ *   or one left from an earlier run).
+ * - E2E_REUSE_SERVER=1: test the server already answering on E2E_PORT after all, instead of
+ *   starting one (for a server this tree started and left running on purpose).
  * - E2E_REUSE_BUILD=1: serve the build already in the suite's output folder instead of building
  *   again (while the suite itself is being worked on).
  * - E2E_BASE_URL: test a server that is already running instead (no server is started).
@@ -53,7 +57,10 @@ export default defineConfig({
         env: { E2E_PORT: String(port) },
         // The build runs first, and it takes a few minutes.
         timeout: 20 * 60_000,
-        reuseExistingServer: !process.env.CI,
+        reuseExistingServer: process.env.E2E_REUSE_SERVER === '1',
+        // SIGTERM first, so a server stopped during its build puts tsconfig.json back
+        // (tests/e2e/serve.mjs). Windows has no such signal; there the next run repairs it.
+        gracefulShutdown: { signal: 'SIGTERM', timeout: 10_000 },
         stdout: 'pipe',
         stderr: 'pipe',
       },
