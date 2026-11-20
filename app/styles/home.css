@@ -80,6 +80,12 @@
   grid-template-columns: max(var(--hd-fit), min(100cqw, 288px));
 }
 .hm-hero__held .hm-art { width: var(--hd-fit); }
+/* Printed, the held height (the screen's) no longer holds: the drawing takes its own size, as in drawing mode. */
+@media print {
+  .hm-hero__held { height: auto !important; container-type: normal; }
+  .hm-hero__held > .hm-hero__art { grid-template-columns: min(100%, calc(78vh * var(--hd-w) / var(--hd-h))); }
+  .hm-hero__held .hm-art { width: 100%; }
+}
 
 /* ---------- Readouts ---------- */
 

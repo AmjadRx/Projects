@@ -248,9 +248,12 @@ async function sampled(page: Page): Promise<Sample[]> {
 
 /**
  * The sampler saw the swap, from one strip to the other (the marker from `!to` to `to`) and on to
- * its end, and every frame of it was drawn in one place.
+ * its end, and every frame of it was drawn in one place. The report notes how many frames showed
+ * each strip.
  */
 function expectSwapInPlace(samples: Sample[], to: boolean, what: string): void {
+  const after = samples.filter((sample) => sample.marker === to).length;
+  test.info().annotations.push({ type: 'swap', description: `${what}: ${samples.length - after} frames before it, ${after} after` });
   expect(samples[0]?.marker, `${what}: the frame before it shows the strip it starts from`).toBe(!to);
   expect(samples.length, `${what}: it is over within ${MAX_SAMPLES} frames`).toBeLessThan(MAX_SAMPLES);
   expect(
