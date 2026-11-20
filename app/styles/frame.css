@@ -27,12 +27,12 @@
 .hm-h1 {
   margin: 0; color: var(--ink); text-wrap: balance;
   font-size: clamp(28px, calc(2.6667cqi + 17.6px), 56px); line-height: 1.08; font-weight: 600;
-  letter-spacing: -0.015em; font-variation-settings: "wdth" 112;
+  letter-spacing: -0.015em; font-variation-settings: "wdth" 112; font-stretch: 112%;
 }
 .hm-h2 {
   margin: 0; color: var(--ink); text-wrap: balance;
   font-size: clamp(28px, calc(1.1429cqi + 23.543px), 40px); line-height: 1.1; font-weight: 600;
-  letter-spacing: -0.01em; font-variation-settings: "wdth" 112;
+  letter-spacing: -0.01em; font-variation-settings: "wdth" 112; font-stretch: 112%;
 }
 .hm-label {
   display: flex; align-items: center; gap: var(--space-3); margin: 0;

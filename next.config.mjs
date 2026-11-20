@@ -193,6 +193,9 @@ const nextConfig = {
           { key: 'Content-Security-Policy', value: "sandbox allow-scripts; frame-ancestors 'self'; base-uri 'none'; object-src 'none'" },
         ],
       },
+      // The site's fonts (scripts/subset-fonts.py): each file's name carries its content's hash, so
+      // a browser may keep it for good, as it keeps Next's own hashed files.
+      { source: '/fonts/:file*', headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }] },
       // An SVG opened on its own runs nothing (D-24). This rule comes after the site-wide one, so
       // its policy is the one sent for SVG files.
       {

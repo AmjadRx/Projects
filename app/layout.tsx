@@ -1,12 +1,13 @@
 import type { Metadata, Viewport } from 'next';
-import localFont from 'next/font/local';
 import SiteAnalytics from '@/components/site/SiteAnalytics';
 import { loadSite } from '@/lib/content';
+import { FONT_PRELOADS } from '@/lib/fontFiles';
 import { hasText } from '@/lib/format';
 import { siteUrl } from '@/lib/site';
 import { themeFromSetting, themeScript } from '@/lib/theme';
 import { tokenValue } from '@/lib/tokens';
 // The order matters: see app/globals.css.
+import './fonts.css';
 import './tokens.css';
 import './globals.css';
 import './sheet.css';
@@ -25,34 +26,18 @@ import './utilities.css';
 import './print.css';
 
 /*
- * The two faces of the design system, self-hosted from the Claude Design bundle's files in
- * app/fonts/ (SIL Open Font License 1.1; the licence texts are in licenses/). next/font serves
- * them from this site with a metric-matched fallback, so the swap moves nothing. The loaders stay
- * in this file: next/font preloads a font only for the layout or page that calls its loader.
- *
- * Archivo is one variable file with a weight axis (100 to 900) and a width axis (62 to 125), set
- * with font-variation-settings ("wdth" 100 for body, 112 to 125 for headlines). B612 Mono is for
- * data only (tables, the title block, readouts, dates, callouts); it is not preloaded, because no
- * first view depends on it. Their variables are read by --font-sans and --font-mono in tokens.css.
+ * The two faces of the design system, Archivo and B612 Mono, self-hosted from the Claude Design
+ * bundle's files (SIL Open Font License 1.1, no Reserved Font Name; the licence texts are in
+ * licenses/). The pages load subsets of them, which scripts/subset-fonts.py makes from the full
+ * files in app/fonts/ (only the Open Graph images read those) and writes to public/fonts/, with
+ * their @font-face rules and fallback faces in app/fonts.css (imported first, above) and the list
+ * of files to preload in lib/fontFiles.ts. Each face has a core file, with every character the
+ * pages use, and an extended file, which a browser fetches only for a character in it, so a word
+ * typed in the admin never loses a glyph. Every page preloads the two core files its first view
+ * sets text in (Archivo, and B612 Mono's regular weight), in the head below, so on a fast
+ * connection the text is laid out once, in its own face. The files carry their content's hash in
+ * their names and are cached for good (next.config.mjs).
  */
-const archivo = localFont({
-  src: './fonts/Archivo-Variable.woff2',
-  weight: '100 900',
-  style: 'normal',
-  display: 'swap',
-  variable: '--font-archivo',
-  declarations: [{ prop: 'font-stretch', value: '62% 125%' }],
-});
-
-const b612Mono = localFont({
-  src: [
-    { path: './fonts/B612Mono-Regular.woff2', weight: '400', style: 'normal' },
-    { path: './fonts/B612Mono-Bold.woff2', weight: '700', style: 'normal' },
-  ],
-  display: 'swap',
-  preload: false,
-  variable: '--font-b612-mono',
-});
 
 /**
  * Site-wide defaults from content: `seo.title`, `seo.description`, and the owner's name. The
@@ -100,8 +85,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const theme = themeFromSetting(loadSite().settings.themeDefault);
 
   return (
-    <html lang="en" data-theme={theme} className={`${archivo.variable} ${b612Mono.variable}`} suppressHydrationWarning>
+    <html lang="en" data-theme={theme} suppressHydrationWarning>
       <head>
+        {FONT_PRELOADS.map((href) => (
+          <link key={href} rel="preload" href={href} as="font" type="font/woff2" crossOrigin="anonymous" />
+        ))}
         <script dangerouslySetInnerHTML={{ __html: themeScript(theme) }} />
       </head>
       <body>

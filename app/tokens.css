@@ -1,8 +1,8 @@
 /*
  * Design tokens: the one source of every token value and the only file with hex values
  * (ARCHITECTURE.md 2). This is the Claude Design bundle's tokens.css without its @font-face rules:
- * the fonts come from next/font (app/fonts.ts), so --font-sans and --font-mono name its
- * variables first. Blueprint is the default theme; <html data-theme="whiteprint"> switches.
+ * the fonts' rules are in app/fonts.css (written by scripts/subset-fonts.py), so --font-sans and
+ * --font-mono name its variables first. Blueprint is the default theme; <html data-theme="whiteprint"> switches.
  * Tailwind reads these through tailwind.config.ts; app/sheet.css builds the components on them.
  */
 :root, [data-theme="blueprint"] {

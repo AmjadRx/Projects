@@ -1,3 +1,9 @@
+The pages of this site load subsets of B612 Mono (public/fonts/b612-mono-regular-*.woff2 and
+b612-mono-bold-*.woff2), made from the full fonts (app/fonts/B612Mono-Regular.woff2 and
+B612Mono-Bold.woff2, kept unchanged) by scripts/subset-fonts.py: the characters split between two
+files per weight, and only the OpenType features the pages turn on. They are Modified Versions of
+the Font Software, and this license covers them. B612 Mono has no Reserved Font Name.
+
 Copyright 2012 The B612 Project Authors (https://github.com/polarsys/b612)
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.

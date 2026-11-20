@@ -1,3 +1,9 @@
+The pages of this site load subsets of Archivo (public/fonts/archivo-core.<hash>.woff2 and
+archivo-ext.<hash>.woff2), made from the full font (app/fonts/Archivo-Variable.woff2, kept
+unchanged) by scripts/subset-fonts.py: the characters split between the two files, the widths from
+100 to 125 only, and only the OpenType features the pages turn on. They are Modified Versions of
+the Font Software, and this license covers them. Archivo has no Reserved Font Name.
+
 Copyright 2020 The Archivo Project Authors (https://github.com/Omnibus-Type/Archivo)
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.

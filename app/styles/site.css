@@ -19,7 +19,7 @@
 .st-title {
   margin: 0; color: var(--ink); text-wrap: balance; overflow-wrap: break-word; hyphens: manual;
   font-size: clamp(40px, calc(3.8095cqi + 25.143px), 80px); line-height: 1.02; font-weight: 700;
-  letter-spacing: -0.02em; font-variation-settings: "wdth" 118;
+  letter-spacing: -0.02em; font-variation-settings: "wdth" 118; font-stretch: 118%;
 }
 .st-sub {
   margin: 0; max-width: 60ch; color: var(--ink-dim);
@@ -90,7 +90,7 @@
 .st-edu__item { display: grid; gap: var(--space-1); align-content: start; padding: var(--space-5); }
 .st-edu__dates { margin: 0 0 var(--space-1); font-family: var(--font-mono); font-size: 13px; line-height: 1.5; color: var(--ink-dim); }
 /* A card title: it wraps as the board's does, not balanced like the page headings. */
-.st-edu__school { margin: 0; font-size: 21px; line-height: 1.3; font-weight: 600; font-variation-settings: "wdth" 112; color: var(--ink); text-wrap: wrap; }
+.st-edu__school { margin: 0; font-size: 21px; line-height: 1.3; font-weight: 600; font-variation-settings: "wdth" 112; font-stretch: 112%; color: var(--ink); text-wrap: wrap; }
 .st-edu__degree { margin: 0; font-size: 17px; line-height: 1.55; color: var(--ink); }
 .st-edu__details { margin: var(--space-1) 0 0; font-size: 15px; line-height: 1.6; color: var(--ink-dim); }
 
@@ -101,7 +101,7 @@
 .st-hon__year { margin: 0; font-family: var(--font-mono); font-size: 13px; line-height: 1.9; color: var(--ink-dim); white-space: nowrap; }
 /* The last column, also when an honor has no year. */
 .st-hon__body { display: grid; grid-column: -2 / -1; gap: var(--space-1); min-width: 0; }
-.st-hon__title { margin: 0; font-size: 17px; line-height: 1.45; font-weight: 600; font-variation-settings: "wdth" 112; color: var(--ink); }
+.st-hon__title { margin: 0; font-size: 17px; line-height: 1.45; font-weight: 600; font-variation-settings: "wdth" 112; font-stretch: 112%; color: var(--ink); }
 .st-hon__note { margin: 0; max-width: var(--measure); font-size: 15px; line-height: 1.6; color: var(--ink-dim); }
 
 /* ---------- Build log ---------- */
@@ -124,7 +124,7 @@
 .st-contact__resume { position: relative; min-width: 0; }
 .st-contact__addr {
   margin: 0; font-size: clamp(24px, calc(1.1429cqi + 19.5px), 36px); line-height: 1.15; font-weight: 600;
-  font-variation-settings: "wdth" 112; color: var(--ink); overflow-wrap: anywhere;
+  font-variation-settings: "wdth" 112; font-stretch: 112%; color: var(--ink); overflow-wrap: anywhere;
 }
 .st-contact__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
 .st-copied { min-width: 6ch; font-family: var(--font-mono); font-size: 13px; line-height: 1.5; color: var(--line); }
