@@ -15,7 +15,7 @@ import { fontMetrics, lineWidth } from '../lib/og/font/metrics';
 import { pathData, textOutline } from '../lib/og/font/outline';
 import { readSfnt, writeSfnt, type Font } from '../lib/og/font/sfnt';
 import { decodeWoff2 } from '../lib/og/font/woff2';
-import { breakLines, fitText, wordsFit } from '../lib/og/text';
+import { breakLines, clampLines, fitText, wholeSize, wordsFit } from '../lib/og/text';
 
 const fontFile = (name: string) => new Uint8Array(fs.readFileSync(path.join(__dirname, '..', 'app', 'fonts', name)));
 const archivo = decodeWoff2(fontFile('Archivo-Variable.woff2'));
@@ -191,11 +191,39 @@ describe('measuring and breaking lines', () => {
   });
 
   it('picks the largest size that keeps every word whole within the line limit', () => {
-    const fitted = fitText('STMicroelectronics', measure, chars(18, 30), { max: 40, min: 10, maxLines: 3 });
+    const fitted = fitText('STMicroelectronics', measure, chars(18, 30), { max: 40, min: 10, maxLines: 3 })!;
     expect(fitted.lines).toEqual(['STMicroelectronics']);
     expect(fitted.size).toBe(30);
     // With no size that fits the limit, the fewest lines with whole words.
-    expect(fitText('aa bb cc dd', measure, chars(3), { max: 10, min: 10, maxLines: 1 }).lines).toEqual(['aa', 'bb', 'cc', 'dd']);
+    expect(fitText('aa bb cc dd', measure, chars(3), { max: 10, min: 10, maxLines: 1 })!.lines).toEqual(['aa', 'bb', 'cc', 'dd']);
+  });
+
+  it('keeps the lines within a height, and answers null when no size from max to min can', () => {
+    const fit = { max: 20, min: 10, maxLines: 3, lineHeight: (size: number) => size };
+    // Two lines at 20 take 40: a 30 px limit takes the size down until the text fits.
+    const tall = fitText('aaaa bbbb', measure, chars(4, 20), fit)!;
+    expect(tall).toEqual({ size: 20, lines: ['aaaa', 'bbbb'] });
+    const short = fitText('aaaa bbbb', measure, chars(4, 20), { ...fit, maxHeight: 30 })!;
+    expect(short.lines.length * short.size).toBeLessThanOrEqual(30);
+    expect(short.size).toBeLessThan(20);
+    expect(fitText('aaaa bbbb', measure, chars(4, 20), { ...fit, maxHeight: 9 })).toBeNull();
+    // A word too wide at every size: null, never a cut word.
+    expect(fitText('abcdefghij', measure, chars(4, 20), fit)).toBeNull();
+  });
+
+  it('steps a cell down only as far as it must to keep every word whole', () => {
+    expect(wholeSize('STMicroelectronics', measure, chars(18, 24), [30, 26, 24, 20])).toBe(24);
+    expect(wholeSize('STMicroelectronics', measure, chars(18, 10), [30, 26, 24, 20])).toBe(20);
+  });
+
+  it('cuts text short only past its line limit, at a whole word, with an ellipsis and no stop before it', () => {
+    const at = measure(10);
+    expect(clampLines('one two three', at, chars(7), 2)).toEqual({ lines: ['one two', 'three'], clamped: false });
+    expect(clampLines('one two three four', at, chars(7), 1)).toEqual({ lines: ['one\u2026'], clamped: true });
+    expect(clampLines('one, two three', at, chars(5), 1)).toEqual({ lines: ['one\u2026'], clamped: true });
+    expect(clampLines('Done. Then more', at, chars(6), 1)).toEqual({ lines: ['Done\u2026'], clamped: true });
+    // At least one line, and a single long word gives up characters.
+    expect(clampLines('abcdefghij klm', at, chars(5), 0)).toEqual({ lines: ['abcd\u2026'], clamped: true });
   });
 });
 

@@ -3,7 +3,7 @@
  * 15, item 2): the home image the owner's name and the headline; a project image its title,
  * subtitle, and title block fields. An empty field is left out, never drawn as a dash or an empty
  * label, and the GPA is not on any image. The alt text is read from the same model, so it names
- * exactly what the image draws.
+ * the fields the image draws.
  */
 import { createHash } from 'node:crypto';
 import { hasText, statusText } from '../format';
@@ -92,7 +92,11 @@ function sentences(parts: (string | undefined)[]): string {
     .join(' ');
 }
 
-/** The image's alt text: what it draws, in reading order, with the title block's own labels. */
+/**
+ * The image's alt text: what it draws, in reading order, with the title block's own labels. Every
+ * field it names has its cell on the image (lib/og/sheet.tsx keeps them all on the sheet), and it
+ * reads each value whole, also the rare one the image had to cut short.
+ */
 export function cardAlt(card: Card): string {
   if (card.kind === 'home') {
     return sentences([card.headline !== card.name ? card.headline : undefined, card.name ? `${UI.seo.name}: ${card.name}` : undefined]);
@@ -111,9 +115,10 @@ export function cardAlt(card: Card): string {
 
 /**
  * Bumped by hand whenever the drawing itself changes (lib/og/sheet.tsx), so the images' addresses
- * change with them and link previews that cached an older image fetch the new one.
+ * change with them and link previews that cached an older image fetch the new one. 2: long content
+ * steps the type down to stay on the sheet, and the first line's tall letters are no longer clipped.
  */
-export const DRAWING_VERSION = 1;
+export const DRAWING_VERSION = 2;
 
 /** A short version for the image's address: it changes whenever what the image draws changes. */
 export function cardVersion(card: Card, palette: unknown): string {
