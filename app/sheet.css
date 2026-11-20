@@ -37,8 +37,7 @@
 
 /* Glass and the night wells. Glass dims and blurs the sky behind a panel; Whiteprint has no sky,
    so its glass is the plain white panel. Inside a night well (photos, video, viewers) lines and
-   labels use the night inks in both themes. site: the sticky nav and the phone menu's sheet, which
-   photos pass under, dim by --nav-glass-dim (app/tokens.css says why). */
+   labels use the night inks in both themes. site: the nav's glass is --nav-glass-filter. */
 :root, [data-theme] {
   --glass-filter: blur(var(--glass-blur)) brightness(var(--glass-dim));
   --nav-glass-filter: blur(var(--glass-blur)) brightness(var(--nav-glass-dim));
@@ -260,8 +259,7 @@ html[data-theme="whiteprint"] .ar-theme__opt[data-value="whiteprint"] { backgrou
 
 /* ---------- 8. Nav ---------- */
 
-/* site: the nav's glass dims what scrolls under it by half (--nav-glass-filter, section 1), so its
-   ink-dim words keep AA over a white photo (app/tokens.css). */
+/* site: the nav's glass (section 1, app/tokens.css). */
 .ar-nav { position: relative; z-index: 10; background-color: var(--glass); -webkit-backdrop-filter: var(--nav-glass-filter); backdrop-filter: var(--nav-glass-filter); border-bottom: 1px solid var(--rule); }
 /* site: the nav is sticky; inside the sheet frame it starts at the frame's inset. */
 .ar-nav--sticky { position: sticky; top: 0; z-index: 30; }
@@ -327,7 +325,8 @@ html[data-theme="whiteprint"] .ar-theme__opt[data-value="whiteprint"] { backgrou
 
 .ar-sheetframe { position: fixed; inset: 0; z-index: 40; pointer-events: none; display: none; }
 @container frame (min-width: 1024px) { .ar-sheetframe { display: block; } }
-.ar-sheetframe__band { position: absolute; background-color: var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); }
+/* site: the nav's glass, so the top band and the nav below it stay one glass over a photo. */
+.ar-sheetframe__band { position: absolute; background-color: var(--glass); -webkit-backdrop-filter: var(--nav-glass-filter); backdrop-filter: var(--nav-glass-filter); }
 .ar-sheetframe__band--t { top: 0; left: 0; right: 0; height: var(--frame-inset); }
 .ar-sheetframe__band--b { bottom: 0; left: 0; right: 0; height: var(--frame-inset); }
 .ar-sheetframe__band--l { top: 0; bottom: 0; left: 0; width: var(--frame-inset); }
@@ -804,8 +803,7 @@ html[data-theme="whiteprint"] .ar-theme__opt[data-value="whiteprint"] { backgrou
 .ar-mmenu__social { display: flex; flex-wrap: wrap; gap: 0 var(--space-5); margin: 0; padding: 0; list-style: none; }
 .ar-mmenu__roll { position: absolute; inset: 0; display: flex; flex-direction: column; overflow: hidden; }
 /* site: the sheet scrolls when a short window (a phone on its side) cannot show it all. It is the
-   nav's glass (section 1, --nav-glass-filter): it lies over whatever the page shows, photos too,
-   and its line-colored LinkedIn and GitHub keep AA over a white one. */
+   nav's glass (section 1). */
 .ar-mmenu__sheet { display: flex; flex-direction: column; flex: 1; min-height: 100%; overflow-y: auto; overscroll-behavior: contain; background-color: var(--glass); -webkit-backdrop-filter: var(--nav-glass-filter); backdrop-filter: var(--nav-glass-filter); }
 
 /* ---------- 20. Footer ---------- */
@@ -1015,11 +1013,12 @@ html[data-theme="whiteprint"] .ar-theme__opt[data-value="whiteprint"] { backgrou
    tokens' own contrast with --sheet-2 over any sky: ink 12.4, ink-dim 7.4, ink-mute 4.7 to 1, all
    AA. Whiteprint's glass is already the plain white panel. Only where the page shows the sky: the
    head script cannot know settings.background, and the flat grid or the plain sheet keeps its glass.
-   The nav's glass (section 1) drops its blur with the rest. */
+   The nav's glass drops its blur too, and the nav's hint is ink-mute again (4.72 to 1). */
 :root[data-sky-tier="light"]:not([data-theme="whiteprint"]):has(.ar-sky[data-background="sky"]) {
   --glass: var(--sheet-2);
   --glass-filter: none;
   --nav-glass-filter: none;
+  --nav-hint: var(--ink-mute);
 }
 
 /* ---------- 25. Media viewers (one frame for every kind of attachment) ---------- */
