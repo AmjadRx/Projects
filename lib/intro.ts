@@ -211,8 +211,7 @@ function runIntro(section: HTMLElement, start: number): void {
  */
 export function beginIntro(section: HTMLElement): boolean {
   if (section.hasAttribute(INTRO_ATTR)) {
-    // The inline scripts started it; remember the visit here too. A drawing that came in after
-    // them (HeroMediaFallback.tsx) gets its go here.
+    // Inline scripts started it. Note the visit; a late drawing gets its go.
     markIntroSeen();
     if (!section.hasAttribute(INTRO_GO_ATTR) && section.querySelector(DRAWING)) {
       runIntro(section, Number(section.getAttribute(INTRO_ATTR)));
