@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import Headshot from '@/components/about/Headshot';
 import BomTable, { hasSkills } from '@/components/sheet/BomTable';
@@ -90,53 +91,61 @@ export default function AboutPage() {
         </div>
       ) : null}
 
-      {hasSkills(site.skills) ? (
-        <section className="st-sec" aria-labelledby="skills-title">
-          <h2 id="skills-title" className="hm-h2">
-            {UI.about.skills}
-          </h2>
-          <Glass>
-            <BomTable skills={site.skills} projects={projects} resolveLink={resolveLink} />
-          </Glass>
-        </section>
-      ) : null}
+      {/* Each section below sits in a Suspense boundary: React hydrates it on its own, after the
+          opening, in short slices (ARCHITECTURE.md 9: TBT); the HTML gains two comments each. */}
+      <Suspense>
+        {hasSkills(site.skills) ? (
+          <section className="st-sec" aria-labelledby="skills-title">
+            <h2 id="skills-title" className="hm-h2">
+              {UI.about.skills}
+            </h2>
+            <Glass>
+              <BomTable skills={site.skills} projects={projects} resolveLink={resolveLink} />
+            </Glass>
+          </section>
+        ) : null}
+      </Suspense>
 
-      {education.length > 0 ? (
-        <section className="st-sec" aria-labelledby="education-title">
-          <h2 id="education-title" className="hm-h2">
-            {UI.about.education}
-          </h2>
-          <ul className="st-edu">
-            {education.map((entry, i) => (
-              <li key={`${entry.school}-${i}`} className="ar-glass st-edu__item">
-                {hasText(entry.dates) ? <p className="st-edu__dates">{entry.dates}</p> : null}
-                <h3 className="st-edu__school">{hasText(entry.school) ? entry.school : entry.degree}</h3>
-                {hasText(entry.school) && hasText(entry.degree) ? <p className="st-edu__degree">{entry.degree}</p> : null}
-                {hasText(entry.details) ? <p className="st-edu__details">{entry.details}</p> : null}
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
+      <Suspense>
+        {education.length > 0 ? (
+          <section className="st-sec" aria-labelledby="education-title">
+            <h2 id="education-title" className="hm-h2">
+              {UI.about.education}
+            </h2>
+            <ul className="st-edu">
+              {education.map((entry, i) => (
+                <li key={`${entry.school}-${i}`} className="ar-glass st-edu__item">
+                  {hasText(entry.dates) ? <p className="st-edu__dates">{entry.dates}</p> : null}
+                  <h3 className="st-edu__school">{hasText(entry.school) ? entry.school : entry.degree}</h3>
+                  {hasText(entry.school) && hasText(entry.degree) ? <p className="st-edu__degree">{entry.degree}</p> : null}
+                  {hasText(entry.details) ? <p className="st-edu__details">{entry.details}</p> : null}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+      </Suspense>
 
-      {honors.length > 0 ? (
-        <section className="st-sec" aria-labelledby="honors-title">
-          <h2 id="honors-title" className="hm-h2">
-            {UI.about.honors}
-          </h2>
-          <Glass as="ol" pad={false} className="st-hon">
-            {honors.map((honor, i) => (
-              <li key={`${honor.title}-${i}`}>
-                {hasText(honor.year) ? <p className="st-hon__year">{honor.year}</p> : null}
-                <div className="st-hon__body">
-                  <p className="st-hon__title">{honor.title}</p>
-                  {hasText(honor.note) ? <p className="st-hon__note">{honor.note}</p> : null}
-                </div>
-              </li>
-            ))}
-          </Glass>
-        </section>
-      ) : null}
+      <Suspense>
+        {honors.length > 0 ? (
+          <section className="st-sec" aria-labelledby="honors-title">
+            <h2 id="honors-title" className="hm-h2">
+              {UI.about.honors}
+            </h2>
+            <Glass as="ol" pad={false} className="st-hon">
+              {honors.map((honor, i) => (
+                <li key={`${honor.title}-${i}`}>
+                  {hasText(honor.year) ? <p className="st-hon__year">{honor.year}</p> : null}
+                  <div className="st-hon__body">
+                    <p className="st-hon__title">{honor.title}</p>
+                    {hasText(honor.note) ? <p className="st-hon__note">{honor.note}</p> : null}
+                  </div>
+                </li>
+              ))}
+            </Glass>
+          </section>
+        ) : null}
+      </Suspense>
     </div>
   );
 }

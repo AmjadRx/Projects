@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import Timeline from '@/components/sheet/Timeline';
 import { pageMetadata } from '@/lib/meta';
@@ -12,7 +13,8 @@ export function generateMetadata(): Metadata {
 /**
  * The timeline of roles with bullets (ARCHITECTURE.md 5), newest first as the content orders them,
  * on the bundle's Timeline. Each role is an h2 (docs/V3_PLAN.md D-67); the Timeline applies the
- * hiding rules.
+ * hiding rules. The timeline sits in a Suspense boundary, so the browser hydrates it after the
+ * head, in short slices (ARCHITECTURE.md 9: TBT); the HTML gains two comments.
  */
 export default function ExperiencePage() {
   const { site } = siteData();
@@ -22,7 +24,9 @@ export default function ExperiencePage() {
       <header className="st-head">
         <h1 className="st-title">{title}</h1>
       </header>
-      <Timeline roles={site.experience} label={title} headingLevel={2} />
+      <Suspense>
+        <Timeline roles={site.experience} label={title} headingLevel={2} />
+      </Suspense>
     </div>
   );
 }

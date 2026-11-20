@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { domainFilter, domainKeys } from '@/components/sheet/DomainFilter';
 import ProjectCard, { CARD_SIZES } from '@/components/sheet/ProjectCard';
@@ -17,15 +18,27 @@ export function generateMetadata(): Metadata {
  * heading and one line, the domain filter, and the cards, one column on phones, two from 768 px,
  * three from 1024 px. The cards are drawn here, on the server; ProjectExplorer holds the filter's
  * choice and moves the cards when it changes (motion sheet 7.4), and a filtered-out card leaves no
- * cell.
+ * cell. The cards after the first row sit in Suspense boundaries, so the browser hydrates them one
+ * by one after the first screen, in short slices, instead of in the page's first long task
+ * (ARCHITECTURE.md 9: TBT); a boundary adds two HTML comments and nothing else.
  */
+/** The cards of the first row at the widest layout: their photos load first, and they hydrate with the page. */
+const FIRST_ROW = 3;
+
 export default function ProjectsPage() {
   const { site, projects } = siteData();
   const heading = navLabel(site, '/projects', 'Projects');
   const items = projects.map((project, i) => ({
     slug: project.slug,
     domains: domainKeys(project),
-    card: <ProjectCard project={project} headingLevel={2} priority={i < 3} sizes={CARD_SIZES.third} />,
+    card:
+      i < FIRST_ROW ? (
+        <ProjectCard project={project} headingLevel={2} priority sizes={CARD_SIZES.third} />
+      ) : (
+        <Suspense>
+          <ProjectCard project={project} headingLevel={2} sizes={CARD_SIZES.third} />
+        </Suspense>
+      ),
   }));
   return (
     <section className="hm-wrap pj-index" aria-labelledby="projects-title">

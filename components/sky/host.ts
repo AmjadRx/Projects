@@ -64,8 +64,23 @@ export function bindLive<Data>(live: LiveModule<Data>): SceneFactory {
   };
 }
 
+/** A later task: what follows runs after the browser has had its turn (and drawn a frame if due). */
+function nextTask(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+/**
+ * The scene's code in three steps, each in a task of its own (site, Phase 7): three.js's module
+ * (./live/engine), then the scene's, then bindLive's first call (canRender, which makes the WebGL
+ * context). Together they held the main thread for one long task; apart, none is long (TBT,
+ * ARCHITECTURE.md 9). The scene's chunk is requested after three.js's arrives.
+ */
 async function importLive(): Promise<SceneFactory> {
-  return bindLive(await import('./live'));
+  await import('./live/engine');
+  await nextTask();
+  const live = await import('./live');
+  await nextTask();
+  return bindLive(live);
 }
 
 export interface SkyHostElements {

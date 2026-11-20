@@ -525,6 +525,35 @@ export function createSky(container: HTMLElement, data: SkyData, options: SkyOpt
     closeImage(image);
   }
 
+  /**
+   * site (Phase 7): a fence after the panorama's upload, so the first draw can wait until the GPU
+   * has finished it (frame below). Reading a fence's status never waits in a browser: it changes
+   * between frames. Null where WebGL2 fences are missing; the draw then goes ahead, as before.
+   */
+  let uploadFence: { sync: WebGLSync; frames: number } | null = null;
+  /** Frames the first draw waits for the upload at most (about half a second), then draws anyway. */
+  const UPLOAD_WAIT_FRAMES = 30;
+
+  function fenceAfterUpload(): { sync: WebGLSync; frames: number } | null {
+    const context = gl.getContext();
+    if (typeof WebGL2RenderingContext === 'undefined' || !(context instanceof WebGL2RenderingContext)) return null;
+    const sync = context.fenceSync(context.SYNC_GPU_COMMANDS_COMPLETE, 0);
+    return sync ? { sync, frames: 0 } : null;
+  }
+
+  /** True once the upload's fence has signaled, or the wait is over; the fence is then let go. */
+  function uploadDone(): boolean {
+    const fence = uploadFence;
+    if (!fence) return true;
+    const context = gl.getContext() as WebGL2RenderingContext;
+    fence.frames += 1;
+    const signaled = context.getSyncParameter(fence.sync, context.SYNC_STATUS) === context.SIGNALED;
+    if (!signaled && fence.frames < UPLOAD_WAIT_FRAMES) return false;
+    context.deleteSync(fence.sync);
+    uploadFence = null;
+    return true;
+  }
+
   // ---- Materials ------------------------------------------------------------------------------
   const skyUniforms = { uRes, uScale, uHorizon, uZenith: u<Vec3>([0, 0, 0]), uMid: u<Vec3>([0, 0, 0]), uLow: u<Vec3>([0, 0, 0]) };
   const milkyWayUniforms = {
@@ -674,11 +703,20 @@ export function createSky(container: HTMLElement, data: SkyData, options: SkyOpt
   applyTheme();
   let compiled = still;
 
-  /** True once the driver reports every program linked. */
+  /**
+   * True once the driver reports every program linked. site (Phase 7): each program is also put to
+   * its first use as it becomes ready (getUniforms: three checks its compile and reads its uniforms
+   * and attributes, questions that wait on the driver), here, before the panorama's upload, so the
+   * first draw asks the driver nothing and stays short.
+   */
   function programsReady(): boolean {
     for (const material of compiling) {
-      const program = (gl.properties.get(material) as { currentProgram?: { isReady?: () => boolean } } | undefined)?.currentProgram;
-      if (!program || typeof program.isReady !== 'function' || program.isReady()) compiling.delete(material);
+      const program = (gl.properties.get(material) as { currentProgram?: { isReady?: () => boolean; getUniforms?: () => unknown } } | undefined)
+        ?.currentProgram;
+      if (!program || typeof program.isReady !== 'function' || program.isReady()) {
+        program?.getUniforms?.();
+        compiling.delete(material);
+      }
     }
     return compiling.size === 0;
   }
@@ -758,9 +796,18 @@ export function createSky(container: HTMLElement, data: SkyData, options: SkyOpt
       return;
     }
     if (!uploaded && panorama && theme === 'blueprint') {
-      // This frame only sends the panorama to the GPU; the sky is drawn in the next one.
+      // This frame only sends the panorama to the GPU; the sky is drawn once the GPU has it.
       gl.initTexture(panorama);
       markUploaded();
+      uploadFence = fenceAfterUpload();
+      raf = requestAnimationFrame(frame);
+      return;
+    }
+    if (uploadFence && !uploadDone()) {
+      // site (Phase 7): the GPU is still taking the panorama in (and making its mipmaps). The first
+      // draw asks the driver about its programs, and a question waits for the GPU to finish all it
+      // was given: drawing now would hold the main thread for that whole upload. Ask again next
+      // frame, with nothing drawn; the still shows meanwhile.
       raf = requestAnimationFrame(frame);
       return;
     }
@@ -927,6 +974,8 @@ export function createSky(container: HTMLElement, data: SkyData, options: SkyOpt
       for (const g of [triangle, quad, starGeometry]) g.dispose();
       for (const m of [skyMaterial, milkyWayMaterial, starMaterial, meteorMaterial, groundMaterial]) m.dispose();
       panorama?.dispose();
+      if (uploadFence) (gl.getContext() as WebGL2RenderingContext).deleteSync(uploadFence.sync);
+      uploadFence = null;
       // Whatever never reached the GPU (a Whiteprint visit) is freed too.
       closeImage(image);
       scene.clear();

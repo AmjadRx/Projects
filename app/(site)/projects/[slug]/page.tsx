@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import { Suspense, type CSSProperties } from 'react';
 import type { Metadata } from 'next';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
@@ -120,6 +120,11 @@ function PagerLink({ project, sheet, sheets, dir }: { project: Project; sheet: n
  * Printed, the article is one drawing sheet (app/print.css, the Print board): its data-print-*
  * attributes carry the words the sheet adds, the page address, the owner's name over the title, and
  * the label over the highlights. Nothing else changes in the markup.
+ *
+ * Everything after the cover sits in Suspense boundaries (the title block, the summary, the
+ * progress, the blocks, the pager): the server sends the page as before (a boundary adds two HTML
+ * comments), and in the browser React hydrates the head and the cover first, then each part on its
+ * own, in short slices between frames, so no one long task holds the page (ARCHITECTURE.md 9: TBT).
  */
 export default async function ProjectPage({ params }: { params: Promise<Params> }) {
   const { slug } = await params;
@@ -159,51 +164,61 @@ export default async function ProjectPage({ params }: { params: Promise<Params> 
             <Cover project={project} cover={cover} />
           </CoverStage>
 
-          <aside className="pj-rail" aria-label={UI.titleBlock.caption}>
-            <TitleBlock
-              project={project}
-              sheet={index + 1}
-              sheets={projects.length}
-              rev={projectRevDate(project.slug)}
-              resolveLink={resolveLink}
-              rail
-            />
-          </aside>
+          <Suspense>
+            <aside className="pj-rail" aria-label={UI.titleBlock.caption}>
+              <TitleBlock
+                project={project}
+                sheet={index + 1}
+                sheets={projects.length}
+                rev={projectRevDate(project.slug)}
+                resolveLink={resolveLink}
+                rail
+              />
+            </aside>
+          </Suspense>
 
-          {hasText(project.pitch) || highlights.length > 0 ? (
-            <section className="pj-intro" aria-label={UI.projects.summary}>
-              {hasText(project.pitch) ? <p className="pj-pitch">{project.pitch}</p> : null}
-              {highlights.length > 0 ? (
-                <ul className="pj-hl ar-glass" data-print-label={UI.print.notes}>
-                  {highlights.map((item, i) => (
-                    <li key={i}>{item}</li>
-                  ))}
-                </ul>
-              ) : null}
-            </section>
-          ) : null}
+          <Suspense>
+            {hasText(project.pitch) || highlights.length > 0 ? (
+              <section className="pj-intro" aria-label={UI.projects.summary}>
+                {hasText(project.pitch) ? <p className="pj-pitch">{project.pitch}</p> : null}
+                {highlights.length > 0 ? (
+                  <ul className="pj-hl ar-glass" data-print-label={UI.print.notes}>
+                    {highlights.map((item, i) => (
+                      <li key={i}>{item}</li>
+                    ))}
+                  </ul>
+                ) : null}
+              </section>
+            ) : null}
+          </Suspense>
 
-          {steps.length > 0 ? (
-            <section className="pj-progress" aria-labelledby="progress-title">
-              <h2 id="progress-title" className="hm-label">
-                {UI.projects.progress}
-              </h2>
-              <Glass>
-                <ProgressStrip steps={steps} label={UI.projects.progressOf(project.title)} />
-              </Glass>
-            </section>
-          ) : null}
+          <Suspense>
+            {steps.length > 0 ? (
+              <section className="pj-progress" aria-labelledby="progress-title">
+                <h2 id="progress-title" className="hm-label">
+                  {UI.projects.progress}
+                </h2>
+                <Glass>
+                  <ProgressStrip steps={steps} label={UI.projects.progressOf(project.title)} />
+                </Glass>
+              </section>
+            ) : null}
+          </Suspense>
 
-          <BlockRenderer blocks={project.blocks} ctx={{ resolveLink, level: 2, idPrefix: '', label: project.title }} />
+          <Suspense>
+            <BlockRenderer blocks={project.blocks} ctx={{ resolveLink, level: 2, idPrefix: '', label: project.title }} />
+          </Suspense>
         </div>
       </article>
 
-      {previous || next ? (
-        <nav className="hm-wrap pj-pager" aria-label={UI.projects.pager}>
-          {previous ? <PagerLink project={previous} sheet={index} sheets={projects.length} dir="prev" /> : null}
-          {next ? <PagerLink project={next} sheet={index + 2} sheets={projects.length} dir="next" /> : null}
-        </nav>
-      ) : null}
+      <Suspense>
+        {previous || next ? (
+          <nav className="hm-wrap pj-pager" aria-label={UI.projects.pager}>
+            {previous ? <PagerLink project={previous} sheet={index} sheets={projects.length} dir="prev" /> : null}
+            {next ? <PagerLink project={next} sheet={index + 2} sheets={projects.length} dir="next" /> : null}
+          </nav>
+        ) : null}
+      </Suspense>
     </>
   );
 }
