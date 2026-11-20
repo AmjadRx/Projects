@@ -22,6 +22,7 @@ import type { PaletteIndex } from '../../lib/palette';
 import { UI } from '../../lib/strings';
 import { describeViolations, runAxe } from './support/axe';
 import { expect, test } from './support/fixtures';
+import { FIRST_ITEM, galleryName } from './support/gallery';
 import { focusedElement, focusInside, open } from './support/page';
 import { DESKTOP, device, GALLERY_PAGES, PHONE, routeTitle, THEMES } from './support/site';
 
@@ -232,9 +233,11 @@ test.describe('command palette, 1440 px', () => {
   test('it does not open over the gallery lightbox', async ({ page }) => {
     const route = GALLERY_PAGES[0];
     expect(await open(page, route.path), `${routeTitle(route)} status`).toBe(200);
-    const gallery = page.getByRole('region', { name: UI.viewers.gallery.label, exact: true }).first();
+    // The gallery is named by its heading ("Build photos" on Raven), its first item by its kind
+    // ("Open photo 1 of 3"), as tests/e2e/keyboard.spec.ts finds them.
+    const gallery = page.getByRole('region', { name: galleryName(route.path), exact: true }).first();
     await gallery.scrollIntoViewIfNeeded();
-    const item = gallery.getByRole('button', { name: /Open (item 1 of \d+|image)/ }).first();
+    const item = gallery.getByRole('button', { name: FIRST_ITEM }).first();
     await item.focus();
     await page.keyboard.press('Enter');
     const lightbox = page.getByRole('dialog', { name: UI.viewers.gallery.label });

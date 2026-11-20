@@ -11,6 +11,13 @@ import { defineConfig } from '@playwright/test';
  * The suite starts its own server (tests/e2e/serve.mjs): `npm run build` into its own output folder,
  * then `next start`. Like every npm command here, the build needs MOTION_TOKEN in the environment.
  *
+ * Before the first test, tests/e2e/global-setup.ts warms that server's image optimizer: it fetches
+ * every /_next/image address a page can ask for, since `next start` leaves every later request for
+ * an address waiting when the first one was dropped (a test that closes its page while a picture
+ * loads). tests/e2e/support/fixtures.ts fails a test whose page asks the optimizer for a picture
+ * the warm-up did not make, judged when the request is sent, answered or not. Against E2E_BASE_URL
+ * nothing is warmed or checked.
+ *
  * Environment:
  * - E2E_PORT: the server's port (3702 by default). When something already answers there, the run
  *   stops with an error rather than test it in this tree's place (it may be another tree's server,
@@ -39,6 +46,8 @@ const workers = Number(process.env.E2E_WORKERS) || undefined;
 export default defineConfig({
   testDir: 'tests/e2e',
   testMatch: '**/*.spec.ts',
+  // After the server is up and before the first test: the image optimizer's warm-up.
+  globalSetup: './tests/e2e/global-setup.ts',
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   // No retries: a check that passes only sometimes is a finding, not noise to hide.

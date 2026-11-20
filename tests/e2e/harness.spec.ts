@@ -9,6 +9,11 @@
  * - the frame meter and the animation list report a loop and an animation under reduced motion,
  *   and the rest scan finds a loop that runs only near the view;
  * - the scroll through fails on a panel that never rises into view;
+ * - the image check (./support/fixtures.ts) names a request for a picture the warm-up did not make
+ *   (a source not warmed, or an Accept header that chooses another format), even one dropped
+ *   before any answer, and not a warmed one, also in a context with no routing, where Playwright
+ *   shows no Accept header; and an answer the server made for the test at a warmed address, but
+ *   not one it had kept;
  * - the text reader leaves out what assistive technology does not read;
  * - the GPA rule reports each wrong form, and the resume rule each name a resume can be stored as;
  * - the contrast check (./support/contrast.ts) reports dim text and passes bright text,
@@ -22,7 +27,7 @@
  *   screenshot's pixels back; the PDF reader counts a printout's pages and reads them.
  * The faults are added to the page in the browser only; nothing in the site changes.
  */
-import type { Page } from '@playwright/test';
+import type { Page, Route } from '@playwright/test';
 import { describeViolations, runAxe } from './support/axe';
 import { luminance } from './support/color';
 import {
@@ -41,8 +46,9 @@ import {
   type Track,
   type Verdict,
 } from './support/contrast';
-import { expect, test } from './support/fixtures';
+import { expect, forgetImagesNotWarmed, imagesNotWarmed, test } from './support/fixtures';
 import { gpaProblems } from './support/gpa';
+import { OPTIMIZER, readWarmed, warmedAddress } from './support/images';
 import { overflow } from './support/layout';
 import { frameActivity, installFrameMeter, LOOP_FRAMES, LOOP_SPAN_MS, REST_STEP, restScan, runningAnimations } from './support/motion';
 import { open, readableText, settle, visitWholePage } from './support/page';
@@ -55,6 +61,9 @@ import { cancelled, dragUp, recordCancels, scrollRest } from './support/touch';
 
 /** A quiet page with no load sequence, for the faults to go into. */
 const PAGE = '/contact';
+
+/** A 1 px GIF, the body of the image optimizer's stand-in answers. */
+const GIF = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
 
 /** Puts `html` at the end of main, in place of what the last call put there. */
 async function put(page: Page, html: string): Promise<void> {
@@ -106,6 +115,110 @@ test.describe('harness, 1440 px', () => {
     // Waiting to rise, as components/site/risePanels.ts marks a panel, but nothing will ever raise it.
     await put(page, '<div class="ar-glass" data-ar-rise>A panel that never rises</div>');
     await expect(visitWholePage(page)).rejects.toThrow(/A panel that never rises/);
+  });
+
+  test.describe('the image check', () => {
+    test.skip(Boolean(process.env.E2E_BASE_URL?.trim()), "the check is off against a deployment, whose image service is Vercel's");
+
+    /** The address as an attribute writes it. */
+    const attribute = (address: string) => address.replace(/&/g, '&amp;');
+    /** The address of a request, as the check names it. */
+    const asked = (url: URL) => `${url.pathname}${url.search}`;
+
+    test('names a request for a picture the warm-up did not make, even one its page drops before any answer, and not a warmed one', async ({ context }) => {
+      const warmed = readWarmed();
+      expect(warmed, "the warm-up's list reached this worker").not.toBeNull();
+      // A warmed picture, asked for by the page and answered by the suite's server.
+      const kept = warmedAddress(warmed!);
+      // A warmed picture asked for by fetch(), whose Accept header (*/*) chooses another format;
+      // answered in the browser, so the server never sees it.
+      const fetched = warmedAddress(warmed!, { width: 1 });
+      // A picture never warmed: held in the browser with no answer, then dropped as its page
+      // closes, as a test drops the first request for a picture that then hangs (the server never
+      // sees this one either).
+      const dropped = `${OPTIMIZER}?url=%2Fe2e-fault-dropped.gif&w=${warmed!.widths[0]}&q=${warmed!.qualities[0]}`;
+      const page = await context.newPage();
+      const held: Route[] = [];
+      await page.route((url) => asked(url) === dropped, (route) => void held.push(route));
+      await page.route((url) => asked(url) === fetched, (route) => route.fulfill({ status: 200, contentType: 'image/gif', body: GIF }));
+      expect(await open(page, PAGE)).toBe(200);
+      await put(page, `<img alt="" width="16" height="16" src="${attribute(kept)}">`);
+      await page.waitForFunction(() => {
+        const image = document.querySelector<HTMLImageElement>('[data-e2e-fault] img');
+        return Boolean(image?.complete && image.naturalWidth > 0);
+      });
+      expect(await page.evaluate(async (address) => (await fetch(address)).status, fetched)).toBe(200);
+      const sent = page.waitForRequest((request) => asked(new URL(request.url())) === dropped);
+      await put(page, `<img alt="" width="16" height="16" src="${attribute(dropped)}">`);
+      await sent;
+      await page.close();
+      expect(held, 'the dropped request was held with no answer').toHaveLength(1);
+      const named = imagesNotWarmed();
+      expect(named.map((entry) => entry.address).sort(), JSON.stringify(named, null, 1)).toEqual([dropped, fetched].sort());
+      expect(named.find((entry) => entry.address === dropped)?.why).toContain('source /e2e-fault-dropped.gif not warmed');
+      expect(named.find((entry) => entry.address === fetched)?.why).toContain(`Accept "*/*" asks for the source's own format, and the warm-up made ${warmed!.format}`);
+      // Seen; so the check at the end of this test passes.
+      forgetImagesNotWarmed();
+    });
+
+    test('names an answer the image optimizer made for the test at a warmed address, and not one it had made before', async ({ page }) => {
+      const warmed = readWarmed();
+      expect(warmed, "the warm-up's list reached this worker").not.toBeNull();
+      // Two warmed pictures, answered in the browser (the server never sees these requests): one
+      // as the server answers a picture it made for the request (X-Nextjs-Cache: MISS), one as a
+      // picture it had kept (HIT).
+      const made = warmedAddress(warmed!, { width: 2 });
+      const kept = warmedAddress(warmed!, { width: 3 });
+      await page.route(
+        (url) => [made, kept].includes(asked(url)),
+        (route) =>
+          route.fulfill({
+            status: 200,
+            contentType: 'image/gif',
+            headers: { 'x-nextjs-cache': asked(new URL(route.request().url())) === made ? 'MISS' : 'HIT' },
+            body: GIF,
+          }),
+      );
+      expect(await open(page, PAGE)).toBe(200);
+      await put(page, [made, kept].map((address) => `<img alt="" width="16" height="16" src="${attribute(address)}">`).join(''));
+      await page.waitForFunction(() =>
+        Array.from(document.querySelectorAll<HTMLImageElement>('[data-e2e-fault] img')).every((image) => image.complete && image.naturalWidth > 0),
+      );
+      await expect.poll(() => imagesNotWarmed()).toEqual([{ address: made, why: 'the server made it for this test (X-Nextjs-Cache: MISS)' }]);
+      forgetImagesNotWarmed();
+    });
+
+    test.describe('with no routing in the context, as the console tests run', () => {
+      test.use({ analyticsStandIn: false });
+
+      test("judges a picture by the Accept header Chrome sends for it, which Playwright does not show here, and a fetch() by its own", async ({ page }) => {
+        const warmed = readWarmed();
+        expect(warmed, "the warm-up's list reached this worker").not.toBeNull();
+        // A warmed picture, answered by the suite's server.
+        const kept = warmedAddress(warmed!);
+        // A warmed picture asked for by fetch(), whose Accept header (any type) chooses the
+        // source's own format. With no routing nothing can answer in the browser: the server makes
+        // it, small, under a key no page asks for.
+        const fetched = warmedAddress(warmed!, { width: 4 });
+        expect(await open(page, PAGE)).toBe(200);
+        await put(page, `<img alt="" width="16" height="16" src="${attribute(kept)}">`);
+        await page.waitForFunction(() => {
+          const image = document.querySelector<HTMLImageElement>('[data-e2e-fault] img');
+          return Boolean(image?.complete && image.naturalWidth > 0);
+        });
+        expect(imagesNotWarmed(), 'a warmed picture, though this context shows no Accept header for it').toEqual([]);
+        const status = await page.evaluate(async (address) => {
+          const response = await fetch(address);
+          await response.arrayBuffer();
+          return response.status;
+        }, fetched);
+        expect(status).toBe(200);
+        await expect
+          .poll(() => imagesNotWarmed().filter((entry) => entry.address === fetched).map((entry) => entry.why).join('\n'))
+          .toMatch(/Accept "\*\/\*"( \(Chrome's own for this kind of request\))? asks for the source's own format/);
+        forgetImagesNotWarmed();
+      });
+    });
   });
 
   test.describe('with a Whiteprint cookie', () => {
