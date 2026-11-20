@@ -17,6 +17,10 @@
  *   lost.
  * - E2E_REUSE_BUILD=1 serves the build already in that folder, when there is one, without building
  *   again.
+ * - The image optimizer's cache (the folder's cache/images) is emptied before the server starts, so
+ *   the warm-up before the first test (./global-setup.ts) makes every picture on every run alike;
+ *   a picture left from an earlier run would be answered stale and made again behind the first
+ *   tests.
  * - The server listens on 127.0.0.1 at E2E_PORT (3702 by default). Playwright stops it, and this
  *   script stops `next start` with it.
  */
@@ -116,6 +120,9 @@ repairTsconfig();
 const built = fs.existsSync(path.join(root, distDir, 'BUILD_ID'));
 if (process.env.E2E_REUSE_BUILD === '1' && built) console.log(`serve: using the build in ${distDir}`);
 else if (!(await build())) process.exit(1);
+
+// An empty image cache, so ./global-setup.ts warms it from nothing (see the top of this file).
+fs.rmSync(path.join(root, distDir, 'cache', 'images'), { recursive: true, force: true });
 
 const next = path.join(root, 'node_modules', 'next', 'dist', 'bin', 'next');
 const server = spawn(process.execPath, [next, 'start', '-p', port, '-H', '127.0.0.1'], { cwd: root, env, stdio: 'inherit' });

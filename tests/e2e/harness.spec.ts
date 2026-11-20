@@ -9,6 +9,8 @@
  * - the frame meter and the animation list report a loop and an animation under reduced motion,
  *   and the rest scan finds a loop that runs only near the view;
  * - the scroll through fails on a panel that never rises into view;
+ * - the image check (./support/fixtures.ts) reports a picture the image optimizer made for the
+ *   test, and not one it had made before;
  * - the text reader leaves out what assistive technology does not read;
  * - the GPA rule reports each wrong form, and the resume rule each name a resume can be stored as;
  * - the contrast check (./support/contrast.ts) reports dim text and passes bright text,
@@ -41,7 +43,7 @@ import {
   type Track,
   type Verdict,
 } from './support/contrast';
-import { expect, test } from './support/fixtures';
+import { expect, forgetImagesMadeForTheTest, imagesMadeForTheTest, test } from './support/fixtures';
 import { gpaProblems } from './support/gpa';
 import { overflow } from './support/layout';
 import { frameActivity, installFrameMeter, LOOP_FRAMES, LOOP_SPAN_MS, REST_STEP, restScan, runningAnimations } from './support/motion';
@@ -106,6 +108,32 @@ test.describe('harness, 1440 px', () => {
     // Waiting to rise, as components/site/risePanels.ts marks a panel, but nothing will ever raise it.
     await put(page, '<div class="ar-glass" data-ar-rise>A panel that never rises</div>');
     await expect(visitWholePage(page)).rejects.toThrow(/A panel that never rises/);
+  });
+
+  test('the image check reports a picture the image optimizer made for the test, and not one it had made before', async ({ page }) => {
+    test.skip(Boolean(process.env.E2E_BASE_URL?.trim()), 'the check is off against a deployment, whose image service is Vercel\'s');
+    expect(await open(page, PAGE)).toBe(200);
+    // Two answers of the optimizer, stood in for in the browser (the server never sees these
+    // requests): one made for this request (X-Nextjs-Cache: MISS), one it had made before (HIT).
+    const gif = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
+    await page.route(/\/_next\/image\?url=%2Fe2e-fault-/, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'image/gif',
+        headers: { 'x-nextjs-cache': route.request().url().includes('fault-made') ? 'MISS' : 'HIT' },
+        body: gif,
+      }),
+    );
+    await put(
+      page,
+      ['made', 'kept'].map((name) => `<img alt="" width="16" height="16" src="/_next/image?url=%2Fe2e-fault-${name}.gif&amp;w=16&amp;q=75">`).join(''),
+    );
+    await page.waitForFunction(() =>
+      Array.from(document.querySelectorAll<HTMLImageElement>('[data-e2e-fault] img')).every((image) => image.complete && image.naturalWidth > 0),
+    );
+    await expect.poll(() => imagesMadeForTheTest()).toEqual(['/_next/image?url=%2Fe2e-fault-made.gif&w=16&q=75']);
+    // Seen; so the check at the end of this test passes.
+    forgetImagesMadeForTheTest();
   });
 
   test.describe('with a Whiteprint cookie', () => {
