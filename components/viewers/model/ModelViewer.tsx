@@ -319,8 +319,14 @@ export default function ModelViewer({ media, views, explode: offerExplode, callo
       toolbar={toolbar}
     >
       <div ref={wellRef} className={styles.well}>
-        {/* Waiting for a tap with no poster: the plain grid, so nothing shows around the button. */}
-        {!(live && ready) && (media.poster || !(requiresTap && !started)) && <Poster media={media} wellAspect={MODEL_ASPECT} />}
+        {/* Waiting for a tap with no poster: the plain grid, so nothing shows around the button. Once
+            the model is ready the poster stays under it, out of sight (app/motion-media.css), so a
+            printed page still has the picture: the print stylesheet shows it and leaves the canvas. */}
+        {(media.poster || !(requiresTap && !started)) && (
+          <div className="mm-poster" data-out={live && ready ? '' : undefined}>
+            <Poster media={media} wellAspect={MODEL_ASPECT} />
+          </div>
+        )}
         {engineOn && (
           <ViewerErrorBoundary fallback={<Notice text={UI.viewers.model.failed} onShown={handleFailed} />}>
             <FrameBridge>

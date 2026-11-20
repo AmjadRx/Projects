@@ -13,13 +13,20 @@
  *   photo that fails to load (S.4, S.5).
  * - "nolog": no project has a build log, so /log says so and points to the projects (S.4).
  * - "heromedia": the hero shows the owner's photo (media mode), for the photo that fails to load (S.5).
+ * - "longsheet": more than the printed sheet's data column holds (app/print.css 5): Raven's build log
+ *   has eight entries and its spec table two more rows, one of them two lines long; Bronco Racing's
+ *   second spec table runs well past the column; SCU Pegasus has eleven highlights.
+ * - "media": covers the admin allows but the seed lacks (ARCHITECTURE.md 13A): Raven's cover is a
+ *   video and MoonLamp's a 3D model, each with a poster and callouts. The files are the development
+ *   samples under public/dev/samples (SAMPLE_VIDEO, SAMPLE_MODEL); they move with those samples.
  *
- * Only node:fs and node:path, so a plain Node script can import it as well as Vitest.
+ * Every added word is a test word, not a fact. Only node:fs and node:path, so a plain Node script
+ * can import it as well as Vitest.
  */
 import fs from 'node:fs';
 import path from 'node:path';
 
-export type StatesVariant = 'states' | 'logphoto' | 'nolog' | 'heromedia';
+export type StatesVariant = 'states' | 'logphoto' | 'nolog' | 'heromedia' | 'longsheet' | 'media';
 
 /** The States board's test string for a long title (States-LongTitle), not a project's. */
 export const LONG_TITLE = 'A test title, not a project: long enough to take five lines at full size';
@@ -32,6 +39,23 @@ export const NO_PHOTO_CALLOUTS = [
 
 /** The stand-in photo the fixture gives Raven's latest log entry: a file the seed already has. */
 export const LOG_PHOTO = '/media/fsae-bronco-racing/img-7658.jpeg';
+
+/** The covers of the "media" variant: the development samples, with their posters. */
+export const SAMPLE_VIDEO = { kind: 'video', src: '/dev/samples/clip.mp4', poster: '/dev/samples/clip-poster.webp', alt: '' };
+export const SAMPLE_MODEL = { kind: 'model', src: '/dev/samples/model.glb', poster: '/dev/samples/model-poster.webp', alt: '' };
+
+/** The build log entries the "longsheet" variant adds to Raven's three, all newer than them. */
+export const LONG_LOG = [1, 2, 3, 4, 5].map((n) => ({
+  date: `2026-09-1${n}`,
+  title: `Fixture entry ${n}`,
+  md: 'Test words for a long build log, not a fact.',
+}));
+
+/** The rows the "longsheet" variant adds to a spec table, one of them two lines long on the sheet. */
+export const LONG_ROWS = [
+  { label: 'Fixture row', value: 'Fixture value that runs long enough to take two lines' },
+  { label: 'Fixture span', value: '12 mm' },
+];
 
 type Json = Record<string, any>;
 
@@ -95,6 +119,32 @@ export function writeStatesContent(from: string, to: string, variant: StatesVari
     const site = readJson(file);
     site.settings.heroMode = 'media';
     writeJson(file, site);
+  }
+
+  if (variant === 'longsheet') {
+    editProject(to, 'raven', (raven) => {
+      const log = raven.blocks.find((block: Json) => block.type === 'log');
+      log.entries = [...LONG_LOG, ...log.entries];
+      const spec = raven.blocks.find((block: Json) => block.type === 'specTable');
+      spec.rows = [...spec.rows, ...LONG_ROWS];
+    });
+    editProject(to, 'fsae-bronco-racing', (bronco) => {
+      const second = bronco.blocks.filter((block: Json) => block.type === 'specTable')[1];
+      second.rows = [...second.rows, ...LONG_ROWS, ...LONG_ROWS, ...LONG_ROWS];
+    });
+    editProject(to, 'dbvf-senior-design', (pegasus) => {
+      pegasus.highlights = [...pegasus.highlights, ...[1, 2, 3, 4, 5, 6].map((n) => `Fixture highlight ${n}, test words that are not a fact`)];
+    });
+  }
+
+  if (variant === 'media') {
+    editProject(to, 'raven', (raven) => {
+      raven.cover = { ...SAMPLE_VIDEO };
+    });
+    editProject(to, 'moonlamp', (lamp) => {
+      lamp.cover = { ...SAMPLE_MODEL };
+      lamp.callouts = NO_PHOTO_CALLOUTS;
+    });
   }
 
   return to;

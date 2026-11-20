@@ -134,6 +134,10 @@
   .ar-ph__bar,
   .ar-well__bar,
   .ar-mv__bar,
+  .ar-mv__full,
+  .ar-mv__play,
+  .ar-mv__btn,
+  .ar-mv__note,
   .ar-gal__bar,
   .ar-gal__nav,
   .hm-swipe,
@@ -180,9 +184,11 @@
     display: block;
     padding: 0 !important;
   }
+  /* One pixel of room at each side: a box as wide as the page would end on the page's edge, where
+     the printer cuts its right-hand rule to a hairline (Letter paper). */
   .hm-wrap {
     max-width: none;
-    padding: 0 !important;
+    padding: 0 1px !important;
   }
   .hm-sec,
   .st-sec {
@@ -333,18 +339,24 @@
   }
 
   /* The sheet's working area: 912 x 672 px from 72 px in, a 456 px view column and a 432 px data
-     column. Rows: the heading, the pitch, the view (the height that is left), the notes beside the
-     title block. The data column's tables span the first three rows. */
+     column, each its own stack. Left: the heading (row 1), the pitch (2), the view (3, the height
+     that is left), the notes (4 and 5). Right: the tables (1 to 4) over the title block (5). Row 5
+     is the title block's height and row 4 what the notes need beyond it, so the tables lose only
+     the title block's height, however long the notes run. Nothing runs past the working area onto
+     the frame: the sheet clips what does not fit (the data column ends on a whole row, below), a
+     few pixels out, so the title block's own rule at the edge stays whole. */
   .pj-sheet {
     position: relative;
     z-index: 1;
     display: grid;
     grid-template-columns: 456px 432px;
-    grid-template-rows: auto auto minmax(120px, 1fr) auto;
+    grid-template-rows: auto auto minmax(120px, 1fr) auto auto;
     column-gap: 24px;
     width: 912px;
     height: 672px;
     margin: 72px 0 0 72px;
+    overflow: clip;
+    overflow-clip-margin: 4px;
     break-inside: avoid;
     font-family: var(--font-sans);
     color: var(--ink);
@@ -436,18 +448,21 @@
     min-height: 120px;
     margin-top: 14px;
   }
-  .pj-sheet .pj-cover > .ar-dim,
-  .pj-sheet .pj-cover > .ar-mv {
+  /* The figure takes the view's height, and so does a viewer inside its player's wrapper. */
+  .pj-sheet .pj-cover > :not(.ar-dim__row),
+  .pj-sheet .pj-cover .ar-mv {
     flex: 1 1 auto;
     display: flex;
     flex-direction: column;
     min-height: 0;
   }
+  /* The well takes the height the view has (a viewer sets its ratio inline, so this one must win):
+     the picture is contained in it. */
   .pj-sheet .pj-cover .ar-well,
   .pj-sheet .pj-cover .ar-mv__well {
     flex: 1 1 auto;
     min-height: 0;
-    aspect-ratio: auto;
+    aspect-ratio: auto !important;
     border-radius: 0;
     border: 1px solid var(--ink-mute);
   }
@@ -613,7 +628,16 @@
     border-top: 1.5px solid var(--line);
   }
 
-  /* A cover with nothing to draw on (no photo, or a video or model cover): the row of readouts under it. */
+  /* A video or model cover prints as its poster, the picture its viewer paints first and keeps
+     under the moving image (VideoPlayer, ModelViewer): everything else in the well (the video, the
+     canvas, the callouts drawn over a model, the play plate, the load button, a note) stays on
+     screen. Without a poster the well prints its placeholder, the kind's mark and the file type. */
+  .pj-sheet .pj-cover .ar-mv__well > * > :not(.mm-poster) {
+    display: none !important;
+  }
+
+  /* A cover with nothing to draw on (no photo, or a video or model cover): the row of readouts under
+     it (app/styles/project.css shows it under a viewer). */
   .pj-sheet .pj-cover .ar-dim__row {
     margin-top: 8px;
     padding: 0 0 0 10px;
@@ -635,7 +659,7 @@
   /* The notes: the highlights under a drafting label, a short line before each. */
   .pj-sheet .pj-hl {
     grid-column: 1;
-    grid-row: 4;
+    grid-row: 4 / 6;
     margin: 14px 0 0;
     padding: 0;
     border: 0;
@@ -668,36 +692,61 @@
     border-top: 1px solid var(--line);
   }
 
-  /* Right: the revision table, the specifications, and the title block at the foot. */
+  /* Right: the revision table and the specifications over the title block. The column holds what
+     fits and never reaches the title block, which the sheet must always show whole: the tables'
+     rows are the column's own items (their wrappers and table boxes give way to them), and a row
+     that does not fit wraps whole into a second column that the clip leaves off the paper. So a
+     long table ends on a whole row and its rule, never a cut line, and never over the title block.
+     The revision table comes first and gives way first: the newest five revisions print (the
+     rows are newest first), so the specifications keep their room. */
   .pj-sheet .pj-blocks {
     grid-column: 2;
-    grid-row: 1 / 4;
+    grid-row: 1 / 5;
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 0 40px;
     min-height: 0;
+    overflow: hidden;
   }
-  .pj-sheet .pj-blocks > [data-block='log'] {
-    order: -1;
+  .pj-sheet .pj-blocks > [data-block='log'],
+  .pj-sheet .pj-log > .ar-glass,
+  .pj-sheet .ar-rev,
+  .pj-sheet .ar-rev > thead,
+  .pj-sheet .ar-rev > tbody,
+  .pj-sheet .pj-blocks > [data-block='specTable'],
+  .pj-sheet .pj-spec,
+  .pj-sheet .ar-spec,
+  .pj-sheet .ar-spec > tbody {
+    display: contents;
   }
-  .pj-sheet .pj-log > .hm-label {
+  .pj-sheet .pj-log > .hm-label,
+  .pj-sheet .ar-rev > caption,
+  .pj-sheet .ar-rev > colgroup,
+  .pj-sheet .ar-spec > caption,
+  .pj-sheet .ar-rev > tbody > tr:nth-child(n + 6) {
     display: none;
   }
-  .pj-sheet .pj-log .ar-glass,
-  .pj-sheet .pj-spec {
+  .pj-sheet .ar-rev tr,
+  .pj-sheet .ar-spec tr {
+    display: grid;
+    flex: none;
+    width: 100%;
+    margin: 0;
     padding: 0;
     border: 0;
-    border-radius: 0;
+    break-inside: avoid;
   }
-  .pj-sheet .ar-rev {
-    border-bottom: 1px solid var(--ink-mute);
+  .pj-sheet .ar-rev tr {
+    order: -1;
+    grid-template-columns: 36px 92px minmax(0, 1fr);
   }
-  .pj-sheet .ar-rev__rev-col {
-    width: 36px;
+  .pj-sheet .ar-spec tr {
+    grid-template-columns: 108px minmax(0, 1fr);
   }
-  .pj-sheet .ar-rev__date-col {
-    width: 92px;
-  }
+
+  /* The revision table: titles only, a rule under each row, the darker one under the last. */
   .pj-sheet .ar-th-caps {
     padding: 0 10px 4px 0;
     font-size: 12px;
@@ -707,6 +756,11 @@
   }
   .pj-sheet .ar-rev td {
     padding: 3px 10px 3px 0;
+    border-top: 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .pj-sheet .ar-rev > tbody > tr:is(:nth-child(5), :last-child) td {
+    border-bottom-color: var(--ink-mute);
   }
   .pj-sheet .ar-rev__rev,
   .pj-sheet .ar-rev__date {
@@ -723,12 +777,21 @@
   .pj-sheet .ar-rev__photo {
     display: none;
   }
-  .pj-sheet .ar-spec {
+
+  /* The specifications: a rule over the first row and under each, the darker ones at the ends, and
+     14 px above each table. */
+  .pj-sheet .ar-spec tr {
+    border-bottom: 1px solid var(--rule);
+  }
+  .pj-sheet .ar-spec > tbody > tr:first-child {
+    margin-top: 14px;
     border-top: 1px solid var(--ink-mute);
-    border-bottom: 1px solid var(--ink-mute);
+  }
+  .pj-sheet .ar-spec > tbody > tr:last-child {
+    border-bottom-color: var(--ink-mute);
   }
   .pj-sheet .ar-spec th {
-    width: 108px;
+    width: auto;
     padding: 3px 10px 3px 0;
     font-size: 12px;
     line-height: 1.35;
@@ -741,15 +804,22 @@
     line-height: 1.35;
     color: var(--ink);
   }
+  /* With no revision table, the first table starts at the column's top: the column rises by the
+     space its first table keeps above it. */
+  .pj-sheet .pj-blocks:not(:has(> [data-block='log'])) {
+    margin-top: -14px;
+  }
   /* A table the content heads with a heading block (Bronco Racing's two cars) keeps that heading
-     on paper: the caption the screen gives it for screen readers. A table with no heading before
-     it is named for its project, which the sheet already says. */
+     on paper: the caption the screen gives it for screen readers, which then takes the space above
+     the table. A table with no heading before it is named for its project, which the sheet says. */
   .pj-sheet .pj-blocks > .pj-h2 ~ [data-block='specTable'] caption {
+    display: block;
+    flex: none;
     position: static;
     width: auto;
     height: auto;
-    margin: 0 0 4px;
-    padding: 0;
+    margin: 14px 0 0;
+    padding: 0 0 4px;
     overflow: visible;
     clip: auto;
     clip-path: none;
@@ -760,13 +830,19 @@
     letter-spacing: 0.04em;
     color: var(--ink-dim);
   }
+  .pj-sheet .pj-blocks > .pj-h2 ~ [data-block='specTable'] tbody > tr:first-child {
+    margin-top: 0;
+  }
 
   /* The title block, laid out as a drawing's: project and sheet; role; dates, status and rev;
-     maturity; links. A field the content leaves out leaves its place to the next. */
+     maturity; links. A field the content leaves out leaves its place to the next. It sits above
+     everything else on the sheet, so nothing can ever be drawn over it. */
   .pj-sheet .pj-rail {
     grid-column: 2;
-    grid-row: 4;
+    grid-row: 5;
     align-self: end;
+    position: relative;
+    z-index: 1;
     margin: 0;
     padding-top: 14px;
   }

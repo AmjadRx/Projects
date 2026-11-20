@@ -53,7 +53,7 @@ export function domainFilter(projects: Pick<Project, 'domain'>[]): FilterWords {
   const total = projects.length;
   return {
     label: UI.projects.filterLabel,
-    all: { label: UI.projects.filterAll, count: total, result: UI.projects.showing(total, total) },
-    options: domainOptions(projects).map((option) => ({ ...option, result: UI.projects.showing(option.count, total) })),
+    all: { label: UI.projects.filterAll, count: total, result: UI.projects.count(total, total) },
+    options: domainOptions(projects).map((option) => ({ ...option, result: UI.projects.count(option.count, total) })),
   };
 }

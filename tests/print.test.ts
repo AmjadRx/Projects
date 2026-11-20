@@ -151,12 +151,21 @@ describe('the print stylesheet', () => {
       '.st-contact__actions',
       '.pj-back',
       '.pj-pager',
+      // A viewer's corner button, play plate, load button and notes.
+      '.ar-mv__full',
+      '.ar-mv__play',
+      '.ar-mv__btn',
+      '.ar-mv__note',
       'video',
       'canvas',
       'iframe',
     ]) {
       expect(hidden, selector).toContain(selector);
     }
+  });
+
+  it('keeps a pixel of room at each side, so a full-width box keeps its right-hand rule on Letter paper', () => {
+    expect(rule('.hm-wrap')).toContain('padding: 0 1px !important;');
   });
 
   it('stops every animation and transition, and shows what waits for a script', () => {
@@ -222,9 +231,66 @@ describe('the project sheet (the Print board)', () => {
   });
 
   it('prints the revision table, the specifications and the title block, and leaves the other blocks on screen', () => {
-    expect(selectorsOf('order: -1;')).toContain(".pj-sheet .pj-blocks > [data-block='log']");
+    expect(rule('.pj-sheet .ar-rev tr')).toContain('order: -1;');
     expect(PRINT).toContain(".pj-sheet .pj-blocks > :not([data-block='specTable']):not([data-block='log'])");
     expect(rule('.pj-sheet .pj-rail')).toContain('align-self: end;');
+  });
+
+  it('keeps the title block whole whatever the tables hold (two stacks, the data column clipped)', () => {
+    const sheet = rule('.pj-sheet');
+    // Rows: heading, pitch, view, then the notes beside the title block; the notes span rows 4 and
+    // 5, the tables rows 1 to 4, the title block row 5 alone.
+    expect(sheet).toContain('grid-template-rows: auto auto minmax(120px, 1fr) auto auto;');
+    expect(sheet).toContain('overflow: clip;');
+    expect(sheet).toContain('overflow-clip-margin: 4px;');
+    expect(rule('.pj-sheet .pj-hl')).toContain('grid-row: 4 / 6;');
+    const rail = rule('.pj-sheet .pj-rail');
+    expect(rail).toContain('grid-row: 5;');
+    expect(rail).toMatch(/position: relative;[\s\S]*z-index: 1;/);
+    const column = rule('.pj-sheet .pj-blocks');
+    expect(column).toContain('grid-row: 1 / 5;');
+    expect(column).toContain('flex-wrap: wrap;');
+    expect(column).toContain('overflow: hidden;');
+    expect(column).toContain('min-height: 0;');
+  });
+
+  it("makes the tables' rows the data column's items, so a row that does not fit leaves whole", () => {
+    const contents = RULES.find((r) => r.body.includes('display: contents;') && r.selectors.includes('.pj-sheet .ar-spec > tbody'))?.selectors ?? [];
+    for (const selector of [
+      ".pj-sheet .pj-blocks > [data-block='log']",
+      '.pj-sheet .ar-rev',
+      '.pj-sheet .ar-rev > tbody',
+      ".pj-sheet .pj-blocks > [data-block='specTable']",
+      '.pj-sheet .ar-spec',
+      '.pj-sheet .ar-spec > tbody',
+    ]) {
+      expect(contents, selector).toContain(selector);
+    }
+    const rows = RULES.find((r) => r.selectors.includes('.pj-sheet .ar-rev tr') && r.selectors.includes('.pj-sheet .ar-spec tr'));
+    expect(rows?.body).toContain('display: grid;');
+    expect(rows?.body).toContain('flex: none;');
+    expect(rows?.body).toContain('break-inside: avoid;');
+    // The label column is the grid's, not the screen's third of the table.
+    expect(rule('.pj-sheet .ar-spec th')).toContain('width: auto;');
+  });
+
+  it('prints the newest five revisions, so the specifications keep their room', () => {
+    const hidden = RULES.find((r) => r.selectors.includes('.pj-sheet .ar-rev > tbody > tr:nth-child(n + 6)'));
+    expect(hidden?.body).toContain('display: none;');
+    expect(PRINT).toContain('.pj-sheet .ar-rev > tbody > tr:is(:nth-child(5), :last-child) td');
+  });
+
+  it('prints a video or model cover as its poster, with the callouts as the row under it', () => {
+    // The well keeps only the poster: no video, canvas, callouts drawn over a model, or controls.
+    const poster = RULES.find((r) => r.selectors.includes('.pj-sheet .pj-cover .ar-mv__well > * > :not(.mm-poster)'));
+    expect(poster?.body).toContain('display: none !important;');
+    expect(selectorsOf('opacity: 1 !important;')).toContain('.mm-poster');
+    // A viewer sets its ratio inline: on the sheet the well takes the view's height instead.
+    expect(RULES.find((r) => r.selectors.includes('.pj-sheet .pj-cover .ar-mv__well'))?.body).toContain('aspect-ratio: auto !important;');
+    expect(selectorsOf('flex: 1 1 auto;')).toEqual(expect.arrayContaining(['.pj-sheet .pj-cover > :not(.ar-dim__row)', '.pj-sheet .pj-cover .ar-mv']));
+    // The row under a viewer shows, on screen and on paper (the bundle hides a bare row).
+    const project = stripComments(read('app/styles/project.css'));
+    expect(project).toMatch(/\.pj-cover > \.ar-dim__row \{ display: flex; \}/);
   });
 });
 

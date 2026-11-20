@@ -9,14 +9,26 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { blockHasContent } from '../lib/blocks';
 import { loadValidContent } from '../lib/content';
 import { mergedLog } from '../lib/log';
 import { isKnownBlock } from '../lib/schema';
+import type { MediaRef } from '../lib/types';
+import { JSDOM } from 'jsdom';
 import { UI } from '../lib/strings';
-import { LONG_TITLE, NO_PHOTO_CALLOUTS, writeStatesContent, type StatesVariant } from './fixtures/states';
+import {
+  LONG_LOG,
+  LONG_ROWS,
+  LONG_TITLE,
+  NO_PHOTO_CALLOUTS,
+  SAMPLE_MODEL,
+  SAMPLE_VIDEO,
+  writeStatesContent,
+  type StatesVariant,
+} from './fixtures/states';
 
 // The project page's client parts read the route and the router.
 vi.mock('next/navigation', async (load) => ({
@@ -31,7 +43,7 @@ const dirs = {} as Record<StatesVariant, string>;
 
 beforeAll(() => {
   tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'states-'));
-  for (const variant of ['states', 'logphoto', 'nolog', 'heromedia'] as const) {
+  for (const variant of ['states', 'logphoto', 'nolog', 'heromedia', 'longsheet', 'media'] as const) {
     dirs[variant] = writeStatesContent(path.join(ROOT, 'content'), path.join(tmp, variant), variant);
   }
 });
@@ -82,6 +94,77 @@ describe('the fixtures', () => {
     expect(isKnownBlock(empty) && blockHasContent(empty)).toBe(false);
     expect(mergedLog(loadValidContent(dirs.nolog).projects)).toHaveLength(0);
   });
+
+  it('hold more than the printed sheet takes, and the covers the seed lacks', () => {
+    const long = new Map(loadValidContent(dirs.longsheet).projects.map((p) => [p.slug, p]));
+    const ravenLog = long.get('raven')!.blocks.filter(isKnownBlock).find((b) => b.type === 'log');
+    expect(ravenLog?.type === 'log' && ravenLog.entries).toHaveLength(LONG_LOG.length + 3);
+    const ravenSpec = long.get('raven')!.blocks.filter(isKnownBlock).find((b) => b.type === 'specTable');
+    expect(ravenSpec?.type === 'specTable' && ravenSpec.rows.slice(-LONG_ROWS.length)).toEqual(LONG_ROWS);
+    expect(long.get('dbvf-senior-design')!.highlights.length).toBeGreaterThan(10);
+    const media = new Map(loadValidContent(dirs.media).projects.map((p) => [p.slug, p]));
+    expect(media.get('raven')!.cover).toMatchObject(SAMPLE_VIDEO);
+    expect(media.get('moonlamp')!.cover).toMatchObject(SAMPLE_MODEL);
+    expect(media.get('moonlamp')!.callouts).toEqual(NO_PHOTO_CALLOUTS);
+  });
+});
+
+/** The project page's DOM, from its server markup. */
+async function projectDom(variant: StatesVariant, slug: string): Promise<Document> {
+  return new JSDOM(await projectHtml(variant, slug)).window.document;
+}
+
+describe('a video or model cover', () => {
+  it('keeps its callouts as the row of readouts under the viewer, outside any figure', async () => {
+    for (const [slug, count] of [
+      ['raven', 3],
+      ['moonlamp', NO_PHOTO_CALLOUTS.length],
+    ] as const) {
+      const doc = await projectDom('media', slug);
+      const row = doc.querySelector('.pj-cover > ul.ar-dim__row');
+      expect(row, slug).not.toBeNull();
+      expect(row?.getAttribute('aria-label')).toBe(UI.projects.callouts);
+      expect(row?.querySelectorAll('li')).toHaveLength(count);
+      // Not a photo cover: no drawn figure, so app/styles/project.css is what shows the row.
+      expect(doc.querySelector('.pj-cover .ar-dim'), slug).toBeNull();
+    }
+    const css = fs.readFileSync(path.join(ROOT, 'app/styles/project.css'), 'utf8');
+    expect(css).toMatch(/\.pj-cover > \.ar-dim__row \{ display: flex; \}/);
+  }, 120_000);
+
+  it("paints the model's poster in the wrapper that stays under the model and prints", async () => {
+    const { default: ModelViewer } = await import('../components/viewers/model/ModelViewer');
+    const { resolveMedia } = await import('../lib/media-server');
+    const media = resolveMedia(SAMPLE_MODEL as MediaRef)!;
+    const html = renderToStaticMarkup(createElement(ModelViewer, { media, views: ['realistic'], explode: false, callouts: [] }));
+    // Before the engine is ready the poster shows; once it is, data-out hides it on screen only
+    // (app/motion-media.css), and app/print.css shows it again on paper.
+    expect(html).toMatch(/<div class="mm-poster"><img /);
+    expect(html).not.toContain('data-out');
+    const motion = fs.readFileSync(path.join(ROOT, 'app/motion-media.css'), 'utf8');
+    expect(motion).toMatch(/\.mm-poster\[data-out\] \{\s*opacity: 0;/);
+  }, 120_000);
+});
+
+describe('the printed sheet with more than it holds', () => {
+  it("serves every revision newest first, so the sheet's newest five are the first five rows", async () => {
+    const doc = await projectDom('longsheet', 'raven');
+    const rows = [...doc.querySelectorAll('[data-block="log"] tbody tr.ar-rev__row')];
+    expect(rows).toHaveLength(LONG_LOG.length + 3);
+    const dates = rows.map((row) => row.querySelector('.ar-rev__date')?.textContent ?? '');
+    expect(dates).toEqual([...dates].sort().reverse());
+    expect(dates.slice(0, 5)).toEqual(LONG_LOG.map((entry) => entry.date).sort().reverse());
+    expect(rows[0].querySelector('.ar-rev__rev')?.textContent).toBe('H');
+  }, 120_000);
+
+  it('serves every spec row, the long tables included, for the sheet to keep what fits', async () => {
+    const doc = await projectDom('longsheet', 'fsae-bronco-racing');
+    const tables = [...doc.querySelectorAll('[data-block="specTable"] table.ar-spec')];
+    expect(tables).toHaveLength(2);
+    expect(tables[1].querySelectorAll('tbody > tr')).toHaveLength(6 + 3 * LONG_ROWS.length);
+    // Each table is headed by its heading block, which the sheet prints as the caption.
+    expect(tables.map((t) => t.querySelector('caption')?.textContent)).toEqual(['BR1, the 2026 car', 'BR2, the 2027 car']);
+  }, 120_000);
 });
 
 describe('S.1 a project with no photos', () => {

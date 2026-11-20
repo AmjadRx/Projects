@@ -65,7 +65,7 @@ export default function RevisionTable({
   const total = sorted.length;
   return (
     <table className={cn('ar-table ar-rev', className)}>
-      <caption className="ar-sr">{UI.revisions.caption}</caption>
+      <caption className="ar-sr">{UI.revisions.logCaption}</caption>
       <colgroup>
         <col className="ar-rev__rev-col" />
         <col className="ar-rev__date-col" />

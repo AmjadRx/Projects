@@ -70,7 +70,7 @@ export default function ContactPage() {
                   </Button>
                   <CopyAddress
                     address={email}
-                    labels={{ copy: UI.contact.copyAddress, copied: UI.contact.copied, failed: UI.contact.copyFailed }}
+                    labels={{ copy: UI.contact.copyEmail, copied: UI.contact.copiedShort, failed: UI.contact.copyFailed }}
                   />
                 </div>
               </>
@@ -79,7 +79,7 @@ export default function ContactPage() {
         ) : null}
 
         {links.length > 0 ? (
-          <Glass as="ul" pad={false} className="st-links" aria-label={UI.contact.elsewhere}>
+          <Glass as="ul" pad={false} className="st-links" aria-label={UI.contact.otherWays}>
             {links.map((link) => (
               <li key={link.id}>
                 <a href={link.url} rel={isExternalUrl(link.url) ? 'noopener noreferrer' : undefined}>

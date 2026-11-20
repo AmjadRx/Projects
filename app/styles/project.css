@@ -51,6 +51,9 @@
   .pj-grid > .pj-rail { grid-column: 9 / -1; grid-row: 1 / span 8; align-self: stretch; margin-top: 0; }
 }
 .pj-cover { position: relative; }
+/* A video or model cover has nothing the dimensions can be drawn on: its callouts are the row of
+   readouts under the viewer, at every width (the bundle's row is hidden unless a figure shows it). */
+.pj-cover > .ar-dim__row { display: flex; }
 
 /* Pitch and highlights. Highlights are separated by rules alone: a running number would count nothing. */
 .pj-intro { display: grid; gap: var(--space-5); }
