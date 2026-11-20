@@ -1,86 +1,62 @@
 # amjadrehawi.com
 
-Personal portfolio for **Amjad Rehawi**: hardware engineer for things that move themselves.
-Built to Build Brief v2. Deploys on **Vercel** (primary) or Netlify — no host-specific APIs.
+The portfolio of Amjad Rehawi, drawn as an engineering drawing sheet over a real night sky, with an
+admin that edits every word and file through git. Version 3 is built on the `v3` branch; `main`
+holds the published site.
 
-## Deploy on Vercel
+## Documents
 
-1. Go to [vercel.com/new](https://vercel.com/new) and import the `AmjadRx/Projects` repo.
-   Framework preset: **Next.js** (auto-detected). Build command and output: defaults.
-2. Set the environment variables below (Project → Settings → Environment Variables).
-3. Add the custom domain `amjadrehawi.com` under Project → Settings → Domains and point
-   the domain's DNS at Vercel (A record `76.76.21.21` or CNAME `cname.vercel-dns.com`).
-4. Every push to `main` deploys production. Admin saves commit to `main`, which
-   triggers the next deploy automatically.
+| document | what it covers |
+|---|---|
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | How the site is built: stack, layout, pages, motion, budgets, accessibility, security, checks. |
+| [`docs/ADMIN_GUIDE.md`](docs/ADMIN_GUIDE.md) | Setting up and using `/admin`: variables, saving, the content check, preview, publish, media. |
+| [`docs/CONTENT_RULES.md`](docs/CONTENT_RULES.md) | The rules every word on the site follows, and how they are enforced. |
+| [`docs/V3_PLAN.md`](docs/V3_PLAN.md) | The rebuild plan, its decisions, and what each phase built. |
+| [`docs/V3_ACCEPTANCE.md`](docs/V3_ACCEPTANCE.md) | The acceptance list, item by item, with its evidence. |
+| [`docs/V3_FOLLOWUPS.md`](docs/V3_FOLLOWUPS.md) | Open items and questions for the owner. |
 
-Security headers ship from `next.config.mjs` (`headers()`), so they apply on any host.
+## Setting up
 
-## Stack
+1. Node.js 24 (what Vercel builds on).
+2. Motion+ installs from a private registry: `.npmrc` reads the `MOTION_TOKEN` environment
+   variable. Set it in your shell before any npm command; it is never written to a file in this
+   repository.
+3. `npm ci` installs the exact lockfile.
+4. Copy `.env.example` to `.env.local` (git ignores it) and fill in what you need. Without the
+   GitHub variables the admin saves to your own disk. `docs/ADMIN_GUIDE.md` explains each variable.
+5. `npm run dev` serves the site at http://localhost:3000 and the admin at `/admin`.
 
-- **Next.js 14** App Router · TypeScript strict · React 18
-- **Tailwind CSS** with CSS-variable theme tokens; **dual theme** (dark default + light) with cookie persistence and zero-flash inline script
-- **Framer Motion** for scroll reveals, page transitions, mobile menu, gallery lightbox
-- **three + @react-three/fiber** lazy-loaded 3D hero (desktop only, reduced-motion aware)
-- **Git-based CMS**: the admin dashboard commits JSON + media to this repo through the GitHub Contents API, which triggers a redeploy. No database.
-- **zod** validation on every save; **lucide-react** + inline brand SVGs for icons
+## Scripts
 
-## Content model
+| script | what it does |
+|---|---|
+| `npm run dev`, `npm run build`, `npm start` | Develop, build (every public page is static), and serve a build. `build` first checks the lockfile, the content, and the sky data, and afterwards the weight of the first load and the build output for secrets. |
+| `npm run lint`, `npm run lint:tests`, `npm run type-check` | ESLint over the app and over the tests, and TypeScript. |
+| `npm test` | The unit tests (Vitest). |
+| `npm run test:build` | The build tests: a production build checked for fidelity and for hidden content. |
+| `npm run test:e2e` | The end-to-end and accessibility suite (Playwright and axe, Google Chrome), on a production build it makes itself. |
+| `npm run lighthouse` | Lighthouse CI against the budgets in `docs/ARCHITECTURE.md`, on every public page, phone and desktop, both themes. Run `npm run build` first. |
+| `npm run check:content` | The content check: the schema, the public rules, and the private terms. Also a pre-commit hook. |
+| `npm run check:lockfile`, `npm run check:secrets` | The lockfile and token check (also a pre-commit hook), and the scan of tracked files or, with `--build`, of the build output. |
+| `npm run check:sky`, `npm run build:sky`, `npm run render:stills` | The sky's data and budgets, the star data build, and the still images. |
+| `npm run screenshots` | Screenshots of every page at four widths in both themes. |
 
-```
-content/
-  site.json            settings, personal, socials, nav, stats, thesis, about,
-                       skills, experience, honors, education, contact
-  projects/*.json      one file per project (slug = filename), block-based body
-public/media/{scope}/  uploaded media per project slug + "site"
-```
+## Continuous integration
 
-Project bodies are composable **blocks**: heading, text (markdown), image, gallery
-(scroll-snap carousel + lightbox), video (file or YouTube/Vimeo embed), specTable,
-bullets, twoCol, quote, linkRow, roadmap, log (dated build-log entries). Unknown
-block types render nothing (forward compatible).
+`.github/workflows/ci.yml` runs on pushes to `v3` and on pull requests to `main`. It never deploys.
+Its jobs: lint, types, unit tests and the content check; the production build with its weight and
+secret checks, then the build tests; Lighthouse CI for phone and desktop in both themes; the
+end-to-end suite; and a secret scan with gitleaks. It needs two repository secrets, which the
+owner adds under Settings, Secrets and variables, Actions: `MOTION_TOKEN` and `CONTENT_BLOCKLIST`.
 
-## Environment variables
+## Deploying
 
-| Var | Required | Purpose |
-|---|---|---|
-| `ADMIN_PASSWORD` | recommended | Admin login (server-side check; httpOnly session cookie) |
-| `GITHUB_TOKEN` | prod | Fine-grained PAT, this repo only, Contents read/write |
-| `GITHUB_REPO` | prod | `AmjadRx/Projects` — GitHub-CMS mode is ON only when both this and the token are set |
-| `GITHUB_BRANCH` | optional | defaults to `main` |
+Vercel builds every push. Production follows `main`; every other branch gets a preview. The
+environment variables live in the Vercel project (`docs/ADMIN_GUIDE.md`). A build whose content
+check fails does not deploy.
 
-To create the token: GitHub → Settings → Developer settings → Fine-grained personal
-access tokens → Generate new token → Repository access: only `AmjadRx/Projects` →
-Permissions → Contents: **Read and write**. Paste it into Vercel as `GITHUB_TOKEN`.
+## Licences
 
-Without `GITHUB_TOKEN` + `GITHUB_REPO` (local dev), `/api/save` and `/api/upload`
-write straight to the local filesystem, so the admin works offline.
-
-## Local dev
-
-```bash
-npm install
-npm run dev        # http://localhost:3000, admin at /admin
-npm run build      # production build (all pages static)
-npm run lint       # eslint
-npm run type-check # tsc --noEmit
-```
-
-## How saving works
-
-1. `/admin` edits a draft of the content JSON in memory.
-2. Save → `POST /api/save` validates the session cookie + zod schemas, then commits
-   each changed file via the GitHub Contents API (or writes locally in dev).
-3. The push triggers the Netlify/Vercel rebuild; the banner says
-   "Saved and committed. Site rebuilds in ~1–2 min."
-4. Media uploads (`POST /api/upload`) are size-checked (images ≤ 8 MB after
-   client-side WebP compression, video ≤ 25 MB) and committed to
-   `public/media/{scope}/`.
-
-## Hard content rules
-
-- Documented metrics only; never invent numbers.
-- No patents, anywhere.
-- Raven = flagship project. Stallion = the stock Flightory airframe it is built on.
-- The startup is "a stealth AI hardware startup", never named.
-- FAA Part 107: "in progress".
-- Availability: Summer 2027 internships / full-time 2027.
+The fonts are under the SIL Open Font License (`licenses/`). The star catalog and the Milky Way
+image are credited in `public/sky/CREDITS.md`. Notices for code the admin loads are in
+`licenses/ADMIN-NOTICES.md`.

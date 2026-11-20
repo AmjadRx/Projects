@@ -237,14 +237,15 @@ for (const file of interfaceFiles) {
   }
 }
 
-// 6. No em dash or en dash in any source file, comments included (ARCHITECTURE.md 0, rule 5). README.md is
-// rewritten in Phase 1 and joins the scan then.
+// 6. No em dash or en dash in any source file, comments included (ARCHITECTURE.md 0, rule 5), the
+// README and the CI and test configuration included.
 const DASHES = new RegExp(`[${String.fromCharCode(0x2013, 0x2014)}]`);
 const dashFiles = [
   ...['app', 'components', 'lib', 'scripts', 'tests', 'docs', 'public/viewers'].flatMap((dir) =>
     sourceFiles(path.join(ROOT, dir), /\.(ts|tsx|mjs|mts|js|cjs|css|md|json|html)$/),
   ),
-  ...['CLAUDE.md', 'package.json', 'next.config.mjs', 'tailwind.config.ts', 'vitest.config.mts', 'vitest.build.config.mts', 'content-rules.public.json']
+  ...['CLAUDE.md', 'README.md', 'package.json', 'next.config.mjs', 'tailwind.config.ts', 'vitest.config.mts', 'vitest.build.config.mts',
+    'playwright.config.ts', 'lighthouserc.cjs', '.github/workflows/ci.yml', 'content-rules.public.json']
     .map((name) => path.join(ROOT, name))
     .filter((p) => fs.existsSync(p)),
 ].filter((file) => rel(file) !== 'content-rules.public.json');
