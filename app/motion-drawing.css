@@ -218,5 +218,5 @@
     animation: hm-headline-set 0s linear var(--hm-headline-giveup, 0s) forwards;
   }
 }
-/* site: while the split lines stand in for the text (a block each on its own row, from the reveal until the h1 changes width; headlineReveal.ts), each keeps the break the text has: no line wraps again. */
+/* site: while the split lines stand in for the text (a block each on its own row, from the reveal until the h1 changes width, the page prints, the visitor's first press, key, wheel or touch, or the reveal stops; headlineReveal.ts), each keeps the break the text has: no line wraps again. */
 .hm-hero__title .hm-hero__line { white-space: nowrap; }

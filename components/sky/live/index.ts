@@ -531,8 +531,6 @@ export function createSky(container: HTMLElement, data: SkyData, options: SkyOpt
    * between frames. Null where WebGL2 fences are missing; the draw then goes ahead, as before.
    */
   let uploadFence: { sync: WebGLSync; frames: number } | null = null;
-  /** Frames the first draw waits for the upload at most (about half a second), then draws anyway. */
-  const UPLOAD_WAIT_FRAMES = 30;
 
   function fenceAfterUpload(): { sync: WebGLSync; frames: number } | null {
     const context = gl.getContext();
@@ -541,14 +539,17 @@ export function createSky(container: HTMLElement, data: SkyData, options: SkyOpt
     return sync ? { sync, frames: 0 } : null;
   }
 
-  /** True once the upload's fence has signaled, or the wait is over; the fence is then let go. */
+  /**
+   * True once the upload's fence has signaled, or after SKY.liveLoad.uploadWaitFrames frames
+   * without it (the draw then goes ahead anyway); the fence is then let go.
+   */
   function uploadDone(): boolean {
     const fence = uploadFence;
     if (!fence) return true;
     const context = gl.getContext() as WebGL2RenderingContext;
     fence.frames += 1;
     const signaled = context.getSyncParameter(fence.sync, context.SYNC_STATUS) === context.SIGNALED;
-    if (!signaled && fence.frames < UPLOAD_WAIT_FRAMES) return false;
+    if (!signaled && fence.frames < SKY.liveLoad.uploadWaitFrames) return false;
     context.deleteSync(fence.sync);
     uploadFence = null;
     return true;

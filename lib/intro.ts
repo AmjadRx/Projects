@@ -22,9 +22,9 @@
  *
  * Who sets the marks:
  * - On a full page load, two inline scripts: introScript(), the hero section's first child, sets
- *   data-intro while the page is parsed, before the headline paints; introGoScript(), right after
- *   the drawing's svg, sets data-intro-go and waits for the end. Without scripts nothing is set
- *   and the page is simply final (sheet 2.4).
+ *   data-intro while the page is parsed, before the headline paints; introGoScript(), the drawing
+ *   figure's last child (after the svg and the caption), sets data-intro-go and waits for the end.
+ *   Without scripts nothing is set and the page is simply final (sheet 2.4).
  * - After a client-side navigation to the home page, where React's copies of those scripts never
  *   run, beginIntro(), called from a layout effect before the new page first paints. The drawing
  *   is already whole there, so it sets both marks at once.
@@ -144,11 +144,13 @@ export function introScript(): string {
 }
 
 /**
- * The inline script right after the drawing's svg (HeroDrawing): by the time it runs, the whole
- * drawing has been parsed. While the sequence plays it sets data-intro-go, so every step of the
- * drawing starts in the same style pass, then takes both marks off at the end (the file comment):
- * once every animation in the drawing has finished or stopped, and not before load.end since
- * data-intro. Where the browser cannot list animations, it ends load.end after the go.
+ * The inline script that is the drawing figure's last child, after the svg and the caption
+ * (HeroDrawing): by the time it runs, the whole drawing and its caption have been parsed, so the
+ * layout its first read of the animations forces already holds the caption. While the sequence
+ * plays it sets data-intro-go, so every step of the drawing starts in the same style pass, then
+ * takes both marks off at the end (the file comment): once every animation in the drawing has
+ * finished or stopped, and not before load.end since data-intro. Where the browser cannot list
+ * animations, it ends load.end after the go.
  */
 export function introGoScript(): string {
   const attr = JSON.stringify(INTRO_ATTR);
