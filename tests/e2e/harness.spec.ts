@@ -10,19 +10,29 @@
  *   and the rest scan finds a loop that runs only near the view;
  * - the scroll through fails on a panel that never rises into view;
  * - the text reader leaves out what assistive technology does not read;
- * - the GPA rule reports each wrong form, and the resume rule each name a resume can be stored as.
+ * - the GPA rule reports each wrong form, and the resume rule each name a resume can be stored as;
+ * - the contrast check (./support/contrast.ts) reports dim text and passes bright text,
+ *   reads a glow under a word but not a hairline, and leaves out text under the sticky nav, and its
+ *   statistic takes a twentieth of a whole line where only part of it shows; the touch check
+ *   reports a listener that cancels a finger's drag, and the scroll it stops; the PNG
+ *   reader gives a screenshot's pixels back; the PDF reader counts a printout's pages and reads them.
  * The faults are added to the page in the browser only; nothing in the site changes.
  */
 import type { Page } from '@playwright/test';
 import { describeViolations, runAxe } from './support/axe';
+import { luminance } from './support/color';
+import { collectText, judge, measureText, prepareShot, sampleBackground, TRANSPARENT_TEXT, withoutWebGL, type Segment } from './support/contrast';
 import { expect, test } from './support/fixtures';
 import { gpaProblems } from './support/gpa';
 import { overflow } from './support/layout';
 import { frameActivity, installFrameMeter, REST_STEP, restScan, runningAnimations } from './support/motion';
 import { open, readableText, settle, visitWholePage } from './support/page';
+import { letters, readPdf } from './support/pdf';
+import { decodePng } from './support/png';
 import { namedLikeResume } from './support/resume';
 import { DESKTOP, device, PHONE } from './support/site';
 import { flashes, recordTheme, themeLog } from './support/theme';
+import { cancelled, dragUp, recordCancels } from './support/touch';
 
 /** A quiet page with no load sequence, for the faults to go into. */
 const PAGE = '/contact';
@@ -304,4 +314,136 @@ test('the resume rule catches every name a resume can be stored as, and passes t
   ]) {
     expect(namedLikeResume(name), name).toBe(false);
   }
+});
+
+test.describe('harness, the contrast check and its readers, 1440 px', () => {
+  test.use({ ...device(DESKTOP), theme: 'blueprint' });
+
+  /** Every piece of text on the page now, judged against the window as it is, by its words. */
+  async function verdicts(page: Page) {
+    const items = await page.evaluate(collectText);
+    const style = await page.addStyleTag({ content: TRANSPARENT_TEXT });
+    const placements = await page.evaluate(measureText, null);
+    const shot = prepareShot(decodePng(await page.screenshot()));
+    await style.evaluate((e) => e.parentNode?.removeChild(e));
+    const out = new Map<string, number>();
+    for (const placement of placements) {
+      const verdict = judge(items[placement.i], shot, placement.segments, placement.whole);
+      const words = /"([^"]+)"/.exec(items[placement.i].describe)?.[1] ?? '';
+      if (verdict) out.set(words, verdict.ratio);
+    }
+    return out;
+  }
+
+  test('the PNG reader gives back the colors of a screenshot', async ({ page }) => {
+    expect(await open(page, PAGE)).toBe(200);
+    await page.evaluate(() => {
+      const box = document.createElement('div');
+      box.style.cssText = 'position:fixed;left:100px;top:200px;width:50px;height:40px;background:rgb(18,52,86);z-index:999';
+      document.body.append(box);
+    });
+    const raster = decodePng(await page.screenshot());
+    expect([raster.width, raster.height]).toEqual([1440, 900]);
+    const at = (120 + 220 * raster.width) * 4;
+    expect(Array.from(raster.data.slice(at, at + 4))).toEqual([18, 52, 86, 255]);
+  });
+
+  test('the contrast check reports dim text, passes bright text, and reads a glow but not a hairline', async ({ page }) => {
+    await page.addInitScript(withoutWebGL);
+    expect(await open(page, PAGE)).toBe(200);
+    // On a ground of the sheet's own color, in the page's flow (a fixed element would count as a
+    // layer in front of the page, as the nav does).
+    await put(
+      page,
+      [
+        '<div style="position:relative;height:180px;background:#0b1f45">',
+        '<p style="position:absolute;left:20px;top:10px;margin:0;font-size:17px;line-height:22px;color:#2b3a55">Dimmarkzq</p>',
+        '<p style="position:absolute;left:20px;top:50px;margin:0;font-size:17px;line-height:22px;color:#ffffff">Brightmarkzq</p>',
+        // A hairline (1 px) of white across a word: not the ground it is read against.
+        '<div style="position:absolute;left:0;top:100px;width:400px;height:1px;background:#ffffff"></div>',
+        '<p style="position:absolute;left:20px;top:90px;margin:0;font-size:17px;line-height:22px;color:#a9bedf">Hairlinemarkzq</p>',
+        // A glow (a 12 px band of pale light) behind the lower half of a word: the ground it is read against.
+        '<div style="position:absolute;left:0;top:141px;width:400px;height:12px;background:#d8e2f2"></div>',
+        '<p style="position:absolute;left:20px;top:130px;margin:0;font-size:17px;line-height:22px;color:#a9bedf">Glowmarkzq</p>',
+        '</div>',
+      ].join(''),
+    );
+    await page.locator('[data-e2e-fault]').evaluate((e) => e.scrollIntoView({ block: 'center', behavior: 'instant' }));
+    const found = await verdicts(page);
+    expect(found.get('Dimmarkzq'), 'dim text on the dark ground').toBeLessThan(4.5);
+    expect(found.get('Brightmarkzq'), 'white on the dark ground').toBeGreaterThan(10);
+    expect(found.get('Hairlinemarkzq'), 'a hairline across a word does not decide it').toBeGreaterThan(4.5);
+    expect(found.get('Glowmarkzq'), 'a band of light under a word does').toBeLessThan(2);
+  });
+
+  test('the contrast check leaves out text where the sticky nav lies over it', async ({ page }) => {
+    await page.addInitScript(withoutWebGL);
+    expect(await open(page, PAGE)).toBe(200);
+    // Under the nav (64 px tall from the frame's top), dim text that no one can see; beside it, outside.
+    await put(page, '<p style="position:fixed;left:900px;top:30px;margin:0;font-size:15px;color:#2b3a55;z-index:0">Undernavmarkzq</p>');
+    const found = await verdicts(page);
+    expect(found.has('Undernavmarkzq'), 'text under the nav is not judged').toBe(false);
+  });
+
+  test('the PDF reader counts the pages of a printout and reads their words and size', async ({ page }) => {
+    await page.setContent('<p>Firstpagezq</p><p style="break-before:page">Secondpagezq</p>');
+    const pdf = await readPdf(await page.pdf({ format: 'Letter' }));
+    expect(pdf.pages).toBe(2);
+    expect(pdf.sizes).toEqual([
+      [612, 792],
+      [612, 792],
+    ]);
+    expect(letters(pdf.text[0])).toContain('firstpagezq');
+    expect(letters(pdf.text[1])).toContain('secondpagezq');
+  });
+});
+
+test('the contrast statistic takes a twentieth of the whole line where only part of it shows', () => {
+  const width = 200;
+  const height = 40;
+  /** A dark sky, white where `light` says. */
+  const sky = (light: (x: number, y: number) => boolean) => {
+    const data = new Uint8Array(width * height * 4);
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) data.set(light(x, y) ? [255, 255, 255, 255] : [11, 20, 48, 255], (y * width + x) * 4);
+    }
+    return prepareShot({ width, height, data });
+  };
+  const text = luminance([169, 190, 223]);
+  const whole = 160 * 20;
+  const line: Segment = [20, 10, 180, 30];
+  // The lower 8 rows of the line, below a layer in front that hides the rest in passing.
+  const strip: Segment = [20, 22, 180, 30];
+  // A star's glow, 12 px across, under the strip: 3 percent of the line, 7.5 percent of the strip.
+  const star = sky((x, y) => x >= 90 && x < 102 && y >= 22 && y < 34);
+  expect(sampleBackground(star, [line], text, whole)?.luminance, 'the whole line: the star is under a twentieth').toBeLessThan(0.01);
+  expect(sampleBackground(star, [strip], text)?.luminance, 'the strip read on its own: the star decides').toBeGreaterThan(0.9);
+  const passing = sampleBackground(star, [strip], text, whole);
+  expect(passing?.luminance, 'the strip as part of its line: the star does not decide').toBeLessThan(0.01);
+  expect(passing?.shown).toBeCloseTo(0.4, 5);
+  expect(passing?.percentile).toBe(87.5);
+  // A glow under all of the strip still decides, and nothing is read where under a twentieth shows.
+  const glow = sky((_x, y) => y >= 20);
+  expect(sampleBackground(glow, [strip], text, whole)?.luminance, 'a glow under all that shows').toBeGreaterThan(0.9);
+  expect(sampleBackground(glow, [[20, 28, 30, 30]], text, whole), 'a sliver: 20 of 3,200 px').toBeNull();
+});
+
+test.describe('harness, the touch check, 390 px', () => {
+  test.use(device(PHONE));
+
+  test('reports a listener that cancels a touch, and the scroll it stops', async ({ page }) => {
+    await page.addInitScript(recordCancels);
+    expect(await open(page, PAGE)).toBe(200);
+    await dragUp(page, 195, 600);
+    await expect.poll(() => page.evaluate(() => window.scrollY), { message: 'a free drag scrolls' }).toBeGreaterThan(150);
+    expect(await cancelled(page)).toEqual([]);
+    await page.evaluate(() => {
+      window.scrollTo(0, 0);
+      window.addEventListener('touchmove', (event) => event.preventDefault(), { passive: false });
+    });
+    await dragUp(page, 195, 600);
+    await page.waitForTimeout(500);
+    expect(await page.evaluate(() => window.scrollY), 'a cancelled drag does not scroll').toBe(0);
+    expect(await cancelled(page)).toContain('touchmove');
+  });
 });

@@ -56,6 +56,29 @@ describe('the hero visual follows settings.heroMode (ARCHITECTURE.md 6)', () => 
     expect(html).not.toContain('hd-svg');
   });
 
+  // The seed's hero has no model file and an image for media; the two cases below give the other
+  // files the admin allows, the development samples (as tests/fixtures/states.ts does).
+  it("model with the owner's model file: the model hero in the drawing's place, and no drawing", () => {
+    const html = hero({
+      heroMode: 'model',
+      heroModel: { kind: 'model', src: '/dev/samples/model.glb', poster: '/dev/samples/model-poster.webp', alt: 'A sample model' },
+    });
+    // The viewer's own chunk loads on demand; the server sends its slot, which holds the stage's box.
+    expect(html).toMatch(/<div class="hm-hero__art"><div class="hm-model" aria-hidden="true"><div class="hm-model__stage"><\/div><\/div><\/div>/);
+    for (const part of ['hm-hero__art--drawing', 'hd-svg', 'hd-ring', 'hm-hero__media', GO]) expect(html, part.slice(0, 40)).not.toContain(part);
+    expect(scripts(html)).toBe(1);
+  });
+
+  it('media with a video: its poster in the well, with no drawing and no lens', () => {
+    const html = hero({
+      heroMode: 'media',
+      heroMedia: { kind: 'video', src: '/dev/samples/clip.mp4', poster: '/dev/samples/clip-poster.webp', alt: 'A sample clip' },
+    });
+    expect(html).toContain('hm-hero__media');
+    expect(html).toMatch(/<img\b[^>]*clip-poster\.webp/);
+    for (const part of ['hm-hero__art--drawing', 'hd-svg', 'hd-ring', 'hd-th', GO]) expect(html, part.slice(0, 40)).not.toContain(part);
+  });
+
   it('keeps the headline markup as it is, whatever the mode', () => {
     for (const heroMode of ['drawing', 'model', 'media'] as const) {
       expect(hero({ heroMode })).toMatch(/<h1 class="hm-hero__title" id="hero-title">[^<]+<\/h1>/);
