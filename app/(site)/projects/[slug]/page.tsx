@@ -49,8 +49,13 @@ function longestWord(title: string): number {
  * column inside the 20 px gutters below 1024 px; from 1024 px eight of twelve columns (32 px gaps)
  * inside the frame's 16 px inset and the 32 px gutters, which reach their 800 px at a 1344 px window
  * (the 1280 px content width). Measured in Chrome from 360 to 2560 px.
+ *
+ * The space after the last `calc(` is for next/image, which reads a vw ratio only after a space:
+ * seeing 100vw, its srcset lists the eight files from 640 px wide up, not all sixteen from 16 px.
+ * The narrowest cover is 320 px (a 360 px phone), so at two device px to the CSS px or more no
+ * smaller file could be chosen. The browser reads the space as nothing.
  */
-const COVER_SIZES = '(min-width: 1344px) 800px, (min-width: 1024px) calc(66.67vw - 75px), calc(100vw - 40px)';
+const COVER_SIZES = '(min-width: 1344px) 800px, (min-width: 1024px) calc(66.67vw - 75px), calc( 100vw - 40px)';
 
 /**
  * The page's address as the printed sheet's frame band shows it ("amjadrehawi.com/projects/raven";
