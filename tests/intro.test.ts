@@ -201,8 +201,30 @@ describe('beginIntro, after a client-side navigation', () => {
     section.setAttribute(ATTR, '120');
     blockStorage();
     expect(beginIntro(section)).toBe(true);
+    expect(section.hasAttribute(GO)).toBe(false);
     expect(introSeen()).toBe(true);
     expect(beginIntro(hero())).toBe(false);
+  });
+
+  it("runs the steps of a drawing that came into a sequence already playing (DrawingStage, for the media hero's), and ends with them", async () => {
+    const { runIntro } = await intro();
+    const draw = fakeAnimation();
+    const section = hero([draw]);
+    // The hero's first script set the mark at the first paint; the photo failed 300 ms later and
+    // the drawing took its slot, where no go script runs.
+    const start = performance.now();
+    section.setAttribute(ATTR, String(start));
+    await vi.advanceTimersByTimeAsync(300);
+    runIntro(section, start);
+    expect(section.hasAttribute(GO)).toBe(true);
+    // Its steps end 700 ms later; the marks stay until load.end since the first mark, then go.
+    await vi.advanceTimersByTimeAsync(700);
+    draw.finish();
+    await flush();
+    await vi.advanceTimersByTimeAsync(END - 1000 - 1);
+    expect(section.hasAttribute(ATTR) && section.hasAttribute(GO)).toBe(true);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(section.hasAttribute(ATTR) || section.hasAttribute(GO)).toBe(false);
   });
 
   it('never plays twice in one page when storage is blocked and hydration comes after the end', async () => {

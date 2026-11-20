@@ -2,17 +2,18 @@
 /**
  * The phone strip of featured projects (DESIGN_DIRECTION.md 6.4 and 7; components/home/
  * FeaturedStrip.tsx): what the server draws, when the Motion+ Carousel takes the strip's place
- * (never in the window), and what the strip does around it: the marks, Previous and Next, the arrow
- * keys, focus as the two trade places, the click that ends a drag, the browser's own link drag, and
- * the rise of cards that were still waiting. The Carousel itself is faked here
- * (tests/home-motion-plus.test.ts renders PhoneCarousel against a fake Motion+ Carousel; the browser
- * checks cover the real one).
+ * (never in the window, and never under reduced motion or the pause control), and what the strip
+ * does around it: the marks, Previous and Next, the arrow keys, focus as the two trade places, the
+ * click that ends a drag, the browser's own link drag, and the rise of cards that were still
+ * waiting. The Carousel itself is faked here (tests/home-motion-plus.test.ts renders PhoneCarousel
+ * against a fake Motion+ Carousel; the browser checks cover the real one).
  */
 import { act, createElement as h } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 import { media, page, spring } from '../lib/motion';
+import { setMotionPaused } from '../lib/motionPause';
 
 type Api = import('../components/home/PhoneCarousel').StripApi;
 type CarouselProps = import('../components/home/PhoneCarousel').PhoneCarouselProps;
@@ -128,12 +129,15 @@ describe('FeaturedStrip in the browser', () => {
     state.motionOk = true;
     state.props = null;
     state.rises = [];
+    setMotionPaused(false);
+    (HTMLElement.prototype.scrollTo as Mock).mockClear();
   });
 
   afterEach(() => {
     act(() => root?.unmount());
     root = null;
     document.body.replaceChildren();
+    setMotionPaused(false);
   });
 
   function mount(width: number) {
@@ -144,6 +148,11 @@ describe('FeaturedStrip in the browser', () => {
     root = createRoot(frame);
     act(() => root!.render(h(FeaturedStrip, { id: 'featured-work', items, labels })));
   }
+
+  /** Draws the strip again, as React does when a setting it reads changes. */
+  const redraw = () => act(() => root!.render(h(FeaturedStrip, { id: 'featured-work', items, labels })));
+  /** The observers that bring the carousel (its code, its margins, the window's edge): none while it may not come. */
+  const carouselObservers = () => FakeObserver.made.filter((o) => !o.options.root);
 
   /** The carousel's code arrives as the strip comes within a window of the view. */
   async function load() {
@@ -204,12 +213,73 @@ describe('FeaturedStrip in the browser', () => {
     expect(carousel()).toBe(false);
     act(() => see('near', true));
     expect(carousel()).toBe(true);
-    expect(state.props).toMatchObject({ id: 'featured-work', start: 1, reduced: false, label: 'Featured projects', kind: 'carousel' });
+    expect(state.props).toMatchObject({ id: 'featured-work', start: 1, label: 'Featured projects', kind: 'carousel' });
+    expect(state.props).not.toHaveProperty('reduced');
     report({ page: 2, canNext: false, canPrev: true });
     act(() => see('far', false));
     expect(carousel()).toBe(false);
     // The strip comes back on the carousel's last card.
     expect(dots()).toBe('001');
+  });
+
+  it('under reduced motion, never loads or mounts the Carousel: the strip stays, and its buttons move it at once', async () => {
+    state.motionOk = false;
+    mount(390);
+    await toCarousel();
+    expect(carousel()).toBe(false);
+    expect(carouselObservers()).toHaveLength(0);
+    expect(state.props).toBeNull();
+    act(() => buttons()[1].click());
+    expect(HTMLElement.prototype.scrollTo).toHaveBeenLastCalledWith(expect.objectContaining({ behavior: 'auto' }));
+  });
+
+  it('while the visitor has paused motion, never loads or mounts the Carousel: the strip stays', async () => {
+    act(() => setMotionPaused(true));
+    mount(390);
+    await toCarousel();
+    expect(carousel()).toBe(false);
+    expect(carouselObservers()).toHaveLength(0);
+    expect(state.props).toBeNull();
+    // The strip keeps the card in view and moves by the buttons, as with motion.
+    act(() => buttons()[1].click());
+    expect(HTMLElement.prototype.scrollTo).toHaveBeenLastCalledWith(expect.objectContaining({ behavior: 'smooth' }));
+  });
+
+  it('paused with the Carousel there, gives the strip its place back at once on the Carousel\'s card, focus kept; on Play the Carousel comes back once the strip is out of the window', async () => {
+    mount(390);
+    await toCarousel();
+    report({ page: 2, canPrev: true, canNext: false });
+    act(() => links()[2].focus());
+    act(() => setMotionPaused(true));
+    expect(carousel()).toBe(false);
+    expect(dots()).toBe('001');
+    expect(document.activeElement).toBe(links()[2]);
+    // The strip shows the Carousel's card at once: scrolled straight to it, with no smooth scroll.
+    const [options] = (HTMLElement.prototype.scrollTo as Mock).mock.calls.at(-1) as [ScrollToOptions];
+    expect(options.behavior).toBe('auto');
+    expect(carouselObservers()).toHaveLength(0);
+
+    act(() => setMotionPaused(false));
+    // In the window, the strip stays; once it has left it, the Carousel takes over, on the same card.
+    act(() => {
+      see('screen', true);
+      see('near', true);
+    });
+    expect(carousel()).toBe(false);
+    act(() => see('screen', false));
+    expect(carousel()).toBe(true);
+    expect(state.props).toMatchObject({ start: 2 });
+  });
+
+  it('gives the strip its place back when reduced motion is turned on with the Carousel there', async () => {
+    mount(390);
+    await toCarousel();
+    report({ page: 1, canPrev: true });
+    state.motionOk = false;
+    redraw();
+    expect(carousel()).toBe(false);
+    expect(dots()).toBe('010');
+    expect(carouselObservers()).toHaveLength(0);
   });
 
   it('never takes the place of a strip in the window: the strip stays until it has left it', async () => {

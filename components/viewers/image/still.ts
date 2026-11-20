@@ -24,6 +24,13 @@ const NOT_STILL = new Set([
   'ogg',
 ]);
 
+/** What an item of a gallery is, for its tag and its button's name: a video (a file or an embed), a 3D model, or a photo. */
+export function itemKind(media: ResolvedMedia): 'image' | 'video' | 'model' {
+  if (media.kind === 'video' || media.kind === 'embed') return 'video';
+  if (media.kind === 'model') return 'model';
+  return 'image';
+}
+
 /**
  * The still picture of an item: the photo itself, or the poster of a video, model, or document.
  * Null when there is none, and the caller paints the placeholder instead.

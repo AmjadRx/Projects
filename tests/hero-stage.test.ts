@@ -2,6 +2,7 @@
 import { act, createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { load, toMs } from '../lib/motion';
 
 /** What the stand-in leaves report: "+name" when one mounts, "-name" when it unmounts. */
 const state = vi.hoisted(() => ({ motionOk: true, paused: false, log: [] as string[] }));
@@ -112,5 +113,64 @@ describe('DrawingStage mounts what needs a script only while motion is allowed',
     state.paused = false;
     stage(4);
     expect(state.log.slice(4)).toEqual(['+tilt', '+pointer']);
+  });
+});
+
+describe("DrawingStage joins a load sequence already playing (the media hero's drawing, when its photo fails)", () => {
+  const INTRO = 'data-intro';
+  const GO = 'data-intro-go';
+  const END = toMs(load.end);
+
+  /** A hero section whose sequence the inline scripts started at the first paint; `go` when the drawing's go script has run. */
+  function playing(go: boolean) {
+    const section = document.createElement('section');
+    section.className = 'hm-hero';
+    section.setAttribute(INTRO, String(Math.round(performance.now())));
+    if (go) section.setAttribute(GO, '');
+    document.documentElement.setAttribute('data-intro-seen', '');
+    document.body.append(section);
+    root = createRoot(section);
+    return section;
+  }
+
+  beforeEach(() => {
+    state.motionOk = true;
+    state.paused = false;
+    state.log = [];
+    sessionStorage.clear();
+    pointer(true);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    const r = root;
+    if (r) act(() => r.unmount());
+    root = null;
+    document.body.replaceChildren();
+    document.documentElement.removeAttribute('data-intro-seen');
+  });
+
+  it('a drawing that comes in after the inline scripts ran gives itself the go mark as it mounts, so its steps run', () => {
+    const section = playing(false);
+    stage();
+    expect(section.hasAttribute(INTRO) && section.hasAttribute(GO)).toBe(true);
+  });
+
+  it('a drawing whose go script has run leaves the end of the sequence to that script', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'performance'] });
+    const section = playing(true);
+    stage();
+    await vi.advanceTimersByTimeAsync(END * 2);
+    expect(section.hasAttribute(INTRO) && section.hasAttribute(GO)).toBe(true);
+  });
+
+  it('later in the visit, with no sequence playing, the drawing paints final', () => {
+    const section = document.createElement('section');
+    section.className = 'hm-hero';
+    document.documentElement.setAttribute('data-intro-seen', '');
+    document.body.append(section);
+    root = createRoot(section);
+    stage();
+    expect(section.hasAttribute(INTRO) || section.hasAttribute(GO)).toBe(false);
   });
 });

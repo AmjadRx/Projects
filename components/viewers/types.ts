@@ -21,6 +21,8 @@ export interface ImageZoomProps {
 /** Images, videos, and models, mixed (ARCHITECTURE.md 4). Opens each item in the lightbox. */
 export interface GalleryProps {
   items: ResolvedMedia[];
+  /** The id of the heading the gallery sits under, which names it; without one it is named "Gallery". */
+  labelledBy?: string;
 }
 
 export interface VideoPlayerProps {

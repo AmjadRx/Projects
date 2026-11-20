@@ -2,18 +2,21 @@
 /**
  * The gallery's strip in a page (components/viewers/image/Gallery.tsx; motion sheet 6.4 and 8.1):
  * Previous, Next, the arrow keys, Tab, the counter, the click that ends a drag, a wheel at an end,
- * reduced motion, and Carousel there only near the view, around a stand-in for Motion+ Carousel.
- * jsdom lays nothing out, so the stand-in takes the frames' positions from the test and lets it
- * move Carousel's offset as a drag or a wheel would; Motion's `animate` is recorded and lands at
+ * Carousel there only near the view and only with motion, and the still strip that stands in for
+ * it under reduced motion, under the pause control and far from the view, around a stand-in for
+ * Motion+ Carousel. jsdom lays nothing out, so the stand-in takes the frames' positions from the
+ * test and lets it move Carousel's offset as a drag or a wheel would, and the still strip reads the
+ * same positions through the layout stand-in below; Motion's `animate` is recorded and lands at
  * once, so each move shows its target and its transition. The real Carousel's markup is in
  * media-gallery.test.ts, and its motion was checked in a browser.
  */
 import { act, createElement as h } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MotionValue } from 'motion/react';
 import type { ResolvedMedia } from '../lib/media';
 import { media, spring } from '../lib/motion';
+import { setMotionPaused } from '../lib/motionPause';
 
 vi.mock('next/navigation', () => ({ usePathname: () => '/projects/raven' }));
 
@@ -121,6 +124,43 @@ const ITEMS = [photo(1), photo(2), photo(3), photo(4)];
 
 /** The reduced-motion setting the page reads, and whoever listens for its changes. */
 const reduced = { matches: false, listeners: new Set<() => void>() };
+/** Turns reduced motion on or off with the page open, as the visitor's system would. */
+const setReduced = (on: boolean) =>
+  act(() => {
+    reduced.matches = on;
+    reduced.listeners.forEach((listener) => listener());
+  });
+
+/**
+ * The layout jsdom does not do, for the still strip, which measures itself as Carousel does: each
+ * frame's place along its list (the test's frame positions, as the stand-in Carousel gets them) and
+ * the strip's width, 800 px (the 1,672 px of frames travel 872 px in it).
+ */
+const layout = { width: 800 };
+const realOffsetLeft = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetLeft')!;
+const realOffsetWidth = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetWidth')!;
+/** The place of a frame's item in its list, or -1 for any other element. */
+const itemIndex = (el: HTMLElement) => (el.classList.contains('ticker-item') && el.parentElement ? Array.prototype.indexOf.call(el.parentElement.children, el) : -1);
+beforeAll(() => {
+  Object.defineProperty(HTMLElement.prototype, 'offsetLeft', {
+    configurable: true,
+    get(this: HTMLElement) {
+      return fake.positions[itemIndex(this)]?.start ?? 0;
+    },
+  });
+  Object.defineProperty(HTMLElement.prototype, 'offsetWidth', {
+    configurable: true,
+    get(this: HTMLElement) {
+      if (this.classList.contains('mm-gal')) return layout.width;
+      const frame = fake.positions[itemIndex(this)];
+      return frame ? frame.end - frame.start : 0;
+    },
+  });
+});
+afterAll(() => {
+  Object.defineProperty(HTMLElement.prototype, 'offsetLeft', realOffsetLeft);
+  Object.defineProperty(HTMLElement.prototype, 'offsetWidth', realOffsetWidth);
+});
 
 let container: HTMLDivElement;
 let root: Root;
@@ -129,6 +169,16 @@ const draw = () => act(() => root.render(h(Gallery, { items: ITEMS })));
 const box = () => container.querySelector<HTMLElement>('.mm-gal')!;
 const frameButton = (index: number) => box().querySelectorAll<HTMLButtonElement>('.ar-gal__frame')[index];
 const counter = () => container.querySelector('.ar-gal__count')?.textContent;
+/** How far the still strip's list is drawn to the left, px (its transform). */
+const stillInset = () => {
+  const shift = /translateX\((-?[\d.]+)px\)/.exec(box().querySelector('ul')!.style.transform);
+  return shift ? -Number(shift[1]) : 0;
+};
+/** A pointer event on `target`, as a mouse (or `pointerType`) would send it, at `x` px. */
+const pointer = (target: EventTarget, type: string, x: number, init: PointerEventInit = {}) =>
+  act(() => {
+    target.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, clientX: x, pointerId: 1, isPrimary: true, pointerType: 'mouse', button: 0, ...init }));
+  });
 const previous = () => container.querySelector<HTMLButtonElement>('[aria-label="Previous"]')!;
 const next = () => container.querySelector<HTMLButtonElement>('[aria-label="Next"]')!;
 const press = (element: Element) => act(() => element.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 })));
@@ -188,8 +238,10 @@ beforeEach(() => {
   lightbox.openAt = null;
   fake.positions = FRAMES;
   fake.maxInset = MAX;
+  layout.width = 800;
   reduced.matches = false;
   reduced.listeners.clear();
+  setMotionPaused(false);
   window.matchMedia = ((query: string) => ({
     get matches() {
       return query.includes('reduce') ? reduced.matches : false;
@@ -210,6 +262,7 @@ beforeEach(() => {
 afterEach(() => {
   act(() => root.unmount());
   container.remove();
+  setMotionPaused(false);
   vi.useRealTimers();
 });
 
@@ -458,12 +511,15 @@ describe('Carousel near the view only (its Ticker runs the frame loop while it i
     views.observers.clear();
   });
 
-  it('is in the server markup and stays near the view; far, the still strip stands in, frames and bar as they were', () => {
+  it('takes the server\'s still strip\'s place once the strip is near, and stays; far, the still strip stands in, frames and bar as they were', () => {
     draw();
-    expect(carousel()).not.toBeNull();
+    // The server's still strip, until the first word on where the strip is.
+    expect(carousel()).toBeNull();
+    expect(box().querySelectorAll(':scope > ul > li.ticker-item')).toHaveLength(4);
     view(true);
     afterEvent();
     expect(carousel()).not.toBeNull();
+    expect(fake.targetOffset.get()).toBe(0);
     press(next());
     settle();
     afterEvent();
@@ -472,14 +528,19 @@ describe('Carousel near the view only (its Ticker runs the frame loop while it i
     view(false);
     afterEvent();
     expect(carousel()).toBeNull();
-    // The still strip: the same box and items, every frame in order, and the counter where it was.
+    // The still strip: the same box and items, every frame in order, drawn where Carousel drew
+    // them, and the counter where it was.
     expect(box().querySelectorAll(':scope > ul > li.ticker-item')).toHaveLength(4);
-    expect(frameButton(2).textContent).toContain('Open item 3 of 4');
+    expect(frameButton(2).textContent).toContain('Open photo 3 of 4');
+    expect(stillInset()).toBe(456);
     expect(counter()).toBe('2 of 4');
     expect(previous().hasAttribute('aria-disabled')).toBe(false);
-    // Next still counts; the strip is placed when Carousel is back.
+    // Next moves it at once, unseen; Carousel comes back where it stands.
+    const count = moves.list.length;
     press(next());
     expect(counter()).toBe('3 of 4');
+    expect(stillInset()).toBe(MAX);
+    expect(moves.list).toHaveLength(count);
     view(true);
     expect(carousel()).not.toBeNull();
     expect(fake.targetOffset.get()).toBe(-MAX);
@@ -563,64 +624,261 @@ describe('Carousel near the view only (its Ticker runs the frame loop while it i
   });
 });
 
-describe('the strip without motion (sheet 8.1)', () => {
-  it('moves at once, stops at the ends, and settles a release on the nearest place it can rest', () => {
-    reduced.matches = true;
-    draw();
-    expect(fake.props.transition).toEqual({ duration: 0 });
-    expect(fake.props.dragElastic).toBe(0);
-    // No wheel swipe pages the strip, so Carousel never plays its bounce at an end.
-    expect(fake.props.snap).toBe(false);
-    press(next());
-    expect(lastMove()).toMatchObject({ target: -456, transition: media.gallery.atOnce });
-
-    // A drag let go at 700 px: the end (872) is nearer than the wide frame's start (456), whatever the flick.
-    expect(typeof fake.props.onDragEnd).toBe('function');
-    act(() => (fake.props.onPointerDown as () => void)());
-    moveTo(-700);
-    act(() => (fake.props.onDragEnd as () => void)());
-    expect(lastMove()).toMatchObject({ target: -MAX, transition: media.gallery.atOnce });
-    expect(counter()).toBe('3 of 4');
-  });
-
-  it("switches with the setting, in the transition object Carousel keeps for its own paging", () => {
-    draw();
-    const held = fake.props.transition;
-    expect(held).toEqual(spring.snap);
-    reduced.matches = true;
-    act(() => reduced.listeners.forEach((listener) => listener()));
-    expect(fake.props.transition).toBe(held);
-    expect(held).toEqual({ duration: 0 });
-    expect(fake.props.dragElastic).toBe(0);
-    expect(fake.props.snap).toBe(false);
-    reduced.matches = false;
-    act(() => reduced.listeners.forEach((listener) => listener()));
-    expect(held).toEqual(spring.snap);
-    expect(fake.props.onDragEnd).toBeUndefined();
-    expect(fake.props.snap).toBe('loose');
-  });
-
-  it('settles a strip a wheel left between frames on the nearest one, at once', () => {
-    reduced.matches = true;
-    draw();
-    // The wheel moves the strip directly (Carousel's own reading, within its ends) and stops 300 px in.
-    moveTo(-300);
-    settle();
-    expect(lastMove()).toMatchObject({ target: -456, transition: media.gallery.atOnce });
-    expect(counter()).toBe('2 of 4');
-    // At the shared end it stays, and names the frame that starts nearest the left edge.
-    const count = moves.list.length;
-    moveTo(-MAX);
-    settle();
-    expect(moves.list).toHaveLength(count);
-    expect(counter()).toBe('3 of 4');
-  });
-
-  it('with motion, leaves a strip a wheel moved where it is, and only names the frame', () => {
+describe('with motion, a wheel', () => {
+  it('leaves a strip it moved where it is, and only names the frame', () => {
     draw();
     moveTo(-300);
     settle();
     expect(moves.list).toHaveLength(0);
     expect(counter()).toBe('2 of 4');
+  });
+});
+
+describe('without motion: the still strip, never Carousel (sheet 8.1)', () => {
+  /** The still strip's box: Carousel's layout, inline, as the server drew Carousel's. */
+  const stillBox = () => (carousel() ? null : box());
+
+  it('stands in for Carousel under reduced motion: the same box, frames, names and bar, at rest, with no animation', () => {
+    reduced.matches = true;
+    draw();
+    expect(carousel()).toBeNull();
+    const still = stillBox()!;
+    expect(still.style.overflowX).toBe('clip');
+    expect(still.style.touchAction).toBe('pan-y');
+    expect(still.querySelectorAll(':scope > ul > li.ticker-item')).toHaveLength(4);
+    expect(Array.from(still.querySelectorAll('.ar-gal__frame'), (frame) => frame.textContent)).toEqual([
+      'Open photo 1 of 4',
+      'Open photo 2 of 4',
+      'Open photo 3 of 4',
+      'Open photo 4 of 4',
+    ]);
+    expect(still.querySelector('li')?.getAttribute('aria-posinset')).toBe('1');
+    expect(still.querySelector('li')?.getAttribute('aria-setsize')).toBe('4');
+    expect(stillInset()).toBe(0);
+    expect(counter()).toBe('1 of 4');
+    expect(previous().getAttribute('aria-disabled')).toBe('true');
+    // Nothing here asks Motion for anything.
+    expect(moves.list).toHaveLength(0);
+  });
+
+  it('stands in for Carousel while the visitor has paused motion, near the view too', () => {
+    (window as unknown as { IntersectionObserver: unknown }).IntersectionObserver = FakeObserver;
+    try {
+      act(() => setMotionPaused(true));
+      draw();
+      view(true);
+      afterEvent();
+      expect(carousel()).toBeNull();
+      expect(stillBox()).not.toBeNull();
+    } finally {
+      delete (window as unknown as { IntersectionObserver?: unknown }).IntersectionObserver;
+      views.observers.clear();
+    }
+  });
+
+  it('moves one frame at once with Previous, Next and the arrow keys, stops at the ends, and turns the end buttons phantom', () => {
+    reduced.matches = true;
+    draw();
+    press(next());
+    expect(stillInset()).toBe(456);
+    expect(counter()).toBe('2 of 4');
+    press(next());
+    expect(stillInset()).toBe(MAX);
+    expect(counter()).toBe('3 of 4');
+    // The last two frames share the end: the strip stays, the counter names the last.
+    press(next());
+    expect(stillInset()).toBe(MAX);
+    expect(counter()).toBe('4 of 4');
+    expect(next().getAttribute('aria-disabled')).toBe('true');
+    press(next());
+    expect(counter()).toBe('4 of 4');
+
+    act(() => frameButton(3).focus());
+    key(frameButton(3), 'ArrowLeft');
+    expect(document.activeElement).toBe(frameButton(2));
+    expect(stillInset()).toBe(MAX);
+    expect(counter()).toBe('3 of 4');
+    key(frameButton(2), 'ArrowLeft');
+    key(frameButton(1), 'ArrowLeft');
+    expect(document.activeElement).toBe(frameButton(0));
+    expect(stillInset()).toBe(0);
+    expect(counter()).toBe('1 of 4');
+    // At the first frame Left stays put, its default still taken.
+    expect(key(frameButton(0), 'ArrowLeft').defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(frameButton(0));
+    expect(moves.list).toHaveLength(0);
+  });
+
+  it('brings a frame reached by Tab outside its view to it, at once; one in view stays', () => {
+    reduced.matches = true;
+    draw();
+    act(() => frameButton(3).focus());
+    expect(stillInset()).toBe(MAX);
+    expect(counter()).toBe('4 of 4');
+    act(() => frameButton(2).focus());
+    expect(stillInset()).toBe(MAX);
+    expect(counter()).toBe('4 of 4');
+  });
+
+  it('follows a drag exactly once it has moved 3 px, holds it to the ends, and settles it on the nearest frame at once', () => {
+    reduced.matches = true;
+    draw();
+    pointer(frameButton(0), 'pointerdown', 500);
+    pointer(window, 'pointermove', 498);
+    expect(stillInset()).toBe(0);
+    pointer(window, 'pointermove', 300);
+    expect(stillInset()).toBe(200);
+    // Past the end: it stops there (no stretch without motion).
+    pointer(window, 'pointermove', -800);
+    expect(stillInset()).toBe(MAX);
+    pointer(window, 'pointermove', 100);
+    expect(stillInset()).toBe(400);
+    expect(counter()).toBe('1 of 4');
+    pointer(window, 'pointerup', 100);
+    // 400 px: the wide frame's start (456) is the nearest place a frame rests.
+    expect(stillInset()).toBe(456);
+    expect(counter()).toBe('2 of 4');
+    // The click that ends the drag opens nothing; a tap does.
+    press(frameButton(1));
+    expect(lightbox.opened).toEqual([]);
+    pointer(frameButton(1), 'pointerdown', 200);
+    pointer(window, 'pointerup', 200);
+    press(frameButton(1));
+    expect(lightbox.opened).toEqual([1]);
+    expect(moves.list).toHaveLength(0);
+  });
+
+  it('settles a touch the browser takes over for a page scroll, and leaves a press with another button alone', () => {
+    reduced.matches = true;
+    draw();
+    pointer(frameButton(0), 'pointerdown', 300, { pointerType: 'touch' });
+    pointer(window, 'pointermove', 200, { pointerType: 'touch' });
+    expect(stillInset()).toBe(100);
+    pointer(window, 'pointercancel', 200, { pointerType: 'touch' });
+    expect(stillInset()).toBe(0);
+    expect(counter()).toBe('1 of 4');
+    // A right-button press drags nothing.
+    pointer(frameButton(0), 'pointerdown', 300, { button: 2 });
+    pointer(window, 'pointermove', 100);
+    expect(stillInset()).toBe(0);
+    pointer(window, 'pointerup', 100);
+  });
+
+  it('moves with a wheel along it, within its ends, then settles on the nearest frame at once; a wheel past an end or across it is not taken', () => {
+    reduced.matches = true;
+    draw();
+    // Toward the first frame from the first frame: Strip keeps it, and nothing moves.
+    expect(wheel(frameButton(0), { deltaX: -40 }).defaultPrevented).toBe(true);
+    expect(stillInset()).toBe(0);
+    // Mostly vertical: the page's scroll.
+    expect(wheel(frameButton(0), { deltaX: 2, deltaY: 60 }).defaultPrevented).toBe(false);
+    expect(stillInset()).toBe(0);
+    expect(wheel(frameButton(0), { deltaX: 300 }).defaultPrevented).toBe(true);
+    expect(stillInset()).toBe(300);
+    act(() => vi.advanceTimersByTime(SETTLE - 1));
+    expect(counter()).toBe('1 of 4');
+    act(() => vi.advanceTimersByTime(1));
+    expect(stillInset()).toBe(456);
+    expect(counter()).toBe('2 of 4');
+    // Held to the end, and at the shared end it names the first frame that rests there.
+    wheel(frameButton(1), { deltaX: 5000 });
+    expect(stillInset()).toBe(MAX);
+    settle();
+    expect(counter()).toBe('3 of 4');
+    // A wheel that counts in lines moves 16 px a line.
+    wheel(frameButton(2), { deltaX: -2, deltaMode: 1 });
+    expect(stillInset()).toBe(MAX - 32);
+    settle();
+    expect(stillInset()).toBe(MAX);
+    expect(moves.list).toHaveLength(0);
+  });
+
+  it('rests on the counter\'s frame when it is measured again, as on a phone\'s 360 px strip', () => {
+    const observers = new Set<() => void>();
+    (window as unknown as { ResizeObserver: unknown }).ResizeObserver = class {
+      constructor(private readonly callback: () => void) {
+        observers.add(callback);
+      }
+      observe() {}
+      disconnect() {
+        observers.delete(this.callback);
+      }
+    };
+    try {
+      reduced.matches = true;
+      draw();
+      press(next());
+      expect(stillInset()).toBe(456);
+      // Smaller frames: the second starts sooner.
+      fake.positions = FRAMES.map(({ start, end }) => ({ start: (start * 360) / 440, end: (end * 360) / 440 }));
+      act(() => observers.forEach((callback) => callback()));
+      expect(stillInset()).toBeCloseTo(373.09, 2);
+      expect(counter()).toBe('2 of 4');
+      // Measured again with nothing changed: it stays where it is.
+      act(() => observers.forEach((callback) => callback()));
+      expect(stillInset()).toBeCloseTo(373.09, 2);
+    } finally {
+      delete (window as unknown as { ResizeObserver?: unknown }).ResizeObserver;
+    }
+  });
+
+  it('takes Carousel\'s place where it was drawn when the visitor pauses motion, focus kept, and gives it back there on Play', () => {
+    draw();
+    expect(carousel()).not.toBeNull();
+    press(next());
+    press(next());
+    settle();
+    expect(fake.targetOffset.get()).toBe(-MAX);
+    act(() => frameButton(2).focus());
+    const count = moves.list.length;
+
+    act(() => setMotionPaused(true));
+    expect(carousel()).toBeNull();
+    expect(stillInset()).toBe(MAX);
+    expect(counter()).toBe('3 of 4');
+    expect(document.activeElement).toBe(frameButton(2));
+    expect(box().contains(document.activeElement)).toBe(true);
+    expect(moves.list).toHaveLength(count);
+
+    // A click on Previous (which takes focus, as a browser's click does).
+    act(() => previous().focus());
+    press(previous());
+    expect(stillInset()).toBe(456);
+    expect(counter()).toBe('2 of 4');
+
+    act(() => setMotionPaused(false));
+    expect(carousel()).not.toBeNull();
+    // Carousel starts where the still strip stood, with no move of its own.
+    expect(fake.targetOffset.get()).toBe(-456);
+    expect(moves.list).toHaveLength(count);
+    expect(document.activeElement).toBe(previous());
+    settle();
+    expect(counter()).toBe('2 of 4');
+
+    // Paused again with focus on a frame: the still strip has it.
+    act(() => frameButton(1).focus());
+    act(() => setMotionPaused(true));
+    expect(carousel()).toBeNull();
+    expect(document.activeElement).toBe(frameButton(1));
+    expect(stillInset()).toBe(456);
+  });
+
+  it('takes Carousel\'s place where it was drawn when reduced motion is turned on with the page open, between frames too', () => {
+    draw();
+    // A wheel with motion on leaves the strip between frames.
+    moveTo(-300);
+    settle();
+    expect(counter()).toBe('2 of 4');
+    setReduced(true);
+    expect(carousel()).toBeNull();
+    expect(stillInset()).toBe(300);
+    expect(counter()).toBe('2 of 4');
+    // The next move settles it on a frame, at once.
+    press(next());
+    expect(stillInset()).toBe(MAX);
+    expect(counter()).toBe('3 of 4');
+    setReduced(false);
+    expect(carousel()).not.toBeNull();
+    expect(fake.targetOffset.get()).toBe(-MAX);
   });
 });

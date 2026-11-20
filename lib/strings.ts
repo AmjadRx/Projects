@@ -10,7 +10,8 @@ export const UI = {
   site: {
     skipToContent: 'Skip to content',
     home: 'Home',
-    primaryNav: 'Main',
+    /** The nav landmark's name, in the nav and the phone menu: the bundle's Nav and MobileMenu words. */
+    primaryNav: 'Primary',
     footerNav: 'Footer',
     /** The phone menu: its button, its dialog's name, and the button that closes it. */
     menu: 'Menu',
@@ -57,7 +58,8 @@ export const UI = {
     drawing: 'Plan view of Raven, a tri-tiltrotor eVTOL: two tilting wing rotors, one tail rotor and a V-tail.',
   },
   home: {
-    readouts: 'In numbers',
+    /** The readouts section's name, for screen readers (the Main board's words). */
+    readouts: 'Readouts',
     /** Read after a readout's value and label: the project its link opens. */
     readoutProof: (title: string) => `, proof: ${title}`,
     now: 'Now',
@@ -74,10 +76,8 @@ export const UI = {
     index: { sheet: 'Sheet', project: 'Project', domain: 'Domain', status: 'Status', maturity: 'Maturity' },
   },
   projects: {
-    intro: 'Filter by domain, or open any project.',
     filterLabel: 'Filter by domain',
     filterAll: 'All',
-    showing: (shown: number, total: number) => `Showing ${shown} of ${total} projects`,
     backToProjects: 'All projects',
     previous: 'Previous',
     next: 'Next',
@@ -125,7 +125,6 @@ export const UI = {
     date: 'Date',
     description: 'Description',
     project: 'Project',
-    caption: 'Revisions, newest first',
     photos: 'Photos',
     /** The table's name for screen readers, in the bundle's words (RevisionTable). */
     logCaption: 'Build log, newest first',
@@ -151,10 +150,7 @@ export const UI = {
   },
   contact: {
     emailMe: 'Email me',
-    copyAddress: 'Copy address',
-    copied: 'Address copied',
     copyFailed: 'Copy did not work. Select the address instead.',
-    elsewhere: 'Elsewhere',
     location: 'Location',
     /** The copy button's name, the word its status says, and the links' name, in the Contact board's words. */
     copyEmail: 'Copy the email address',
@@ -171,7 +167,6 @@ export const UI = {
   },
   notFound: {
     heading: 'Sheet not found',
-    body: 'Nothing is drawn at this address.',
     home: 'Go home',
     projects: 'See all projects',
     /** The line in the empty drawing well above the heading. */
@@ -261,10 +256,18 @@ export const UI = {
         'Use the left and right arrow keys to move between items, plus and minus to zoom, 0 to reset, and the arrow keys to move around while zoomed in.',
     },
     gallery: {
+      /** The gallery's name when no heading stands over it, and the name of its lightbox. */
       label: 'Gallery',
       /** What a screen reader calls the strip (aria-roledescription). */
       roleDescription: 'gallery',
-      openItem: (n: number, total: number) => `Open item ${n} of ${total}`,
+      /**
+       * An item's button, by its kind, in the bundle Gallery's words: "Open photo 2 of 3" ("Open
+       * video", "Open 3D model"), and "Open photo" alone when it is the only item.
+       */
+      open: (kind: 'image' | 'video' | 'model', n: number, total: number) => {
+        const word = kind === 'video' ? 'video' : kind === 'model' ? '3D model' : 'photo';
+        return total < 2 ? `Open ${word}` : `Open ${word} ${n} of ${total}`;
+      },
       videoDidNotLoad: 'Video did not load',
       modelDidNotLoad: '3D model did not load',
     },

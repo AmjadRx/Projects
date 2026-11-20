@@ -28,8 +28,6 @@ export interface PhoneCarouselProps {
   start: number;
   /** The gap between cards, px: the scrolling strip's own (app/styles/home.css). */
   gap: number;
-  /** Reduced motion: every move happens at once, and the ends do not stretch (sheets 6.4 and 8.1). */
-  reduced: boolean;
   /** Its name, for assistive technology. */
   label: string;
   /** What assistive technology calls it (aria-roledescription; lib/strings.ts). */
@@ -38,14 +36,13 @@ export interface PhoneCarouselProps {
   onDragStart: () => void;
 }
 
-const AT_ONCE: Transition = { duration: 0 };
-
 /**
  * The phone strip of featured projects as a Motion+ Carousel (DESIGN_DIRECTION.md 6.4 and 7;
  * motion sheet 6.4), loaded on demand by FeaturedStrip and mounted only while the strip is in view
- * or just outside it. It follows the finger, snaps to a card with the snap spring after a drag, and
- * past either end stretches at a fifth of the pointer's travel; under reduced motion it follows the
- * drag and settles at once. It does not loop: a card is never drawn twice. The cards are the
+ * or just outside it, with motion allowed and not paused (a mounted Carousel keeps Motion's frame
+ * loop running; under reduced motion and the pause control the scrolling strip stays). It follows
+ * the finger, snaps to a card with the snap spring after a drag, and past either end stretches at a
+ * fifth of the pointer's travel. It does not loop: a card is never drawn twice. The cards are the
  * server's own (their tilt, callouts and covers work as anywhere else), each 84% of the strip, in
  * the strip's own box (app/motion-home.css).
  *
@@ -54,11 +51,11 @@ const AT_ONCE: Transition = { duration: 0 };
  * from the start (hm-feat--from-start); on any other card they wait unseen for the measure, which
  * FeaturedStrip lets happen out of the window.
  */
-export default function PhoneCarousel({ id, items, start, gap, reduced, label, kind, onApi, onDragStart }: PhoneCarouselProps) {
+export default function PhoneCarousel({ id, items, start, gap, label, kind, onApi, onDragStart }: PhoneCarouselProps) {
   // The page prop moves the carousel whenever it changes: it is read once, as it mounts.
   const [first] = useState(start);
   const controls = useDragControls();
-  const transition = reduced ? AT_ONCE : page.strip.snap;
+  const transition: Transition = page.strip.snap;
   const slides = useMemo(
     () =>
       items.map((item, i) => (
@@ -79,7 +76,7 @@ export default function PhoneCarousel({ id, items, start, gap, reduced, label, k
       // Top-aligned, each card at its own height, as the scrolling strip lays them out.
       align="start"
       transition={transition}
-      dragElastic={reduced ? 0 : page.strip.overdrag}
+      dragElastic={page.strip.overdrag}
       dragControls={controls}
       className={first === 0 ? 'hm-feat hm-feat--carousel hm-feat--from-start' : 'hm-feat hm-feat--carousel'}
       aria-label={label}
