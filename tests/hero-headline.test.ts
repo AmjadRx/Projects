@@ -2,11 +2,12 @@
 /**
  * The headline's line reveal (DESIGN_DIRECTION.md 6.2 step 2 and 6.4; motion sheet 2.3 and 2.4;
  * components/home/hero/Headline.tsx and headlineReveal.ts): split by line with Motion+ splitText
- * after hydration, React's own text node back when it ends, once a visit through lib/intro.ts, and
- * the CSS start state and give-up. jsdom lays nothing out, so each test gives the words a layout:
+ * after hydration, React's own text node back when the h1 changes width, the page prints, the
+ * visitor's first input once the lines have set, or the reveal stops, once a visit through
+ * lib/intro.ts, and the CSS start state and give-up. jsdom lays nothing out, so each test gives the words a layout:
  * a top for each word's range before the split (Range.getClientRects) and for its span after it
  * (offsetTop, which splitText reads), a top for each line's span, the h1's height before and after
- * the split, and Element.animate is a stand-in the test finishes.
+ * the split, the h1's width (h1Width), and Element.animate is a stand-in the test finishes.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -42,6 +43,8 @@ const TEXT = 'Hardware engineer for things that move themselves.';
 /** Three lines, as the 1440 board sets it: "Hardware engineer" / "for things that" / "move themselves." */
 const LINES = [0, 0, 1, 1, 1, 2, 2];
 const LINE_HEIGHT = 57;
+/** The h1's width as the layout stand-in reports it; a test changes it to turn a phone. */
+let h1Width = 600;
 
 async function flush() {
   for (let i = 0; i < 10; i++) await Promise.resolve();
@@ -86,7 +89,8 @@ function layout({
     writable: true,
     value(this: HTMLElement) {
       const height = this.tagName !== 'H1' ? 0 : this.querySelector(`.${LINE_CLASS}`) ? heightAfter : heightBefore;
-      return { top: 0, left: 0, right: 0, bottom: height, width: 0, height, x: 0, y: 0, toJSON() {} } as DOMRect;
+      const width = this.tagName === 'H1' ? h1Width : 0;
+      return { top: 0, left: 0, right: width, bottom: height, width, height, x: 0, y: 0, toJSON() {} } as DOMRect;
     },
   });
   (Element.prototype as unknown as { animate: unknown }).animate = function animate(this: Element, keyframes: Keyframe[], options: KeyframeAnimationOptions) {
@@ -120,6 +124,7 @@ function clearLayout() {
   else delete (HTMLElement.prototype as unknown as { getBoundingClientRect?: unknown }).getBoundingClientRect;
   delete (Element.prototype as unknown as { animate?: unknown }).animate;
   animations = [];
+  h1Width = 600;
 }
 
 /** An h1 holding the headline as one text node, in a hero section. */
@@ -223,18 +228,83 @@ describe('revealHeadline: split by line, play, and give React its text node back
     for (const [index, call] of animations.entries()) expect(call).toMatchObject(lineReveal(index));
   });
 
-  it('when the last line has set, puts back the very text node React rendered, and the label goes', async () => {
+  it('when the last line has set, the lines stay as they set: the headline is not painted again as new content', async () => {
+    layout();
+    const { h1 } = heading();
+    revealHeadline(h1);
+    for (const { animation } of animations) animation.finish();
+    await flush();
+    expect(linesOf(h1)).toEqual(['Hardware engineer', 'for things that', 'move themselves.']);
+    expect(h1.getAttribute('aria-label')).toBe(TEXT);
+    expect(animations.some(({ animation }) => animation.cancelled)).toBe(false);
+    // A resize that leaves the h1 as wide as it was changes nothing.
+    window.dispatchEvent(new Event('resize'));
+    expect(h1.querySelectorAll(`.${LINE_CLASS}`)).toHaveLength(3);
+  });
+
+  it('when the h1 changes width (a turned phone), puts back the very text node React rendered, and the label goes', async () => {
     layout();
     const { h1, node } = heading();
     revealHeadline(h1);
-    for (const { animation } of animations.slice(0, -1)) animation.finish();
+    for (const { animation } of animations) animation.finish();
     await flush();
-    expect(h1.querySelectorAll(`.${LINE_CLASS}`)).toHaveLength(3);
-    animations.at(-1)!.animation.finish();
-    await flush();
+    h1Width = 360;
+    window.dispatchEvent(new Event('resize'));
     expect(Array.from(h1.childNodes)).toEqual([node]);
     expect(h1.firstChild).toBe(node);
     expect(h1.hasAttribute('aria-label')).toBe(false);
+    expect(animations.every(({ animation }) => animation.cancelled)).toBe(true);
+    // Mid-reveal too: the lines could not wrap again, so it ends at once in its final state.
+    h1Width = 600;
+    const second = heading();
+    revealHeadline(second.h1);
+    h1Width = 360;
+    window.dispatchEvent(new Event('resize'));
+    expect(second.h1.firstChild).toBe(second.node);
+  });
+
+  it("the visitor's first press, key, wheel or touch after the lines have set puts the text back", async () => {
+    for (const type of ['pointerdown', 'keydown', 'wheel', 'touchstart']) {
+      layout();
+      const { h1, node } = heading();
+      revealHeadline(h1);
+      for (const { animation } of animations) animation.finish();
+      await flush();
+      expect(h1.querySelectorAll(`.${LINE_CLASS}`), type).toHaveLength(3);
+      window.dispatchEvent(new Event(type));
+      expect(Array.from(h1.childNodes), type).toEqual([node]);
+      expect(h1.hasAttribute('aria-label'), type).toBe(false);
+      clearLayout();
+      document.body.replaceChildren();
+    }
+  });
+
+  it('an input during the reveal lets it play to the end, then puts the text back', async () => {
+    layout();
+    const { h1, node } = heading();
+    revealHeadline(h1);
+    window.dispatchEvent(new Event('keydown'));
+    await flush();
+    expect(linesOf(h1)).toEqual(['Hardware engineer', 'for things that', 'move themselves.']);
+    expect(animations.some(({ animation }) => animation.cancelled)).toBe(false);
+    for (const { animation } of animations) animation.finish();
+    await flush();
+    expect(Array.from(h1.childNodes)).toEqual([node]);
+  });
+
+  it('puts the text back before the page prints, where the paper sets its own width', async () => {
+    layout();
+    const { h1, node } = heading();
+    revealHeadline(h1);
+    for (const { animation } of animations) animation.finish();
+    await flush();
+    window.dispatchEvent(new Event('beforeprint'));
+    expect(Array.from(h1.childNodes)).toEqual([node]);
+    // Printing mid-reveal ends it at once in its final state.
+    const second = heading();
+    revealHeadline(second.h1);
+    window.dispatchEvent(new Event('beforeprint'));
+    expect(second.h1.firstChild).toBe(second.node);
   });
 
   it('stop() ends it at once in its final state', () => {
@@ -386,6 +456,10 @@ describe('Headline: one h1, hydrated as the server sent it, revealed once a visi
     expect(section.hasAttribute('data-intro')).toBe(true);
     for (const { animation } of animations) animation.finish();
     await flush();
+    // The lines stay as they set; React's text node comes back when the h1 changes width.
+    expect(linesOf(serverH1)).toEqual(['Hardware engineer', 'for things that', 'move themselves.']);
+    h1Width = 360;
+    window.dispatchEvent(new Event('resize'));
     expect(serverH1.firstChild).toBe(serverText);
     expect(serverH1.childNodes).toHaveLength(1);
   });
@@ -522,6 +596,8 @@ describe('Headline: one h1, hydrated as the server sent it, revealed once a visi
     expect(linesOf(serverH1)).toEqual(['Hardware engineer', 'for things that', 'move themselves.']);
     for (const { animation } of live) animation.finish();
     await flush();
+    h1Width = 360;
+    window.dispatchEvent(new Event('resize'));
     expect(serverH1.firstChild).toBe(serverText);
   });
 

@@ -40,7 +40,7 @@
   font-size: 17px;
   line-height: 1.35;
   font-weight: 600;
-  font-variation-settings: "wdth" 112;
+  font-variation-settings: "wdth" 112; font-stretch: 112%;
   color: var(--ink);
   overflow-wrap: anywhere;
 }

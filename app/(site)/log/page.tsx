@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import Glass from '@/components/sheet/Glass';
 import RevisionTable, { type RevisionRow } from '@/components/sheet/RevisionTable';
@@ -37,9 +38,12 @@ export default function LogPage() {
         <p className="st-sub">{UI.log.intro}</p>
       </header>
       {rows.length > 0 ? (
-        <Glass className="st-log">
-          <RevisionTable rows={rows} resolveLink={resolveLink} anchorPrefix="rev-" showProject />
-        </Glass>
+        // In a Suspense boundary: hydrated after the head, in short slices (ARCHITECTURE.md 9: TBT).
+        <Suspense>
+          <Glass className="st-log">
+            <RevisionTable rows={rows} resolveLink={resolveLink} anchorPrefix="rev-" showProject />
+          </Glass>
+        </Suspense>
       ) : (
         <Glass className="st-log-empty">
           <p>{UI.log.empty}</p>

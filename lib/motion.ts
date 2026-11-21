@@ -474,8 +474,12 @@ export const SKY = {
    * `idleTimeout` seconds. Where the browser has no requestIdleCallback, the import starts
    * `noIdleDelay` seconds after the load event instead. The scene then prepares its data in
    * yielding steps of at most `slice` seconds of work each, so its start makes no long task.
+   *
+   * `uploadWaitFrames` (site, Phase 7): the scene's first draw waits for a fence after the Milky
+   * Way's upload to the GPU for at most this many frames (about half a second at 60 Hz), so that
+   * draw does not stall on a texture still being copied; after that it draws anyway.
    */
-  liveLoad: { idleTimeout: 2, noIdleDelay: 0.2, slice: 0.008 },
+  liveLoad: { idleTimeout: 2, noIdleDelay: 0.2, slice: 0.008, uploadWaitFrames: 30 },
 } as const;
 
 // ---------------------------------------------------------------------------------------------

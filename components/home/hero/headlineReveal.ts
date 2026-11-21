@@ -9,9 +9,16 @@
  * lines move by transform alone, through the Web Animations API, so nothing is laid out again.
  *
  * React never meets the split: the h1 hydrates as the server sent it, the split happens after
- * that, and when the last line has set, React's own text node goes back in place of the spans
- * (the same node, so React keeps owning it). Meanwhile the h1 is still one h1, and splitText gives
- * it the full headline as its label.
+ * that, and React's own text node goes back in place of the spans (the same node, so React keeps
+ * owning it) when the h1 changes width, so the text wraps again (a turned phone, a resized window);
+ * before the page prints (the paper's width); at the visitor's first press, key, wheel or touch once
+ * the lines have set (at once if one came during the reveal), so find in page and copying meet the
+ * text as the server sent it; or when the reveal is stopped (motion turned off, the hero leaving the
+ * page). Until then the lines stay as they set, still and in place: putting the text back as the
+ * last line sets would paint the headline once more as new content, and browsers take such a paint
+ * as the page's Largest Contentful Paint (sheet 2.4: the headline must not delay it), which no
+ * longer changes once the visitor has pressed, typed or scrolled. Meanwhile the h1 is still one h1,
+ * and splitText gives it the full headline as its label.
  *
  * The split must set the lines exactly as the text sets them, or they would re-break when the text
  * comes back. So the words stay whole (no letter spans: they keep their kerning), the text must be
@@ -148,23 +155,51 @@ export function rowsKept(h1: HTMLElement, lines: readonly HTMLElement[], height:
   return lines.every((line, index) => index === 0 || line.offsetTop > lines[index - 1].offsetTop);
 }
 
-/** A reveal under way. */
+/** A reveal under way, or its lines set and waiting (the file comment). */
 export type HeadlineReveal = {
   /** Ends it at once in its final state, with React's text node back in place. */
   stop: () => void;
 };
 
+/** How far, in px, the h1's width may move before its text must wrap again: rounding, never a word. */
+const WIDTH_TOLERANCE = 0.5;
+
 /**
- * Splits the h1 by line and plays the reveal; when the last line has set, puts React's own text
- * node back. Returns null, with the h1 as it was, when the reveal cannot play: the text is not
- * plain, the browser has no Web Animations, a word breaks across lines, or the split would set
- * the lines differently or change the h1's rows.
+ * The visitor's first input of these kinds ends the page's Largest Contentful Paint in browsers
+ * (a press, a key, a wheel or touch scroll), so the text can come back from then on.
+ */
+const FIRST_INPUTS = ['pointerdown', 'keydown', 'wheel', 'touchstart'] as const;
+const PASSIVE = { passive: true, capture: true } as const;
+
+/**
+ * Calls `onChange` once `el` is no longer `width` px wide (within WIDTH_TOLERANCE), through a
+ * ResizeObserver, else the window's resize event. Returns the function that stops watching.
+ */
+export function watchWidth(el: HTMLElement, width: number, onChange: () => void): () => void {
+  const check = () => {
+    if (Math.abs(el.getBoundingClientRect().width - width) > WIDTH_TOLERANCE) onChange();
+  };
+  if (typeof ResizeObserver === 'function') {
+    const observer = new ResizeObserver(check);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }
+  window.addEventListener('resize', check);
+  return () => window.removeEventListener('resize', check);
+}
+
+/**
+ * Splits the h1 by line and plays the reveal; the lines stay as they set until the h1 changes width,
+ * the page prints, the visitor's first input after the reveal, or stop(), and then React's own text
+ * node goes back (the file comment). Returns null, with the h1 as it was, when the reveal cannot
+ * play: the text is not plain, the browser has no Web Animations, a word breaks across lines, or the
+ * split would set the lines differently or change the h1's rows.
  */
 export function revealHeadline(h1: HTMLElement): HeadlineReveal | null {
   if (!splittable(h1.textContent ?? '') || typeof h1.animate !== 'function') return null;
   const lineOf = measureLines(h1);
   if (!lineOf) return null;
-  const height = h1.getBoundingClientRect().height;
+  const { height, width } = h1.getBoundingClientRect();
 
   const original = Array.from(h1.childNodes);
   const restore = () => {
@@ -195,19 +230,43 @@ export function revealHeadline(h1: HTMLElement): HeadlineReveal | null {
     return null;
   }
 
+  // Each line holds its end (fill: both) once it has set, so the lines need nothing more until the
+  // text comes back.
   const animations = lines.map((line, index) => {
     const { keyframes, options } = lineReveal(index);
     return line.animate(keyframes, options);
   });
   let ended = false;
+  let set = false;
+  let input = false;
+  let unwatch = () => {};
   const stop = () => {
     if (ended) return;
     ended = true;
+    unwatch();
     for (const animation of animations) animation.cancel();
     restore();
   };
-  void Promise.all(animations.map((animation) => animation.finished)).then(stop, () => {
-    // Cancelled: stop() has already put the text back.
-  });
+  const onInput = () => {
+    input = true;
+    if (set) stop();
+  };
+  const stopWidth = watchWidth(h1, width, stop);
+  window.addEventListener('beforeprint', stop);
+  for (const type of FIRST_INPUTS) window.addEventListener(type, onInput, PASSIVE);
+  unwatch = () => {
+    stopWidth();
+    window.removeEventListener('beforeprint', stop);
+    for (const type of FIRST_INPUTS) window.removeEventListener(type, onInput, PASSIVE);
+  };
+  void Promise.all(animations.map((animation) => animation.finished)).then(
+    () => {
+      set = true;
+      if (input) stop();
+    },
+    () => {
+      // Cancelled: stop() has already put the text back.
+    },
+  );
   return { stop };
 }

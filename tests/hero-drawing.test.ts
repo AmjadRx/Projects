@@ -150,10 +150,13 @@ describe('the drawing as the server sends it', () => {
   const html = renderToString(createElement(HeroDrawing));
   const svg = html.slice(html.indexOf('<svg'), html.indexOf('</svg>') + 6);
 
-  it("puts the load sequence's go right after the svg, inside the drawing's box", () => {
+  it("puts the load sequence's go after the svg and the caption, as the figure's last child", () => {
+    // The go reads the drawing's animations, which lays the page out and may let a frame paint
+    // before the parser goes on: the caption is parsed by then, so the figure never grows later.
     const go = `<script>${introGoScript()}</script>`;
     expect(html).toContain(`<div class="hm-art"><svg class="hd-svg"`);
-    expect(html).toContain(`</svg>${go}</div>`);
+    expect(html).toContain(`</svg></div><figcaption class="hm-art__cap">`);
+    expect(html.endsWith(`</figcaption>${go}</figure>`)).toBe(true);
   });
 
   it('is a figure with the fixed caption, and an image whose label is the text alternative', () => {

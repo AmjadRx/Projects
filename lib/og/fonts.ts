@@ -1,7 +1,8 @@
 /**
- * The site's own type for the images, from the repository's font files (app/fonts/, the files
- * next/font serves to the pages): Archivo, made static at the weight and width each role uses on
- * the pages, and B612 Mono. Each face is decoded and instanced once per process, at build time.
+ * The site's own type for the images, from the repository's full font files (app/fonts/, which
+ * scripts/subset-fonts.py cuts into the subsets the pages load): Archivo, made static at the weight
+ * and width each role uses on the pages, and B612 Mono. Each face is decoded and instanced once per
+ * process, at build time.
  */
 import 'server-only';
 import fs from 'node:fs';

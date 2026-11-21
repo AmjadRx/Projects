@@ -24,7 +24,7 @@
   font-family: var(--font-sans);
   font-size: 17px;
   line-height: 1.65;
-  font-variation-settings: "wdth" 100;
+  font-variation-settings: "wdth" 100; font-stretch: 100%;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   --heat: linear-gradient(90deg, var(--t0), var(--t1), var(--t2), var(--t3), var(--t4), var(--t5), var(--t6));
@@ -71,10 +71,10 @@
 }
 
 /* Width axis of Archivo. Headlines run at 112 to 125, body at 100. */
-.ar-w100 { font-variation-settings: "wdth" 100; }
-.ar-w112 { font-variation-settings: "wdth" 112; }
-.ar-w118 { font-variation-settings: "wdth" 118; }
-.ar-w125 { font-variation-settings: "wdth" 125; }
+.ar-w100 { font-variation-settings: "wdth" 100; font-stretch: 100%; }
+.ar-w112 { font-variation-settings: "wdth" 112; font-stretch: 112%; }
+.ar-w118 { font-variation-settings: "wdth" 118; font-stretch: 118%; }
+.ar-w125 { font-variation-settings: "wdth" 125; font-stretch: 125%; }
 
 /* Fluid steps: phone value at 390 px, token value at 1440 px. */
 .ar-fluid-hero { font-size: clamp(44px, calc(4.9524cqi + 24.686px), 96px); }
@@ -104,7 +104,7 @@
   position: absolute; left: var(--space-3); top: var(--space-3); z-index: 100;
   display: inline-flex; align-items: center; min-height: var(--touch-target); padding: 0 var(--space-4);
   border: 1px solid var(--line); border-radius: var(--radius); background-color: var(--sheet-2); color: var(--ink);
-  font-size: 15px; line-height: 1.2; font-weight: 600; font-variation-settings: "wdth" 112; text-decoration: none;
+  font-size: 15px; line-height: 1.2; font-weight: 600; font-variation-settings: "wdth" 112; font-stretch: 112%; text-decoration: none;
   transform: translateY(-200%);
 }
 .ar-skip:focus, .ar-skip:focus-visible { position: fixed; transform: none; }
@@ -127,7 +127,7 @@
   min-height: 48px; margin: 0; padding: 0 var(--space-5);
   border: 1px solid transparent; border-radius: var(--radius);
   font-family: var(--font-sans); font-size: 15px; line-height: 1.2; font-weight: 600;
-  font-variation-settings: "wdth" 112; letter-spacing: 0.005em;
+  font-variation-settings: "wdth" 112; font-stretch: 112%; letter-spacing: 0.005em;
   text-decoration: none; white-space: nowrap; cursor: pointer; overflow: hidden;
   transition: transform var(--page-press);
   -webkit-tap-highlight-color: transparent;
@@ -269,7 +269,7 @@ html[data-theme="whiteprint"] .ar-theme__opt[data-value="whiteprint"] { backgrou
 }
 .ar-nav__name {
   display: inline-flex; align-items: center; min-height: var(--touch-target);
-  font-size: 17px; line-height: 1; font-weight: 650; font-variation-settings: "wdth" 118;
+  font-size: 17px; line-height: 1; font-weight: 650; font-variation-settings: "wdth" 118; font-stretch: 118%;
   letter-spacing: -0.005em; color: var(--ink); text-decoration: none; white-space: nowrap;
 }
 .ar-nav__links { display: none; align-items: center; gap: var(--space-5); margin: 0; padding: 0; list-style: none; }
@@ -362,7 +362,7 @@ html[data-theme="whiteprint"] .ar-theme__opt[data-value="whiteprint"] { backgrou
 .ar-ph__retry {
   display: inline-flex; align-items: center; min-height: var(--touch-target); margin: 0; padding: 0 var(--space-3);
   border: 0; background: transparent; color: var(--line); cursor: pointer;
-  font-family: var(--font-sans); font-size: 15px; line-height: 1.2; font-weight: 600; font-variation-settings: "wdth" 112;
+  font-family: var(--font-sans); font-size: 15px; line-height: 1.2; font-weight: 600; font-variation-settings: "wdth" 112; font-stretch: 112%;
   text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.22em;
 }
 /* Loading: the well keeps its size; after 600 ms a 2 px line runs along its foot, transform only. */
@@ -558,7 +558,7 @@ html[data-theme="whiteprint"] .ar-theme__opt[data-value="whiteprint"] { backgrou
 .ar-bom { border-bottom: 1px solid var(--ink-mute); }
 .ar-bom__item-col { width: 64px; }
 .ar-bom__proof-col { width: 34%; }
-.ar-bom__tier th { padding: var(--space-6) 0 var(--space-1); text-align: left; font-size: 17px; line-height: 1.4; font-weight: 650; font-variation-settings: "wdth" 112; color: var(--ink); }
+.ar-bom__tier th { padding: var(--space-6) 0 var(--space-1); text-align: left; font-size: 17px; line-height: 1.4; font-weight: 650; font-variation-settings: "wdth" 112; font-stretch: 112%; color: var(--ink); }
 .ar-bom__group th { padding: var(--space-2) 0 var(--space-2); text-align: left; font-size: 15px; line-height: 1.5; font-weight: 500; color: var(--ink-dim); border-bottom: 1px solid var(--rule); }
 .ar-bom__row td { padding: var(--space-3) var(--space-4) var(--space-3) 0; vertical-align: top; border-bottom: 1px solid var(--rule); }
 .ar-bom__n { font-family: var(--font-mono); font-size: 13px; line-height: 1.9; color: var(--ink-mute); }
@@ -664,20 +664,20 @@ html[data-theme="whiteprint"] .ar-theme__opt[data-value="whiteprint"] { backgrou
 .ar-card__cover { position: relative; }
 .ar-card__cover .ar-well { border-radius: var(--radius) var(--radius) 0 0; }
 .ar-card__body { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4) var(--space-4) var(--space-5); }
-.ar-card__title { margin: 0; font-size: 21px; line-height: 1.3; font-weight: 600; font-variation-settings: "wdth" 112; }
+.ar-card__title { margin: 0; font-size: 21px; line-height: 1.3; font-weight: 600; font-variation-settings: "wdth" 112; font-stretch: 112%; }
 .ar-card__link { color: var(--ink); text-decoration: none; }
 .ar-card__link::after { content: ""; position: absolute; inset: 0; z-index: 2; }
 .ar-card__pitch { margin: 0; font-size: 17px; line-height: 1.6; color: var(--ink-dim); }
 .ar-card__status { margin: 0; font-family: var(--font-mono); font-size: 13px; line-height: 1.5; color: var(--ink-mute); }
 /* site: the arrow's 3 px nudge on hover is OpenCue's, through Motion, so it stays put under reduced motion. */
-.ar-card__open { display: inline-flex; align-items: center; gap: var(--space-1); margin-top: var(--space-2); font-size: 15px; font-weight: 600; font-variation-settings: "wdth" 112; color: var(--line); }
+.ar-card__open { display: inline-flex; align-items: center; gap: var(--space-1); margin-top: var(--space-2); font-size: 15px; font-weight: 600; font-variation-settings: "wdth" 112; font-stretch: 112%; color: var(--line); }
 @container frame (min-width: 1024px) {
   .ar-card__body { padding: var(--space-5); }
   .ar-card--featured { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
   .ar-card--featured .ar-card__cover, .ar-card--featured .ar-card__cover .ar-dim { height: 100%; }
   .ar-card--featured .ar-card__cover .ar-well { height: 100%; min-height: 360px; aspect-ratio: auto; border-radius: var(--radius) 0 0 var(--radius); }
   .ar-card--featured .ar-card__body { justify-content: center; gap: var(--space-4); padding: var(--space-6); }
-  .ar-card--featured .ar-card__title { font-size: 28px; line-height: 1.15; font-variation-settings: "wdth" 118; }
+  .ar-card--featured .ar-card__title { font-size: 28px; line-height: 1.15; font-variation-settings: "wdth" 118; font-stretch: 118%; }
 }
 
 @container frame (max-width: 767px) { .ar-card .ar-dim__svg, .ar-card .ar-dim__plates { display: none; } }
@@ -761,7 +761,7 @@ html[data-theme="whiteprint"] .ar-theme__opt[data-value="whiteprint"] { backgrou
 .ar-lightbox__retry {
   display: inline-flex; align-items: center; min-height: var(--touch-target); margin: 0; padding: 0 var(--space-3);
   border: 0; background: transparent; color: var(--on-night); cursor: pointer;
-  font-family: var(--font-sans); font-size: 15px; line-height: 1.2; font-weight: 600; font-variation-settings: "wdth" 112;
+  font-family: var(--font-sans); font-size: 15px; line-height: 1.2; font-weight: 600; font-variation-settings: "wdth" 112; font-stretch: 112%;
   text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.22em;
 }
 .ar-lightbox__bar { position: absolute; left: var(--space-4); right: var(--space-4); bottom: 0; height: 2px; overflow: hidden; opacity: 0; animation: ar-ph-in 1ms linear 600ms forwards; }
@@ -779,7 +779,7 @@ html[data-theme="whiteprint"] .ar-theme__opt[data-value="whiteprint"] { backgrou
    in a portal on <body>, outside the page frame, so it carries its own type. */
 .ar-mmenu {
   position: fixed; inset: 0; z-index: 60; overflow: hidden;
-  color: var(--ink); font-family: var(--font-sans); font-size: 17px; line-height: 1.65; font-variation-settings: "wdth" 100;
+  color: var(--ink); font-family: var(--font-sans); font-size: 17px; line-height: 1.65; font-variation-settings: "wdth" 100; font-stretch: 100%;
   -webkit-font-smoothing: antialiased;
   --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
 }
@@ -793,7 +793,7 @@ html[data-theme="whiteprint"] .ar-theme__opt[data-value="whiteprint"] { backgrou
 .ar-mmenu__links > li + li > .ar-mmenu__link { border-top: 1px solid var(--rule); }
 .ar-mmenu__link {
   display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); min-height: 64px;
-  font-size: 28px; line-height: 1.1; font-weight: 600; font-variation-settings: "wdth" 112;
+  font-size: 28px; line-height: 1.1; font-weight: 600; font-variation-settings: "wdth" 112; font-stretch: 112%;
   color: var(--ink); text-decoration: none;
 }
 .ar-mmenu__link[aria-current] { color: var(--line); }
@@ -810,7 +810,7 @@ html[data-theme="whiteprint"] .ar-theme__opt[data-value="whiteprint"] { backgrou
 
 .ar-foot { border-top: 1px solid var(--rule); background-color: var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); }
 .ar-foot__in { display: grid; gap: var(--space-6); max-width: var(--max-content); margin: 0 auto; padding: var(--space-7) var(--gutter-phone) var(--space-5); }
-.ar-foot__tag { margin: 0; font-size: 21px; line-height: 1.33; font-weight: 600; font-variation-settings: "wdth" 112; color: var(--ink); max-width: 24ch; }
+.ar-foot__tag { margin: 0; font-size: 21px; line-height: 1.33; font-weight: 600; font-variation-settings: "wdth" 112; font-stretch: 112%; color: var(--ink); max-width: 24ch; }
 .ar-foot__links { display: flex; flex-direction: column; align-items: flex-start; gap: 0; margin: 0; padding: 0; list-style: none; }
 /* site: an address runs past a narrow phone, so it may break. */
 .ar-foot__links .ar-link__text { overflow-wrap: anywhere; }
@@ -901,7 +901,17 @@ html[data-theme="whiteprint"] .ar-theme__opt[data-value="whiteprint"] { backgrou
    horizon the still is scaled by the window's projection scale --k (projScale, written with the
    container's units) over the scale it was drawn at, about the horizon's centre; below the horizon
    its ground is stretched to the window, which keeps the grid's lines and rows where the scene
-   draws them. A window wider than 2.7 to 1 stretches it sideways. */
+   draws them. A window wider than 2.7 to 1 stretches it sideways.
+   site (Phase 7): both parts are boxes the size of the window (inset 0) that place the image in
+   them with background-size and background-position, each clipped to its side of the horizon. A
+   browser treats an image that fills the whole window as the page's background, not as its largest
+   content (Chromium leaves an image whose painted area, after clips, is the whole viewport out of
+   Largest Contentful Paint), so the page's LCP is its own largest words or picture, as for a
+   visitor, and never waits for this decoration. So each clip is a polygon, not an inset: its band
+   of the window plus a spike of no area outside the box, along x = -1px, that reaches the window's
+   other edge. The spike paints nothing, but the clip's bounds, which the metric reads, are the
+   whole box. The pixels are the earlier clipped boxes' to within sub-pixel resampling: the image
+   now sits on whole pixels, where the box with its translateX(-50%) drew it at fractions of one. */
 .ar-sky__still {
   inset: 0;
   --sky-still: var(--sky-still-phone, var(--sky-still-phone-fallback));
@@ -930,17 +940,23 @@ html[data-theme="whiteprint"] .ar-theme__opt[data-value="whiteprint"] { backgrou
   [data-theme="whiteprint"] .ar-sky__still { --sky-still: url("/sky/still/whiteprint-desktop.webp"); }
 }
 .ar-sky__still::before, .ar-sky__still::after {
-  content: ""; position: absolute;
-  background-image: var(--sky-still); background-repeat: no-repeat; background-size: 100% 100%;
+  content: ""; position: absolute; inset: 0;
+  background-image: var(--sky-still); background-repeat: no-repeat;
 }
 .ar-sky__still::before {
   --k: min(calc(var(--sky-k-h) * 100cqh), max(calc(var(--sky-k-w) * 100cqw), calc(var(--sky-k-c) * 100cqh)));
-  left: 50%; top: calc(var(--sky-hz) * 100cqh - var(--k) * var(--sky-still-hy));
-  width: max(calc(var(--k) * var(--sky-still-w)), 100cqw); height: calc(var(--k) * var(--sky-still-h));
-  transform: translateX(-50%);
-  clip-path: inset(0 0 calc(var(--sky-still-ground) * 100%) 0);
+  background-size: max(calc(var(--k) * var(--sky-still-w)), 100cqw) calc(var(--k) * var(--sky-still-h));
+  background-position: 50% calc(var(--sky-hz) * 100cqh - var(--k) * var(--sky-still-hy));
+  /* Above the horizon, and a spike down the left side, outside the box, to the foot. */
+  clip-path: polygon(0 0, 100% 0, 100% calc(var(--sky-hz) * 100%), 0 calc(var(--sky-hz) * 100%),
+    -1px calc(var(--sky-hz) * 100%), -1px 100%, -1px calc(var(--sky-hz) * 100%), 0 calc(var(--sky-hz) * 100%));
 }
-.ar-sky__still::after { inset: 0; clip-path: inset(calc(var(--sky-hz) * 100%) 0 0 0); }
+.ar-sky__still::after {
+  background-size: 100% 100%;
+  /* Below the horizon, and a spike up the left side, outside the box, to the top. */
+  clip-path: polygon(0 calc(var(--sky-hz) * 100%), 100% calc(var(--sky-hz) * 100%), 100% 100%, 0 100%,
+    0 calc(var(--sky-hz) * 100%), -1px calc(var(--sky-hz) * 100%), -1px 0, -1px calc(var(--sky-hz) * 100%));
+}
 /* The live scene's canvases, faded in over the still once its first frame is drawn (the host adds
    .is-ready, never sooner than 400 ms after the first paint). */
 .ar-sky__live { inset: 0; opacity: 0; transition: opacity var(--sky-fade) ease-out; }
@@ -1174,7 +1190,7 @@ html[data-theme="whiteprint"] .ar-theme__opt[data-value="whiteprint"] { backgrou
 .ar-repo:hover { border-color: var(--line); }
 .ar-repo__icon { display: grid; place-items: center; width: var(--touch-target); height: var(--touch-target); border: 1px solid var(--ink-mute); border-radius: var(--radius); color: var(--ink); }
 .ar-repo__body { display: grid; gap: 2px; min-width: 0; }
-.ar-repo__title { font-size: 17px; line-height: 1.35; font-weight: 600; font-variation-settings: "wdth" 112; color: var(--ink); }
+.ar-repo__title { font-size: 17px; line-height: 1.35; font-weight: 600; font-variation-settings: "wdth" 112; font-stretch: 112%; color: var(--ink); }
 .ar-repo__name { font-family: var(--font-mono); font-size: 15px; line-height: 1.5; color: var(--ink); overflow-wrap: anywhere; }
 .ar-repo__label { font-size: 13px; line-height: 1.4; font-weight: 500; color: var(--ink-dim); }
 .ar-repo__go { grid-column: 2; display: inline-flex; align-items: center; gap: var(--space-1); font-size: 15px; line-height: 1.2; font-weight: 600; color: var(--line); }
@@ -1212,7 +1228,7 @@ html[data-theme="whiteprint"] .ar-theme__opt[data-value="whiteprint"] { backgrou
   border: 1px solid var(--line);
   background-image: repeating-linear-gradient(135deg, var(--line) 0 2px, transparent 2px 7px);
 }
-.ar-prog__label { font-size: 15px; line-height: 1.4; font-weight: 600; font-variation-settings: "wdth" 112; color: var(--ink); overflow-wrap: anywhere; }
+.ar-prog__label { font-size: 15px; line-height: 1.4; font-weight: 600; font-variation-settings: "wdth" 112; font-stretch: 112%; color: var(--ink); overflow-wrap: anywhere; }
 .ar-prog__step.is-todo .ar-prog__label { font-weight: 500; color: var(--ink-dim); }
 .ar-prog__state { font-family: var(--font-mono); font-size: 13px; line-height: 1.5; color: var(--ink-mute); }
 .ar-prog__step.is-current .ar-prog__state { color: var(--line); }
@@ -1271,7 +1287,7 @@ html[data-theme="whiteprint"] .ar-theme__opt[data-value="whiteprint"] { backgrou
   grid-column: 2; padding: var(--space-4) var(--space-5); border: 1px solid var(--rule); border-radius: var(--radius);
   background-color: var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); box-shadow: var(--shadow-card);
 }
-.ar-tl__role { margin: 0; font-size: 21px; line-height: 1.3; font-weight: 600; font-variation-settings: "wdth" 112; color: var(--ink); }
+.ar-tl__role { margin: 0; font-size: 21px; line-height: 1.3; font-weight: 600; font-variation-settings: "wdth" 112; font-stretch: 112%; color: var(--ink); }
 /* site: the role is a heading (h2 on /experience); it wraps as the bundle's does, not balanced. */
 .ar-tl__role { text-wrap: wrap; }
 .ar-tl__org { display: flex; flex-wrap: wrap; gap: 0 var(--space-3); margin: var(--space-1) 0 0; font-size: 15px; line-height: 1.5; font-weight: 500; color: var(--ink-dim); }
