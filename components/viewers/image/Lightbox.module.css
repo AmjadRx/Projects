@@ -1,0 +1,162 @@
+/*
+ * The lightbox's parts that the bundle's .ar-lightbox (app/sheet.css 18) does not draw: the zoom
+ * group, the caption line, the photo stage's zoom and pan, and the players. Night in both themes,
+ * 44 px controls (D-67). Nothing here animates (the fades are app/motion-media.css). The dialog
+ * sits in a layer on <body>, outside the page frame, so it is its own container, named `frame`
+ * too: a player inside it reads the window's width as it would read the page frame's.
+ */
+.dialog {
+  container: lightbox frame / inline-size;
+  outline: none;
+  font-family: var(--font-sans);
+  /* A drag on the bars never scrolls the page behind (some phones ignore the scroll lock). */
+  touch-action: none;
+  overscroll-behavior: contain;
+}
+
+/* Zoom at the left of the top bar, Close at the right. */
+.dialog .top {
+  justify-content: space-between;
+}
+
+.group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* "Fit": the icon button's plate, as wide as its word. */
+.dialog .textButton {
+  width: auto;
+  padding: 0 var(--space-3);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1;
+  font-weight: 500;
+}
+
+/* Previous, the count, and Next, centered; the caption line under them. */
+.dialog .bottom {
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.caption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1) var(--space-4);
+  max-width: 72ch;
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--on-night-dim);
+}
+
+.captionText {
+  color: var(--on-night);
+}
+
+.stage {
+  overflow: hidden;
+}
+
+/* The modal stage owns every touch: drag pans, two fingers zoom, the page behind is locked. It
+   keeps the bundle's 16 px from each side of the window. */
+.photoStage {
+  position: absolute;
+  inset: 0 var(--space-4);
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: zoom-in;
+}
+
+.photoStage[data-zoomed='true'] {
+  cursor: grab;
+}
+
+.photoStage[data-zoomed='true']:active {
+  cursor: grabbing;
+}
+
+.box {
+  position: absolute;
+  inset: 0;
+  transform-origin: 0 0;
+}
+
+.photo {
+  position: absolute;
+}
+
+.img {
+  object-fit: contain;
+  -webkit-user-drag: none;
+}
+
+/* The loading line (the bundle's .ar-lightbox__bar) sits at the stage's foot: the photo stage is
+   already 16 px in from each side, so inside it the line spans it edge to edge. */
+.photoStage :global(.ar-lightbox__bar) {
+  left: 0;
+  right: 0;
+}
+
+.playerArea {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  overscroll-behavior: contain;
+  /* A player taller than the stage scrolls inside it. */
+  touch-action: pan-x pan-y;
+  padding: 0 var(--space-4);
+}
+
+/*
+ * A player is as wide as the stage allows while its frame still fits the height (16rem holds the
+ * lightbox bars and the player's own bar and caption). On a short screen it keeps a usable width,
+ * and the stage scrolls. It sits in its own media frame: the frame's ink, not the night's.
+ */
+.player {
+  width: 100%;
+  max-width: calc((100vh - 16rem) * var(--player-aspect, 1.7778));
+  max-width: calc((100dvh - 16rem) * var(--player-aspect, 1.7778));
+  min-width: min(100%, 480px);
+  margin: auto;
+  color: var(--ink);
+}
+
+.other {
+  width: min(100%, 900px);
+  margin: auto;
+  border: 1px solid var(--night-rule);
+  border-radius: var(--radius);
+}
+
+.loading {
+  margin: 0;
+  padding: var(--space-4);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--on-night);
+}
+
+@container lightbox (max-width: 767px) {
+  .playerArea {
+    padding: 0 var(--space-2);
+  }
+}

@@ -1,0 +1,208 @@
+{
+  "version": 1,
+  "date": "2026-11-16",
+  "note": "Patterns that are safe to publish. Matched case-insensitively against every string value in content/, against alt text and captions, and against docs/. Terms that must stay unpublished are supplied through the server-only CONTENT_BLOCKLIST variable.",
+  "flags": "iu",
+  "rules": [
+    {
+      "id": "DASH",
+      "pattern": "[\u2013\u2014]",
+      "message": "Use a comma, a colon, parentheses, or 'to'. No em or en dashes."
+    },
+    {
+      "id": "IP-CLAIM",
+      "pattern": "\\bpatent(s|ed)?\\b",
+      "message": "The site makes no intellectual-property claim."
+    },
+    {
+      "id": "GPA-OLD",
+      "pattern": "GPA\\W{0,12}3\\.[78]0?\\b|\\b3\\.[78]0?\\s+(cumulative\\s+)?GPA\\b",
+      "message": "An out-of-date grade point average. Leave the GPA field empty unless the owner supplies the current figure."
+    },
+    {
+      "id": "AVAIL-OLD",
+      "pattern": "Summer\\s+2027\\s+intern|Open\\s+to\\s+Summer\\s+2027",
+      "message": "Out-of-date availability. The line is: Available: Full-time, June 2027."
+    },
+    {
+      "id": "PACK-600V",
+      "pattern": "\\b600\\s?V\\b",
+      "message": "Neither car has a 600 V pack. BR1 is about 420 V max; BR2 is 504 V max."
+    },
+    {
+      "id": "THERM-144",
+      "pattern": "\\b144\\b[\\s-]*thermistors?",
+      "message": "The documented count is 140+."
+    },
+    {
+      "id": "PACK-540V",
+      "pattern": "\\b540\\s?V\\b[^.\\n]{0,12}\\b(pack|accumulator|battery|BMS)\\b",
+      "message": "540 V is the on-board charger's rating, never the pack's."
+    },
+    {
+      "id": "BMS-DESIGNED",
+      "pattern": "\\bdesigned\\s+(a\\s+|the\\s+)?(420[\\s-]?(V|volt)\\s+)?(battery[\\s-]management\\s+system|BMS)\\b",
+      "message": "The BMS is an off-the-shelf Orion BMS 2 that he programmed, configured, and modified."
+    },
+    {
+      "id": "BR1-RAN",
+      "pattern": "\\braced\\b|\\bcompeted\\s+with\\s+(BR1|the\\s+car)\\b|\\bdeployed\\s+on\\s+(the\\s+)?track\\b|\\bran\\s+(it|the\\s+car|BR1)\\s+at\\b",
+      "message": "BR1's high-voltage system was bench-validated and was not energized at competition."
+    },
+    {
+      "id": "BR1-INSPECTION",
+      "pattern": "\\b(passed|passes|cleared)\\b[^.\\n]{0,40}\\b(technical|tech)\\s+inspection",
+      "message": "Say only that the team completed the static events."
+    },
+    {
+      "id": "BR2-LEAD",
+      "pattern": "\\blead(ing|s)?\\s+the\\s+(next\\s+)?(tractive\\s+)?battery\\s+redesign\\b|HV\\s*/\\s*Electrical\\s+Lead",
+      "message": "On BR2 the title is ESO & HV Engineer."
+    },
+    {
+      "id": "LEAD-2023",
+      "pattern": "Co-Electrical\\s+Lead[^\\n]{0,80}\\bSep(t|tember)?\\s+2023\\b",
+      "message": "The lead title runs Nov 2025 to Jun 2026. Before that the title is Electrical Specialist."
+    },
+    {
+      "id": "PART-107",
+      "pattern": "\\b(hold(s|ing)?|earned|passed|obtained)\\s+(an?\\s+|the\\s+|my\\s+)?(FAA\\s+)?Part\\s*107\\b|\\bPart\\s*107[\\s-]+(certified|licensed|holder)\\b|\\bcertified\\s+(FAA\\s+)?remote\\s+pilot\\b",
+      "message": "FAA Part 107 is in progress."
+    },
+    {
+      "id": "RAVEN-FLOWN",
+      "pattern": "\\bRaven\\b[^.\\n]{0,40}\\b(flew|has\\s+flown|was\\s+flown|flight[\\s-]tested|hovered)\\b|\\b(first|maiden|tethered)\\s+(flight|hover)\\s+(complete|completed|done|achieved)\\b|\\b(flew|flown)\\s+(Raven|the\\s+(aircraft|testbed|airframe))\\b",
+      "message": "The site makes no flight or hover statement about Raven. Stage 1 of 8 is in progress."
+    },
+    {
+      "id": "RAVEN-SOFTWARE",
+      "pattern": "\\b(built|wrote|developed|implemented|validated|integrated|building)\\b[^.\\n]{0,60}\\b(PX4|ArduPilot|flight\\s+(firmware|code)|sensor[\\s-]fusion|onboard\\s+(CV|computer\\s+vision|ML|inference))\\b",
+      "message": "Autonomy and flight software are later roadmap stages, written as plans."
+    },
+    {
+      "id": "RAVEN-THRUST",
+      "pattern": "\\b(measured|recorded|logged)\\b[^.\\n]{0,30}\\bthrust\\b",
+      "message": "No measured thrust figure exists."
+    },
+    {
+      "id": "MULTI-DRONE",
+      "pattern": "\\bswarms?\\b",
+      "message": "The wording is: coordinated multi-drone autonomy."
+    },
+    {
+      "id": "BASE-AIRFRAME",
+      "pattern": "\\bStallion\\b(?!\\s*(FPV|airframe|base|platform|geometry|STLs?|parts)|\\s+is\\s+the\\s+(stock|base)|,\\s+the\\s+(stock|base))",
+      "message": "The project is Raven. Stallion appears only as 'the Flightory Stallion FPV airframe', its stock base."
+    },
+    {
+      "id": "RAVEN-ORIGIN",
+      "pattern": "\\bRaven\\b[^.\\n]{0,60}\\b(from\\s+scratch|original\\s+design|clean[\\s-]sheet)\\b|\\b(from\\s+scratch|clean[\\s-]sheet)\\b[^.\\n]{0,40}\\bRaven\\b",
+      "message": "Raven is a custom redesign on the Flightory Stallion FPV airframe."
+    },
+    {
+      "id": "RAVEN-SENIOR-DESIGN",
+      "pattern": "\\bRaven\\b[^.\\n]{0,40}\\b(is|as|was)\\b[^.\\n]{0,15}\\bsenior[\\s-]design\\b",
+      "message": "Raven is a personal project. The senior design is a separate team project."
+    },
+    {
+      "id": "RAVEN-LIGHTING",
+      "pattern": "\\bcustom\\s+(Raven\\s+)?lighting\\s+(PCB|board)\\b|\\banti[\\s-]collision\\s+light(ing)?\\b[^.\\n]{0,40}\\b(legal|compliant|approved|meets)\\b",
+      "message": "No statement about a custom lighting board or lighting compliance."
+    },
+    {
+      "id": "PLACEMENT-SWAP",
+      "pattern": "\\b(2nd|second)\\s+place\\W{1,4}(in\\s+the\\s+|at\\s+the\\s+)?Asearis\\b|\\b(1st|first)\\s+place\\W{1,4}(in\\s+the\\s+|at\\s+the\\s+)?CrossFit\\b",
+      "message": "PalmSync took 1st at Asearis. The CrossFit team took 2nd."
+    },
+    {
+      "id": "PALMSYNC-ACCURACY",
+      "pattern": "PalmSync[^.\\n]{0,80}\\b\\d{1,3}(\\.\\d+)?\\s?(%|percent)\\s+(sensor\\s+)?accura",
+      "message": "PalmSync has no accuracy figure."
+    },
+    {
+      "id": "HIL",
+      "pattern": "\\bhardware[\\s-]+in[\\s-]+the[\\s-]+loop\\b(?![\\s-]+style)",
+      "message": "No formal hardware-in-the-loop rig was used."
+    },
+    {
+      "id": "ST-PRODUCTION",
+      "pattern": "\\bproduction\\s+experience\\s+at\\s+(ST\\b|STMicro)",
+      "message": "Say: engineering experience at STMicroelectronics."
+    },
+    {
+      "id": "ST-CAN",
+      "pattern": "\\bCAN[\\s-]bus\\s+firmware\\b[^.\\n]{0,60}\\b(internship|STMicro)",
+      "message": "The CAN work belongs to Bronco Racing."
+    },
+    {
+      "id": "HONORS-LATIN",
+      "pattern": "\\bcum\\s+laude\\b|\\bgraduated\\s+with\\s+(University\\s+)?Honors\\b",
+      "message": "No graduation honor is stated before graduation."
+    },
+    {
+      "id": "CAMBRIDGE",
+      "pattern": "\\b(attended|studied\\s+at|graduated\\s+from)\\s+(the\\s+)?University\\s+of\\s+Cambridge\\b",
+      "message": "The A-Levels are University of Cambridge qualifications."
+    },
+    {
+      "id": "EDA-TOOLS",
+      "pattern": "\\b(Altium|OrCAD|PSpice)\\b",
+      "message": "The PCB tool is KiCad 9 and the simulation tool is LTspice."
+    },
+    {
+      "id": "TEST-METHODS",
+      "pattern": "\\b(hipot|hi-pot|Weibull|HALT|HASS)\\b|\\bdesigned\\b[^.\\n]{0,20}\\bIGBT",
+      "message": "Not part of the documented work."
+    },
+    {
+      "id": "RF",
+      "pattern": "\\b(experience\\s+(in|with)|worked\\s+on|designed)\\s+(RF|radio[\\s-]link)\\b",
+      "message": "Not part of the documented work."
+    },
+    {
+      "id": "SENSOR-BOARDS",
+      "pattern": "\\b(built|designed\\s+and\\s+built|brought\\s+up)\\b[^.\\n]{0,20}\\b(IMU|ToF)\\s+(board|cluster)\\b|\\bbuilt\\s+an?\\s+EtherCAT\\b",
+      "message": "Not part of the documented work."
+    },
+    {
+      "id": "FUNDING",
+      "pattern": "\\braised\\s+(\\$|a\\s+(seed|round|pre-seed)|capital|funding|money)|\\b(venture|VC|investor)[\\s-]backed\\b|\\b(paying\\s+customers|generating\\s+revenue)\\b|\\bterm\\s+sheet\\b",
+      "message": "The site says nothing about money, investors, or customers."
+    },
+    {
+      "id": "GPA-LABEL",
+      "pattern": "(?<!Major )GPA\\W{0,6}3\\.65\\b|\\bcumulative\\b[^.\\n]{0,30}3\\.65\\b|3\\.65\\b[^.\\n]{0,20}\\bcumulative\\b",
+      "message": "3.65 is the major GPA. Write it only as: Major GPA 3.65."
+    },
+    {
+      "id": "DBVF-FLOWN",
+      "pattern": "\\b(hexacopter|Pegasus)\\b[^.\\n]{0,50}\\b(flew|has\\s+flown|was\\s+flown|flight[\\s-]tested|hovered|won|placed)\\b",
+      "message": "The senior design aircraft is in design. No flight or result statement until the owner adds one."
+    },
+    {
+      "id": "FIRMWARE-CHECKS",
+      "pattern": "\\b\\d{2,4}\\s+(algorithm|renderer)\\s+checks\\b",
+      "message": "The site states no check counts for the MoonLamp firmware."
+    },
+    {
+      "id": "DRONE-MAKER",
+      "pattern": "\\bdrone\\s+(maker|manufacturer)\\b",
+      "message": "The wording is: stealth AI hardware startup."
+    },
+    {
+      "id": "NAME-SPELLING",
+      "pattern": "\\bRihawi\\b",
+      "message": "The name is Rehawi."
+    },
+    {
+      "id": "DRIVE-LINK",
+      "pattern": "drive\\.google\\.com|docs\\.google\\.com|dropbox\\.com",
+      "message": "No cloud-drive links."
+    },
+    {
+      "id": "PLACEHOLDER",
+      "pattern": "\\blorem\\s+ipsum\\b|\\{\\{|\\}\\}",
+      "message": "Placeholder text must not ship."
+    }
+  ]
+}

@@ -22,9 +22,12 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Local env files
-.env*.local
-.env
+# Local env files: every .env file except the names-only .env.example (plan D-43)
+.env*
+!.env.example
+
+# Local tool configuration, which can hold keys (plan D-43, R-01)
+.mcp.json
 
 # Vercel
 .vercel
@@ -39,3 +42,17 @@ next-env.d.ts
 # IDE
 .vscode/
 .idea/
+
+# Generated at build and dev time (scripts/copy-vendor.mjs, scripts/content-dates.mjs)
+/public/vendor/
+/lib/generated/
+
+# Extra Next.js output folders (NEXT_DIST_DIR) and test output
+/.next-*/
+/test-results/
+/playwright-report/
+/screenshots/
+/.lighthouseci/
+
+# Sky source downloads (scripts/build-sky.mjs --cache)
+/.cache/sky-sources/

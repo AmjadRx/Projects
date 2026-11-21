@@ -1,0 +1,116 @@
+/*
+ * The photo viewer's well and the build log's photo wells. The media frame, the gallery strip and
+ * the lightbox are app/sheet.css 18 and 25 (the bundle's ar-mv, ar-gal and ar-lightbox). Nothing
+ * here animates. Colors are tokens; there are no viewport media queries: layout reads the frame.
+ */
+
+/* The photo inside a viewer well is a button: selecting it opens the lightbox (D-63). */
+.open {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: zoom-in;
+}
+
+/* Never larger than the photo's natural size; the caller sets max-width and max-height. */
+.containBox {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* The full-screen plate in the top right corner says the photo opens larger; the whole well is the button. */
+.mark {
+  pointer-events: none;
+}
+
+.open:hover .mark :global(.ar-mv__btn) {
+  border-color: var(--on-night);
+}
+
+/*
+ * The focus ring of the photo is drawn inside the well, above the photo: the frame clips anything
+ * outside it, and a dark, light, dark ring stays visible on any photo.
+ */
+.open:focus-visible {
+  outline: none;
+}
+
+.open:focus-visible::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  box-shadow:
+    inset 0 0 0 2px var(--night),
+    inset 0 0 0 4px var(--on-night),
+    inset 0 0 0 6px var(--night);
+}
+
+.img {
+  -webkit-user-drag: none;
+}
+
+.frame {
+  min-width: 0;
+}
+
+/*
+ * The build log's photos (bundle RevisionTable): small 16:10 night wells, 128 px wide, each a
+ * button that opens the entry's photos in the lightbox. On a phone one photo takes the column's
+ * width, at most 280 px.
+ */
+.wells {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wellItem {
+  flex: none;
+  width: 128px;
+}
+
+@container frame (max-width: 767px) {
+  .one .wellItem {
+    width: min(100%, 280px);
+  }
+}
+
+.well {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: var(--cover-ratio);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background-color: var(--night);
+  color: var(--on-night);
+  cursor: zoom-in;
+}
+
+.well:focus-visible {
+  outline-offset: 2px;
+}
+
+/* A small well whose file did not load: the mark alone; the words go to screen readers. */
+.wellFailed {
+  cursor: auto;
+}

@@ -1,0 +1,166 @@
+/*
+ * The document reader (PDF and Word) inside the media frame (bundle DocumentReader; the frame,
+ * its buttons, the search field and the notes are app/sheet.css 25). Nothing here animates.
+ * Colors are tokens; the thermal ramp is not used. No viewport media queries: the bar reads the
+ * page frame.
+ */
+
+/* The scrolling page area that fills the media well. Touch scrolling chains to the page. */
+.scroller {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  overscroll-behavior: auto;
+  touch-action: auto;
+}
+.scroller:focus-visible {
+  outline: var(--focus-width) solid var(--on-night);
+  outline-offset: -2px;
+}
+
+/* Centers a page smaller than the well; auto margins keep every edge of a larger one reachable. */
+.stage {
+  display: flex;
+  width: max-content;
+  min-width: 100%;
+  min-height: 100%;
+}
+.sheet {
+  position: relative;
+  flex: none;
+  margin: auto;
+}
+
+/* PDF: the page being drawn sits over the last finished drawing until its canvas is ready. */
+.layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+.backdrop {
+  transform-origin: 0 0;
+  pointer-events: none;
+}
+/* react-pdf paints the page box white before its canvas is drawn; the canvas brings its own white. */
+.page {
+  background-color: transparent !important;
+}
+.page canvas {
+  display: block;
+}
+
+/* Search matches in pdf.js's text layer. The text stays transparent: the canvas draws it. */
+.match {
+  color: transparent;
+  background-color: color-mix(in srgb, var(--line) 30%, transparent);
+  border-radius: 2px;
+}
+.current {
+  background-color: color-mix(in srgb, var(--line) 55%, transparent);
+  outline: 2px solid var(--line);
+}
+
+/* Word: the sandboxed frame, sized by the reader to the scaled document. */
+.frame {
+  display: block;
+  border: 0;
+  background: transparent;
+  /* The document is drawn light; matching schemes keep the frame's own canvas transparent. */
+  color-scheme: light;
+}
+
+/* The bar: "Page [n] of N" in the data type, the number as a field. */
+.pageOf {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-dim);
+}
+.total {
+  min-width: 3.5ch;
+}
+.hidden {
+  visibility: hidden;
+}
+
+/* The page number field: a control, so its border is ink-mute (the rule color never bounds a control). */
+.field {
+  min-height: var(--touch-target);
+  border: 1px solid var(--ink-mute);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+.field:disabled {
+  border-style: dashed;
+  color: var(--ink-mute);
+  cursor: not-allowed;
+}
+.pageField {
+  width: 4.25rem;
+  padding: 0 var(--space-2);
+  text-align: center;
+}
+
+/* Search: on a phone the row opens from its button and takes a line of its own; wider frames show it always. */
+.searchRow {
+  display: none;
+  flex: 1 1 100%;
+  order: 1;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.searchOpen {
+  display: flex;
+}
+/* 16 px, so a phone does not zoom the page when the field takes focus. */
+label input.searchField {
+  font-size: 16px;
+}
+.searchField::-webkit-search-cancel-button {
+  cursor: pointer;
+}
+.searchField:disabled {
+  cursor: not-allowed;
+}
+.count {
+  min-width: 7.5rem;
+  padding: 0 var(--space-1);
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-mute);
+}
+
+@container frame (min-width: 768px) {
+  button.searchToggle {
+    display: none;
+  }
+  /* Beside the other controls when they leave it 22rem, else on a line of its own. */
+  .searchRow {
+    display: flex;
+    flex: 1 1 22rem;
+    order: 0;
+  }
+}
+
+/* The Word reader's line about its isolated frame, under the controls. */
+.note {
+  flex: 1 1 100%;
+  order: 2;
+  min-width: 0;
+  margin: 0;
+  padding: 0 var(--space-2);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-mute);
+}

@@ -1,248 +1,38 @@
 @tailwind base;
-@tailwind components;
-@tailwind utilities;
 
 /*
- * Palette notes (researched, accessibility-first):
- * - Dark theme follows GitHub Primer dark: near-black blue-gray surfaces,
- *   #58A6FF accent (7:1 on the background), warm amber as the secondary.
- * - Light theme follows Tailwind gray + blue-700 (#1D4ED8, 6.9:1 on white).
- * - No neon, no glows on text. Elevation via soft shadows only.
+ * Base elements on the design tokens (app/tokens.css). The stylesheets load in this order from
+ * app/layout.tsx: tokens.css, this file (Tailwind's preflight first, so it never overrides a
+ * component), sheet.css (the design system's components), styles/frame.css and the page
+ * stylesheets, then utilities.css (Tailwind's utilities last, so a utility class still wins over
+ * a component rule). The admin loads its own app/admin/admin.css.
  */
 
-:root,
-:root[data-theme='dark'] {
-  --bg: 11 14 20;
-  --surface: 17 21 29;
-  --surface-2: 26 32 41;
-  --ink: 231 235 240;
-  --ink-dim: 179 188 200;
-  --ink-mute: 125 135 148;
-  --accent: 88 166 255;
-  --accent-2: 227 179 65;
-  --accent-contrast: 11 14 20;
-  --line: rgba(231, 235, 240, 0.09);
-  --glow: 0 8px 28px rgba(0, 0, 0, 0.45);
-  --shadow-card: none;
-  color-scheme: dark;
+html { scroll-padding-top: calc(var(--nav-height) + var(--space-4)); }
+@media (min-width: 1024px) {
+  html { scroll-padding-top: calc(var(--frame-inset) + var(--nav-height) + var(--space-4)); }
 }
 
-:root[data-theme='light'] {
-  --bg: 248 249 251;
-  --surface: 255 255 255;
-  --surface-2: 239 241 245;
-  --ink: 17 24 39;
-  --ink-dim: 75 85 99;
-  --ink-mute: 107 114 128;
-  --accent: 29 78 216;
-  --accent-2: 180 83 9;
-  --accent-contrast: 255 255 255;
-  --line: rgba(17, 24, 39, 0.1);
-  --glow: none;
-  --shadow-card: 0 1px 3px rgba(17, 24, 39, 0.08), 0 8px 24px rgba(17, 24, 39, 0.06);
-  color-scheme: light;
+body {
+  background-color: var(--sheet);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
 }
 
-@layer base {
-  html {
-    scroll-behavior: smooth;
-  }
+::selection { background-color: color-mix(in srgb, var(--line) 30%, transparent); }
 
-  body {
-    @apply bg-bg font-display text-ink antialiased;
-    transition: background-color 0.25s ease, color 0.25s ease;
-  }
+/* Focus everywhere, the admin included: a 2 px ring in the line color, 2 px from the control. */
+:focus-visible { outline: var(--focus-width) solid var(--line); outline-offset: var(--focus-offset); }
 
-  ::selection {
-    background-color: rgb(var(--accent) / 0.25);
-  }
-
-  h1, h2, h3, h4 {
-    @apply tracking-tight text-ink;
-    text-wrap: balance;
-  }
-
-  :focus-visible {
-    outline: 2px solid rgb(var(--accent));
-    outline-offset: 2px;
-    border-radius: 2px;
-  }
-}
-
-@layer components {
-  .wrap {
-    @apply mx-auto w-full max-w-wrap px-5 md:px-8;
-  }
-
-  .kicker {
-    @apply font-mono text-[11px] uppercase tracking-[0.18em] text-ink-mute;
-  }
-
-  .display-1 {
-    font-size: clamp(2.25rem, 4.5vw + 1rem, 4.5rem);
-    line-height: 1.04;
-    letter-spacing: -0.03em;
-    font-weight: 600;
-  }
-
-  .display-2 {
-    font-size: clamp(1.75rem, 2.6vw + 0.75rem, 2.9rem);
-    line-height: 1.1;
-    letter-spacing: -0.025em;
-    font-weight: 600;
-  }
-
-  .display-3 {
-    font-size: clamp(1.35rem, 1.4vw + 0.7rem, 1.8rem);
-    line-height: 1.2;
-    letter-spacing: -0.02em;
-    font-weight: 600;
-  }
-
-  .body-lg {
-    @apply text-base text-ink-dim md:text-lg;
-    line-height: 1.7;
-  }
-
-  .hairline {
-    height: 1px;
-    background: var(--line);
-  }
-
-  .btn {
-    @apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-md px-5 py-2.5 text-sm font-medium transition-all duration-200 ease-out;
-  }
-
-  .btn-primary {
-    @apply btn bg-accent text-accent-contrast hover:opacity-90;
-  }
-
-  .btn-ghost {
-    @apply btn text-ink;
-    border: 1px solid var(--line);
-  }
-  .btn-ghost:hover {
-    border-color: rgb(var(--accent) / 0.6);
-    color: rgb(var(--accent));
-  }
-
-  .pill {
-    @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-mono text-[11px] uppercase tracking-wider text-ink-dim;
-    border: 1px solid var(--line);
-    background: rgb(var(--surface) / 0.6);
-  }
-
-  .pill-accent {
-    @apply text-accent;
-    border-color: rgb(var(--accent) / 0.35);
-    background: rgb(var(--accent) / 0.07);
-  }
-
-  .chip {
-    @apply inline-flex items-center rounded-sm px-2 py-0.5 font-mono text-[11px] text-ink-dim;
-    border: 1px solid var(--line);
-  }
-
-  .card {
-    @apply rounded-md bg-surface shadow-card;
-    border: 1px solid var(--line);
-  }
-
-  .input {
-    @apply w-full rounded-sm bg-surface px-3 py-2 font-mono text-sm text-ink placeholder:text-ink-mute focus:outline-none;
-    border: 1px solid var(--line);
-  }
-  .input:focus {
-    border-color: rgb(var(--accent) / 0.6);
-    box-shadow: 0 0 0 3px rgb(var(--accent) / 0.1);
-  }
-
-  .textarea {
-    @apply input min-h-[90px] resize-y;
-    line-height: 1.6;
-  }
-
-  .label {
-    @apply mb-1.5 block font-mono text-[10px] uppercase tracking-[0.16em] text-ink-mute;
-  }
-
-  .link-underline {
-    position: relative;
-  }
-  .link-underline::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    bottom: -2px;
-    height: 1px;
-    width: 100%;
-    background: rgb(var(--accent));
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
-  }
-  .link-underline:hover::after {
-    transform: scaleX(1);
-  }
-
-  /* markdown body */
-  .prose-md {
-    @apply text-ink-dim;
-    line-height: 1.7;
-  }
-  .prose-md p + p {
-    margin-top: 1em;
-  }
-  .prose-md a {
-    color: rgb(var(--accent));
-    text-decoration: underline;
-    text-underline-offset: 3px;
-  }
-  .prose-md strong {
-    color: rgb(var(--ink));
-    font-weight: 600;
-  }
-  .prose-md ul {
-    list-style: disc;
-    padding-left: 1.25em;
-    margin-top: 0.75em;
-  }
-  .prose-md li + li {
-    margin-top: 0.35em;
-  }
-  .prose-md code {
-    font-family: var(--font-mono);
-    font-size: 0.9em;
-    background: rgb(var(--surface-2));
-    padding: 0.1em 0.35em;
-    border-radius: 4px;
-  }
-}
-
-/* marquee */
-@keyframes marquee-x {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
-}
-.marquee-track {
-  animation: marquee-x 40s linear infinite;
-}
-.marquee:hover .marquee-track {
-  animation-play-state: paused;
-}
+/* Reduced motion: nothing time-based or scroll-tied runs (DESIGN_DIRECTION.md 8). */
 @media (prefers-reduced-motion: reduce) {
-  .marquee-track {
-    animation: none;
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
-  html {
-    scroll-behavior: auto;
-  }
-}
-
-/* thin scrollbars for carousels */
-.scrollbar-none::-webkit-scrollbar {
-  display: none;
-}
-.scrollbar-none {
-  scrollbar-width: none;
 }

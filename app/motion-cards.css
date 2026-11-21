@@ -1,0 +1,109 @@
+/*
+ * The cards' motion (Phase 5, stage 2; motion sheets 5, 7.3 and 7.4): what the browser draws for
+ * it, and the row of readouts that stands in for the drawn callouts on a phone's cards. Every
+ * duration, easing and spring is in lib/motion.ts and runs through Motion in the
+ * components; the card-to-page transition's pseudo-elements are timed by custom properties that
+ * lib/cardTransition.ts writes from lib/motion.ts while it runs. Sizes come from the bundle's
+ * bundle.css (17 and 28). In mask gradients write the keyword black, never a hex value.
+ */
+
+/* ---------- The card's frame (CardShell) ---------- */
+
+/* The frame holds the card and takes the pointer; the card inside fills it and tilts, so the area
+   that answers the pointer never moves with the tilt (no flicker at an edge). */
+.ar-card-frame { position: relative; display: flex; flex-direction: column; min-width: 0; }
+.ar-card-frame > .ar-card { flex: 1 1 auto; }
+/* The border turns line while the pointer is anywhere on the frame, the sliver beside a tilted edge included. */
+.ar-card-frame:hover > .ar-card { border-color: var(--line); }
+/* site: the home page's featured cards fill their cell (app/styles/home.css .hm-feat__item .ar-card). */
+.hm-feat__item > .ar-card-frame { height: 100%; }
+
+/* ---------- The highlight on the rim of a card's glass (bundle.css 17, .ar-card::before) ---------- */
+
+/* The ring over the card's 1 px border: the light below it shows only through the border, so it
+   never crosses the text. CardShell fades it in and out (200 ms, fade). The border is already the
+   line color while the card is hovered, so the light screens onto it (a brighter line where the
+   pointer is) rather than painting the same color over it, which would not show. */
+.ar-card__rim {
+  position: absolute; inset: -1px; z-index: 3; padding: 1px; border-radius: inherit;
+  overflow: hidden; pointer-events: none; opacity: 0; mix-blend-mode: screen;
+  -webkit-mask: linear-gradient(black 0 0) content-box, linear-gradient(black 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(black 0 0) content-box exclude, linear-gradient(black 0 0);
+}
+/* The light: the bundle's 280 px circle of line color, clear from 70%, centred on the card's top
+   left corner and carried to the pointer by a transform (CardShell, through the tilt spring). */
+.ar-card__glint {
+  position: absolute; left: -280px; top: -280px; width: 560px; height: 560px;
+  background: radial-gradient(circle closest-side, var(--line), transparent 70%);
+}
+
+/* The arrow after "Open project" moves by transform (OpenCue), which an inline box does not take. */
+.ar-card__cue { display: inline-flex; }
+
+/* ---------- A card's callouts on phones (DESIGN_DIRECTION.md 5.2 and 7) ---------- */
+
+/* Under 768 px nothing is drawn on a card (motion sheet 5.2, Phones): a photo cover's callouts are a
+   plain row of readouts under it instead. It is the project page's row (app/sheet.css 11) without
+   a glass box of its own, since the card is the glass: inset like the card's text and ruled off
+   from it. From 768 px the row stays hidden and the callouts draw over the cover on hover. */
+@container frame (max-width: 767px) {
+  .ar-card .ar-dim--over .ar-dim__row {
+    display: flex; margin: 0; padding-left: var(--space-4);
+    border: 0; border-bottom: 1px solid var(--rule); border-radius: 0;
+    background-color: transparent; -webkit-backdrop-filter: none; backdrop-filter: none;
+  }
+}
+/* Narrower than the 390 px boards the readouts stack (app/sheet.css 11), still inset like the text. */
+@container frame (max-width: 389px) {
+  .ar-card .ar-dim--over .ar-dim__row { padding: 0 var(--space-4); }
+}
+
+/* ---------- Card covers that move: video and 3D model (bundle.css 28) ---------- */
+
+/* The poster's layer: the photo fills it; a model's poster turns with it. */
+.ar-card__turn { position: absolute; inset: 0; }
+/* The video lies over its poster and fades in once its first frame is up. */
+.ar-card__video { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+.ar-card__live {
+  position: absolute; left: var(--space-3); bottom: var(--space-3); z-index: 2;
+  display: inline-flex; align-items: center; gap: var(--space-1);
+  padding: 2px var(--space-2); border: 1px solid var(--night-rule); border-radius: var(--radius);
+  font-family: var(--font-mono); font-size: 13px; line-height: 1.5; color: var(--on-night);
+  background-color: color-mix(in srgb, var(--night) 82%, transparent);
+}
+/* The 2 px progress line along the foot; its bar is scaled to the video's time (CardCover). */
+.ar-card__progress { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; height: 2px; background-color: var(--night-rule); }
+.ar-card__progress > span { display: block; width: 100%; height: 100%; background-color: var(--night-line); transform: scaleX(0); transform-origin: left center; }
+@media (prefers-reduced-motion: reduce) {
+  .ar-card__live, .ar-card__progress { display: none; }
+}
+
+/* ---------- The filter's grid on /projects (ProjectExplorer) ---------- */
+
+/* A card that leaves is lifted out of the grid at its place (popLayout): the grid is its frame. */
+.pj-cards { position: relative; }
+/* Each card sits in a cell that moves; the card fills it, so the cards of a row keep one height. */
+.pj-cards__item { display: flex; flex-direction: column; min-width: 0; }
+.pj-cards__item > .ar-card-frame { flex: 1 1 auto; }
+
+/* ---------- Card to project page (lib/cardTransition.ts) ---------- */
+
+/* The cover travels (250 ms, move); the rest of the page cross-fades (250 ms, fade). */
+:root[data-card-vt]::view-transition-group(*) {
+  animation-duration: var(--ar-vt-cover);
+  animation-timing-function: var(--ar-vt-cover-ease);
+}
+/* Old and new pictures keep their crop while the cover changes shape between card and header. */
+:root[data-card-vt]::view-transition-old(*),
+:root[data-card-vt]::view-transition-new(*) {
+  height: 100%;
+  object-fit: cover;
+  animation-duration: var(--ar-vt-fade);
+  animation-timing-function: var(--ar-vt-fade-ease);
+}
+@media (prefers-reduced-motion: reduce) {
+  :root[data-card-vt]::view-transition-group(*),
+  :root[data-card-vt]::view-transition-old(*),
+  :root[data-card-vt]::view-transition-new(*) { animation: none !important; }
+}

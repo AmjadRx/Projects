@@ -1,0 +1,95 @@
+/*
+ * The audio player inside the media frame (bundle AudioPlayer, app/sheet.css 25): play and pause
+ * on a night plate at the well's left, then the waveform (or, until the engine loads and for media
+ * without a stored waveform, a plain progress line) from 96 px to 32 px short of the right edge
+ * (80 px and 16 px on a phone, the bundle's baseline). The time and mute sit on the bar. Nothing
+ * here animates.
+ */
+
+.stage {
+  position: absolute;
+  inset: 0;
+}
+
+/* The waveform's place in the well. */
+.area,
+.slider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 96px;
+  right: var(--space-6);
+}
+
+@container frame (max-width: 767px) {
+  .area,
+  .slider {
+    left: 80px;
+    right: var(--space-4);
+  }
+}
+
+/* The seek control covers the waveform. Vertical swipes on it still scroll the page. */
+.slider {
+  z-index: 1;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: pan-y pinch-zoom;
+  --progress: 0%;
+}
+
+.slider[aria-disabled='true'] {
+  cursor: default;
+}
+
+/* The well clips anything outside it, so the focus ring sits inside the control. */
+.slider:focus-visible {
+  outline: var(--focus-width) solid var(--on-night);
+  outline-offset: -4px;
+}
+
+.canvas {
+  position: absolute;
+  left: 0;
+  top: var(--space-4);
+  width: 100%;
+  height: calc(100% - 2 * var(--space-4));
+  pointer-events: none;
+}
+
+/* The plain line (the bundle's baseline): on-night-dim, the played part in the night's line color. */
+.track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background-color: var(--on-night-dim);
+  pointer-events: none;
+}
+
+.fill {
+  width: var(--progress, 0%);
+  height: 100%;
+  background-color: var(--night-line);
+}
+
+/* Over the poster line, the load button sits in the middle of the waveform's place. */
+.layer {
+  z-index: 3;
+}
+
+/* The bar: the time, then mute. */
+.controls {
+  display: flex;
+  flex: 1 1 100%;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.pending {
+  visibility: hidden;
+}

@@ -1,0 +1,44 @@
+# v3 follow-ups
+
+Items that wait until after launch: from Phase 6 (1 to 17), Phase 5 stage 2 (18 to 24), and Phase 7 (25 on). None is a security hole in the site's own code, data loss, a broken sign-in, save, publish or upload, a missed AA contrast, or a missed budget, except where an item says so. One line each.
+
+1. The save bar's preview watch does not start again after a media upload or a new sign-in; the status panel shows the newest state.
+2. Cancel pressed after a Blob upload's last bytes does not ask the server, and a file Blob writes after the server answered that nothing was there stays unconfirmed; both are listed under "Not used anywhere", to delete.
+3. A deleted Blob file leaves a 23-byte placeholder that only a later admin listing of its folder removes (after 70 minutes); a preview whose branches are gone never lists again, so its placeholders stay until deleted by hand.
+4. Preview and Production share the Blob store `personal-site-blob-public`, so a preview admin can delete a file the live site uses; give Preview its own store, connected to Preview only.
+5. The empty private Blob store `personal.site-blob` is unused and can be deleted.
+6. `check:secrets --build` skips private terms shorter than 6 characters (4 of the 17); only `check:content` covers those.
+7. `public/media/site/img-7414.webp` is 4.4 MB, above the admin's 4 MB repository limit (the v2 admin uploaded it); recompress it or move it to Blob.
+8. Done in Phase 5 stage 2: the save bar's status text scrambles through Motion+ `scrambleText`, the engine alone, so no Motion code reaches /admin.
+9. A Word file gets no poster: it is never rendered in the site's own origin (D-28), only in the sandboxed reader frame.
+10. Models are not offered for download; the schema has no per-file choice yet (Q-24).
+11. Models other than STEP, and Word files, are read on the page, not in a worker as `ARCHITECTURE.md` 11 asks; they are capped at 150 MB and 50 MB instead.
+12. Old binary `.doc`, `.xls`, and `.ppt` files are refused, where `ARCHITECTURE.md` 13A takes other office formats in as a `file` download.
+13. Files go to the repository up to 4 MB, not the 10 MB of `ARCHITECTURE.md` 13A; Blob takes everything larger.
+14. The login count across server instances is best effort (four instances allow 8 attempts, not 5); the firewall rule, once enforced, is the exact limit.
+15. The firewall rule "Admin login limit" is in log mode; it is enforced only when the owner says (`docs/ADMIN_GUIDE.md`, the firewall section).
+16. Safari, Firefox, and a real phone are untested.
+17. GitHub still has the branch `claude/portfolio-admin-dashboard-OQLaX` from before v3; delete it if nothing needs it.
+18. Motion+ `Ticker`, and `Carousel` built on it, keep Motion's frame loop running while mounted, even at rest (`useAnimationFrame(noop)` in `motion-plus` 4.3.0). Since Phase 7 neither mounts under reduced motion or the pause control; with motion on, the tools strip, the phone strip and the gallery still mount them near the view, and removing the loop there needs a patch to `motion-plus` (a dependency change, the owner's call) or an upstream fix.
+19. Done in Phase 7: the headline's reflow at 390 px when Archivo arrives; fallback faces matched to each width keep every page's layout shift under 0.005.
+20. Owner question: the rotor tilt follows the sheet's range (0 at rest, 1 when the hero's foot meets the nav's), so the wing rotors pass under the sticky nav at about 25 to 30 degrees and the full cruise pose of the Cruise board is never on screen.
+21. Owner question: phone cards show their callouts in a row under the photo, as `DESIGN_DIRECTION.md` 5.2 and 7 ask, where the canvas (Motion-Cards 5.2 and the 390 px boards) shows none.
+22. Owner question: the model hero shows no Blueprint callouts; should it carry Raven's project callouts?
+23. Owner question: `DESIGN_DIRECTION.md` 7 gives tablets (768 to 1023 px) a two-column hero, where the canvas's home.css keeps one column below 1024 px; the build follows the canvas.
+24. D-60 asks for a visible pause button on every looping cover video; covers rely on the footer's pause control for now.
+25. The framework: v3 runs on Next.js 14.2.15 with React 18.3 and Tailwind CSS 3, because Phase 1 (the upgrade to the current stable release, Next.js 16, with React 19 and Tailwind CSS 4) has not run. `npm audit` lists 35 advisories for this Next.js version, 4 of them critical, and many are fixed only in 15.5.x and 16.x; the live site runs the same version today. Phase 1 is the first step after launch.
+26. Owner decision, a missed budget: on the 7 project pages whose largest picture is the cover photo (raven, fsae-bronco-racing, stmicroelectronics, crossfit-megatrons, engr172-build-a-bronco, palmsync, smart-plant-care), Lighthouse's phone LCP on the Vercel preview is 1.98 to 2.88 s (medians of three runs; Performance 95 to 99), and 4.1 to 4.4 s over the lab's HTTP/1.1 server, against 2.0 s, although the photo arrives in about 50 ms and paints in the first frame: Lighthouse's model charges a picture's paint with every script that starts before it. Options: measure over HTTP/2 as Vercel serves the site, judge these pages on field data (Speed Insights), relax the phone LCP budget for photo pages, or change the phone layout or the framework.
+27. Owner decision, a design deviation for AA: in Blueprint the sticky nav, the phone menu's sheet and the sheet frame's bands dim what passes under them by half (`--nav-glass-dim` 0.5, against the bundle's 0.67), and the nav's "Ctrl K" hint is ink-dim where the nav is see-through, so their text keeps AA over a white photo (4.72 to 1, from 3.63 and 2.31); Whiteprint and the Light tier are unchanged. Confirm, or choose another remedy (nav words in ink, a denser fill, an opaque nav).
+28. Owner decision: the sky's still now sits on whole pixels (so Chrome no longer counts it as each page's largest paint), up to about half a pixel from where it was, and covers on phones and tablets load the next smaller file at some screen densities; neither is visible at 3x.
+29. A picture that fails to load still shows the browser's broken-image icon in the image block, every viewer poster (video, embed, 3D model, the model hero's poster, the PDF and Word posters, the lightbox's video and model items), Compare and PanZoom; the States boards (S.1) ask for the placeholder. Cards, covers, the gallery, the build log and the hero already follow the boards.
+30. Owner question: when a video hero's poster fails, the drawing takes the slot (as built from States S.5); should the video stay instead?
+31. Owner question: the lightbox dialog is named "Gallery"; the bundle names it "Photo N of M".
+32. The headline keeps its line-by-line spans after the reveal until the visitor's first input, a width change or print, so the reveal is never painted twice; until then find in page may not match across a line break.
+33. `components/viewers/shared/sizes.ts` writes `calc(100vw - 40px)` with no space after `calc(`, so body pictures list 16 file widths from 16w in their `srcset` (a few hundred bytes of HTML); the cover's sizes show the fix.
+34. `lib/motion.ts` `media.gallery.atOnce` is no longer read by any code; keep it or drop it.
+35. `tests/hero-lens-motionplus.test.ts` "frameBehind" waits a fixed 100 ms of real time and fails when the machine is heavily loaded; `tests/palette-nav.test.ts` and `tests/seo-routes.test.ts` still name `next/font`, which the site no longer uses.
+36. The commit-msg hook that D-78 asks for is not installed: `scripts/check-commit-messages.mjs` already reads a message file, so it is one line in `package.json`'s `simple-git-hooks`; CI checks the branch's messages meanwhile.
+37. CI's end-to-end job runs about 840 tests on 2 workers within 30 minutes; raise `E2E_WORKERS` or shard it if it nears the limit, and upload `E2E_CONTRAST_DIR` with the failure artifacts.
+38. The Lighthouse runner also serves the build with `next start`; if a run ever waits forever on `/_next/image`, reuse the end-to-end suite's image warm-up there. After Phase 1, check whether the warm-up is still needed and that `next/dist/compiled/@hapi/accept`, which it loads, still exists.
+39. The harness self-test "names a request for a picture the warm-up did not make, even one its page drops before any answer" (`tests/e2e/harness.spec.ts`) missed its own held request once with 8 workers at full load and passed 15 of 15 when run again; make it wait for the hold before it closes the page.
+40. Every page now loads four global stylesheets instead of three: with the font faces and the nav's glass rules, the first CSS group passed Next 14's 100 KiB chunk limit and split. The budgets hold on every page whose largest paint is text; moving comments or the fallback faces out of that group would bring it back to three.

@@ -1,0 +1,321 @@
+# CI for the v3 rebuild (ARCHITECTURE.md 9, 11, 12, 14; docs/V3_PLAN.md D-71, D-75, D-78, D-80).
+#
+# It runs on pushes to v3 and on pull requests to main. It never runs on a push to main and never
+# deploys: Vercel builds and deploys on its own, and its build runs the content check first
+# (prebuild), so a failing check stops the deploy there too.
+#
+# Two Actions secrets, set by the owner, each given only to the steps that need it:
+#   MOTION_TOKEN       npm ci (Motion+ installs from Motion's registry through .npmrc),
+#                      check:lockfile, and the build (which runs check:lockfile first).
+#   CONTENT_BLOCKLIST  check:content and the build. The content check fails closed in CI without it.
+# No step prints a secret: the checks below see only whether each one is set.
+#
+# The build job builds once; the Lighthouse and end-to-end jobs measure that build as soon as it is
+# packed, while the build tests run their own two builds beside them.
+#
+# Every action is pinned to a full commit SHA, checked against its releases page (V3_PLAN.md 4.4).
+
+name: CI
+
+on:
+  push:
+    branches: [v3]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Vercel builds this project on Node 24.x.
+  NODE_VERSION: 24.x
+  NEXT_TELEMETRY_DISABLED: '1'
+
+jobs:
+  checks:
+    name: Lint, types, unit tests, content and lockfile checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          # No npm cache: it would hold the licensed Motion+ package in the Actions cache.
+          package-manager-cache: false
+      - name: Check that the secrets this job needs are set
+        env:
+          HAS_MOTION_TOKEN: ${{ secrets.MOTION_TOKEN != '' }}
+          HAS_CONTENT_BLOCKLIST: ${{ secrets.CONTENT_BLOCKLIST != '' }}
+        run: |
+          status=0
+          if [ "$HAS_MOTION_TOKEN" != true ]; then echo "::error::The Actions secret MOTION_TOKEN is not set: npm ci needs it to install Motion+."; status=1; fi
+          if [ "$HAS_CONTENT_BLOCKLIST" != true ]; then echo "::error::The Actions secret CONTENT_BLOCKLIST is not set: the content check fails closed without it."; status=1; fi
+          exit $status
+      - name: Lockfile check, before anything is installed
+        env:
+          MOTION_TOKEN: ${{ secrets.MOTION_TOKEN }}
+        run: npm run check:lockfile
+      - name: Install
+        env:
+          MOTION_TOKEN: ${{ secrets.MOTION_TOKEN }}
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Lint the tests
+        run: npm run lint:tests
+      - name: Type check
+        run: npm run type-check
+      - name: Unit tests
+        run: npm test
+      - name: Content check
+        env:
+          CONTENT_BLOCKLIST: ${{ secrets.CONTENT_BLOCKLIST }}
+        run: npm run check:content
+
+  build:
+    name: Build and build-output checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The whole history: scripts/content-dates.mjs dates each content file from git, as the
+          # Vercel build does through the GitHub API, and refuses a shallow clone.
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false
+      - name: Check that the secrets this job needs are set
+        env:
+          HAS_MOTION_TOKEN: ${{ secrets.MOTION_TOKEN != '' }}
+          HAS_CONTENT_BLOCKLIST: ${{ secrets.CONTENT_BLOCKLIST != '' }}
+        run: |
+          status=0
+          if [ "$HAS_MOTION_TOKEN" != true ]; then echo "::error::The Actions secret MOTION_TOKEN is not set: npm ci needs it to install Motion+."; status=1; fi
+          if [ "$HAS_CONTENT_BLOCKLIST" != true ]; then echo "::error::The Actions secret CONTENT_BLOCKLIST is not set: the content check fails closed without it."; status=1; fi
+          exit $status
+      - name: Install
+        env:
+          MOTION_TOKEN: ${{ secrets.MOTION_TOKEN }}
+        run: npm ci
+      - name: Build
+        # prebuild: check:lockfile, copy-vendor, content-dates, check:content, check:sky; then
+        # next build; postbuild: check:sky --build (first-load weight, no three.js in a first load)
+        # and check:secrets --build (no secret value, private term, or token shape in the output).
+        env:
+          MOTION_TOKEN: ${{ secrets.MOTION_TOKEN }}
+          CONTENT_BLOCKLIST: ${{ secrets.CONTENT_BLOCKLIST }}
+        run: npm run build
+      - name: Pack the build for the Lighthouse and end-to-end jobs
+        run: tar -cf "$RUNNER_TEMP/next-build.tar" --exclude=.next/cache .next
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: next-build
+          path: ${{ runner.temp }}/next-build.tar
+          if-no-files-found: error
+          retention-days: 1
+
+  build-tests:
+    name: Build tests (fidelity and hiding, two full builds)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The whole history, as in the build job, so these builds read the same content dates.
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false
+      - name: Check that the secrets this job needs are set
+        env:
+          HAS_MOTION_TOKEN: ${{ secrets.MOTION_TOKEN != '' }}
+        run: |
+          if [ "$HAS_MOTION_TOKEN" != true ]; then echo "::error::The Actions secret MOTION_TOKEN is not set: npm ci needs it to install Motion+."; exit 1; fi
+      - name: Install
+        env:
+          MOTION_TOKEN: ${{ secrets.MOTION_TOKEN }}
+        run: npm ci
+      - name: Make the files prebuild makes before next build (public/vendor, the content dates)
+        run: node scripts/copy-vendor.mjs && node scripts/content-dates.mjs
+      - name: Build tests
+        # Each test runs `next build` itself, into a folder of its own, and none runs npm run build:
+        # no secret is needed here. The content check and the build-output checks run in the build job.
+        run: npm run test:build
+
+  lighthouse:
+    name: Lighthouse (${{ matrix.form-factor }}, ${{ matrix.theme }})
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        form-factor: [mobile, desktop]
+        theme: [blueprint, whiteprint]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false
+      - name: Check that the secrets this job needs are set
+        env:
+          HAS_MOTION_TOKEN: ${{ secrets.MOTION_TOKEN != '' }}
+        run: |
+          if [ "$HAS_MOTION_TOKEN" != true ]; then echo "::error::The Actions secret MOTION_TOKEN is not set: npm ci needs it to install Motion+."; exit 1; fi
+      - name: Install
+        env:
+          MOTION_TOKEN: ${{ secrets.MOTION_TOKEN }}
+        run: npm ci
+      - name: Copy the files next start serves from public/vendor
+        run: node scripts/copy-vendor.mjs
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: next-build
+          path: ${{ runner.temp }}/next-build
+      - name: Unpack the build
+        run: tar -xf "$RUNNER_TEMP/next-build/next-build.tar"
+      - name: Find Google Chrome
+        run: |
+          chrome="$(command -v google-chrome-stable || command -v google-chrome || true)"
+          if [ -z "$chrome" ]; then echo "::error::Google Chrome is not installed on this runner."; exit 1; fi
+          echo "CHROME_PATH=$chrome" >> "$GITHUB_ENV"
+          "$chrome" --version
+      - name: Lighthouse CI (ARCHITECTURE.md 9 budgets on every public page)
+        # Lighthouse CI comes through npx, pinned in scripts/lighthouse-ci.mjs; npm needs no token
+        # for it, so this step has none. Before collect, the same Chrome (CHROME_PATH, through
+        # @playwright/test) loads every page through the server Lighthouse measures and checks that
+        # it painted this job's theme (<html data-theme>).
+        run: npm run lighthouse -- --form-factor ${{ matrix.form-factor }} --theme ${{ matrix.theme }}
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: ${{ !cancelled() }}
+        with:
+          name: lighthouse-${{ matrix.form-factor }}-${{ matrix.theme }}
+          # The median run's HTML report for each page, the assertion results, and summary.md: about
+          # 18 MB for each form factor and theme. A week keeps them within GitHub Free's artifact
+          # storage once the repository is private.
+          path: .lighthouseci/reports/${{ matrix.form-factor }}-${{ matrix.theme }}/
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 7
+
+  # ------------------------------------------------------------------------------------------------
+  # End-to-end tests: Playwright with Google Chrome (keyboard paths, and axe on every route in both
+  # themes, ARCHITECTURE.md 10). Another Phase 7 area writes the suite as `npm run test:e2e` (branch
+  # p7b/e2e); until it is merged, this job fails with "Missing script: test:e2e". Its server,
+  # tests/e2e/serve.mjs, serves the build this job downloads (E2E_REUSE_BUILD with E2E_DIST_DIR) with
+  # next start, instead of building again: a build here would need both secrets and the history.
+  # ------------------------------------------------------------------------------------------------
+  e2e:
+    name: End-to-end tests
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false
+      - name: Check that the secrets this job needs are set
+        env:
+          HAS_MOTION_TOKEN: ${{ secrets.MOTION_TOKEN != '' }}
+        run: |
+          if [ "$HAS_MOTION_TOKEN" != true ]; then echo "::error::The Actions secret MOTION_TOKEN is not set: npm ci needs it to install Motion+."; exit 1; fi
+      - name: Install
+        env:
+          MOTION_TOKEN: ${{ secrets.MOTION_TOKEN }}
+        run: npm ci
+      - name: Copy the files next start serves from public/vendor
+        run: node scripts/copy-vendor.mjs
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: next-build
+          path: ${{ runner.temp }}/next-build
+      - name: Unpack the build
+        run: tar -xf "$RUNNER_TEMP/next-build/next-build.tar"
+      - name: End-to-end tests
+        # Playwright passes this environment on to the suite's server.
+        env:
+          E2E_REUSE_BUILD: '1'
+          E2E_DIST_DIR: .next
+        run: npm run test:e2e
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        # Traces and reports only when a test fails (D-80); the suite keeps no admin session in them.
+        if: ${{ failure() }}
+        with:
+          name: e2e-results
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  secret-scan:
+    name: Secret scan (gitleaks) and commit messages
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false
+      - name: Find the commits this branch or pull request would bring to main
+        id: range
+        # Every run reads the whole branch, so a run that a newer push cancelled leaves no commit unread.
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ "$EVENT_NAME" = pull_request ]; then
+            range="$BASE_SHA..$HEAD_SHA"
+            messages="$range"
+          elif git rev-parse --verify --quiet origin/main > /dev/null; then
+            range="origin/main..$GITHUB_SHA"
+            messages="$range"
+          else
+            # No main to compare with: gitleaks scans all this commit reaches, and the message check
+            # reads this commit alone, since the v2 commits under v3 hold messages from before D-78.
+            range="$GITHUB_SHA"
+            messages="$GITHUB_SHA^!"
+          fi
+          echo "SCAN_RANGE=$range" >> "$GITHUB_ENV"
+          echo "MESSAGE_RANGE=$messages" >> "$GITHUB_ENV"
+          echo "The commits in $range: $(git rev-list --count "$range")"
+      - name: Install gitleaks 8.30.1, checked against its published SHA-256
+        run: |
+          curl --fail --silent --show-error --location --retry 3 -o "$RUNNER_TEMP/gitleaks.tar.gz" \
+            https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz
+          echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  $RUNNER_TEMP/gitleaks.tar.gz" | sha256sum --check --strict -
+          tar -xzf "$RUNNER_TEMP/gitleaks.tar.gz" -C "$RUNNER_TEMP" gitleaks
+      - name: Scan those commits for secrets
+        # Findings print with the secret redacted. A finding the owner has resolved (the secret
+        # rotated) is ignored by its fingerprint in .gitleaksignore, never by its value (D-71).
+        run: |
+          "$RUNNER_TEMP/gitleaks" git --redact --verbose --no-banner --log-opts="$SCAN_RANGE" .
+      - name: Commit messages without an em dash or an en dash (D-78)
+        # check:content covers every tracked file; this covers the messages, and prints only commit
+        # ids. It runs even when the secret scan failed, so one run reports both.
+        if: ${{ !cancelled() && steps.range.outcome == 'success' }}
+        run: node scripts/check-commit-messages.mjs "$MESSAGE_RANGE"

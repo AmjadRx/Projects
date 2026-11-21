@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!--
+  The isolated page that renders Word documents (docs/V3_PLAN.md D-28). The reader loads it in an
+  iframe with sandbox="allow-scripts" and never allow-same-origin, so it runs in an opaque origin
+  and cannot reach the site.
+
+  Its policy allows one inline loader, by hash, and through 'strict-dynamic' only the three
+  scripts that loader inserts: JSZip, docx-preview, and docx-frame.js, all from this site. Matching
+  by hash does not depend on how a browser reads 'self' inside an opaque origin; 'self' is there
+  only for browsers without 'strict-dynamic'. Styles may be inline (docx-preview writes them), and
+  images and fonts may come only from data: and blob: addresses. Nothing else: no network
+  requests, no frames, no forms.
+
+  If the loader below changes by one byte, its hash changes too:
+    node -e "console.log(require('crypto').createHash('sha256').update(process.argv[1]).digest('base64'))" '<the loader>'
+-->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Yc/61JIMg+iBIvN5mC296yEznKmn5iOXn1tzRsy+1Zg=' 'strict-dynamic' 'self'; style-src 'unsafe-inline'; img-src data: blob:; font-src data: blob:; base-uri 'none'; form-action 'none'">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Document</title>
+<style>
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    overflow: hidden;
+  }
+  /* Laid out at the document's own size; the reader scales it with a transform. */
+  #root {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: max-content;
+    transform-origin: 0 0;
+  }
+  #root .docx-wrapper {
+    background: transparent;
+    padding: 16px 16px 0;
+  }
+  #root .docx-wrapper > section.docx {
+    margin-bottom: 16px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+  }
+  /* Search matches, in Whiteprint's line color (the page is drawn light, and this sandboxed page
+     cannot read the site's tokens); the current one is stronger and outlined. */
+  #root mark[data-docx-match] {
+    background: rgba(21, 87, 192, 0.25);
+    color: inherit;
+    border-radius: 2px;
+  }
+  #root mark[data-docx-match][data-current] {
+    background: rgba(21, 87, 192, 0.45);
+    outline: 2px solid rgb(21, 87, 192);
+  }
+</style>
+</head>
+<body>
+<div id="styles"></div>
+<div id="root"></div>
+<script>["/vendor/docx/jszip.min.js","/vendor/docx/docx-preview.min.js","/viewers/docx-frame.js"].forEach(function(src){var el=document.createElement("script");el.src=src;el.async=false;document.body.appendChild(el)});</script>
+</body>
+</html>

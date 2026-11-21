@@ -1,0 +1,185 @@
+/*
+ * Motion for the owner's media (motion sheet 6; DESIGN_DIRECTION.md 6.3 and 7; the states boards):
+ * a video's poster giving way, the scroll-scrubbed video's pinned run, the lightbox fading in and
+ * out, a photo arriving in its well, and the gallery's strip (Motion+ Carousel moves it by
+ * transform). Only opacity animates here; the loading line is the bundle's own (.ar-ph__bar and
+ * .ar-lightbox__bar, app/sheet.css 10 and 18), transform only.
+ *
+ * Durations and curves come from lib/motion.ts as custom properties that each component sets
+ * inline (--mm-*). The moving states are set on the client only, once the page is interactive and
+ * useMotionOk() allows, so the server's markup is always the final state; under reduced motion
+ * app/globals.css also stops every transition.
+ */
+
+/* ---------- A video's poster (sheet 6.1): it gives way in 150 ms once the first frame is ready ---------- */
+
+.mm-poster[data-out] {
+  opacity: 0;
+}
+
+.mm-motion .mm-poster[data-out] {
+  transition: opacity var(--mm-poster-out) var(--mm-poster-ease);
+}
+
+/* ---------- The scroll-scrubbed video (sheet 6.2) ---------- */
+
+/*
+ * The block (the stage) sticks under the nav while the page scrolls through its run, an empty
+ * element after it whose height is the run: one screen height from the first paint, then
+ * --scrub-run, which the player sets to 100 px a second of video (between one and three screens)
+ * once it knows the file's length. The run is an element, not padding, because a sticky box stays
+ * inside its parent's content box. Only where the scrub runs: a fine pointer, motion allowed, and
+ * not paused (the head script marks the pause on <html> before the first paint). Anywhere else,
+ * and under reduced motion, the block is an ordinary player in the flow.
+ *
+ * The whole block fits between the pin and the window's foot: a clip taller than that room (a
+ * portrait or square one) gives up height in its well, where the poster and the video are
+ * contained, so the picture and the controls never sit below the window while it is pinned. The
+ * bar and the caption line keep their own height. Not in full screen, which has its own layout.
+ */
+.mm-scrub {
+  position: relative;
+  /* Where the stage sticks (under the nav), and the room it leaves at the window's foot. */
+  --mm-scrub-top: var(--nav-height);
+  --mm-scrub-foot: 0px;
+}
+
+@container frame (min-width: 1024px) {
+  /* Inside the sheet frame: under the nav, within the frame's inset, and above its foot band. */
+  .mm-scrub {
+    --mm-scrub-top: calc(var(--frame-inset) + var(--nav-height));
+    --mm-scrub-foot: var(--frame-inset);
+  }
+}
+
+.mm-scrub__stage {
+  top: var(--mm-scrub-top);
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  :root:not([data-motion-paused]) .mm-scrub__stage {
+    position: sticky;
+  }
+
+  :root:not([data-motion-paused]) .mm-scrub__stage .ar-mv:not([data-fullscreen]) {
+    max-height: calc(100vh - var(--mm-scrub-top) - var(--mm-scrub-foot));
+  }
+
+  :root:not([data-motion-paused]) .mm-scrub__stage .ar-mv:not([data-fullscreen]) > .ar-mv__well {
+    min-height: 0;
+  }
+
+  :root:not([data-motion-paused]) .mm-scrub__run {
+    height: var(--scrub-run, 100vh);
+  }
+}
+
+/* Where the run ends: the player changes the run's length only while this is below the window. */
+.mm-scrub__end {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+
+/* ---------- The lightbox (sheet 6.4): in 200 ms (fade), out 150 ms (exit) ---------- */
+
+/*
+ * One layer on <body> holds the loading cover and the lightbox (components/viewers/image/
+ * useLightbox.tsx). It fades in from its first frame (@starting-style; a browser without it opens
+ * at once) and, on closing, fades out before it unmounts, while a shield takes any click. It
+ * stacks where the lightbox does (app/sheet.css 18), so nothing of the page shows over it.
+ */
+.mm-lb {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+}
+
+.mm-lb[data-motion] {
+  transition: opacity var(--mm-lb-in) var(--mm-lb-in-ease);
+}
+
+@starting-style {
+  .mm-lb[data-motion] {
+    opacity: 0;
+  }
+}
+
+.mm-lb[data-closing] {
+  opacity: 0;
+}
+
+.mm-lb[data-motion][data-closing] {
+  transition: opacity var(--mm-lb-out) var(--mm-lb-out-ease);
+}
+
+/* Above the dialog, which shares its stacking level and comes before it. */
+.mm-lb__shield {
+  position: absolute;
+  inset: 0;
+  z-index: 70;
+}
+
+/* ---------- A photo arriving (sheets 6.4 and 8.1; the states boards S.2 and S.5) ---------- */
+
+/*
+ * While the photo is on its way (data-arrive="wait") it is hidden over the well's loading state
+ * (.mm-load, the bundle's loading placeholder, whose 2 px line starts after 600 ms). Once it has
+ * decoded ("show") it fades in over the well in 200 ms, the well still whole under it; then the
+ * well fades out under the photo and the player removes it. That second fade shows only where the
+ * photo leaves the well uncovered (a transparent photo, a contained one), so nothing ever cuts from
+ * the well's sheet to the night behind it.
+ */
+.mm-photo[data-arrive='wait'] {
+  opacity: 0;
+}
+
+.mm-photo[data-arrive='show'] {
+  transition: opacity var(--mm-photo-in) var(--mm-photo-ease);
+}
+
+.mm-load {
+  position: absolute;
+  inset: 0;
+}
+
+.mm-load[data-arrive='show'] {
+  opacity: 0;
+  transition: opacity var(--mm-well-out) var(--mm-well-ease) var(--mm-photo-in);
+}
+
+/* ---------- The gallery's strip (sheet 6.4): Motion+ Carousel ---------- */
+
+/*
+ * Carousel's box (components/viewers/image/Gallery.tsx) clips the frames sideways (overflow-x:
+ * clip, set inline; hidden is the fallback for a browser without clip) and takes the drag, with
+ * touch-action: pan-y set inline, so a vertical swipe still scrolls the page. Its list moves by
+ * transform. The box keeps the native track's room (app/sheet.css 18): 4 px on every side for a
+ * frame's focus ring, the frames still starting at the column's edge, and 12 px under them. The
+ * still strip that stands in for Carousel far from the view is the same box, list and items.
+ */
+.mm-gal {
+  overflow-x: hidden;
+  margin: calc(-1 * var(--space-1));
+  padding: var(--space-1) var(--space-1) var(--space-3);
+}
+
+/*
+ * Carousel keeps its list transparent until it has measured the frames, which it does only near
+ * the view. With no loop there is nothing to place first (no copies, no reprojection), so the
+ * frames show where they rest from the server's markup on: nothing hidden before scripts run.
+ */
+.mm-gal > ul {
+  opacity: 1 !important;
+}
+
+/*
+ * A frame's drawn extras (the loading well, the play mark, its icon) take no pointer: the frame's
+ * button does. Carousel also clears aria-hidden from whatever is pressed inside it.
+ */
+.mm-gal [aria-hidden='true'] {
+  pointer-events: none;
+}

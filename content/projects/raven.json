@@ -1,22 +1,27 @@
 {
   "slug": "raven",
+  "visible": true,
   "title": "Raven",
-  "subtitle": "A tilt-rotor eVTOL and the first airframe of a 4-drone autonomous swarm",
+  "subtitle": "Tri-tiltrotor eVTOL testbed",
   "role": "Founder & Lead Engineer, stealth AI hardware startup",
-  "timeframe": "Feb 2026 - present",
+  "timeframe": "Feb 2026 to present",
   "status": "in-progress",
-  "statusLabel": "Stage 1 of 8: electronics integration",
+  "statusLabel": "Stage 1 of 8",
+  "maturity": {
+    "step": 3,
+    "label": "Testbed built; Stage 1 of 8 in progress"
+  },
   "featured": true,
-  "order": 1,
-  "domain": "eVTOL · Autonomy · Power",
+  "order": 2,
+  "domain": "eVTOL, structures, power",
   "tags": [
     "eVTOL",
-    "tilt-rotor",
-    "autonomy",
-    "carbon fiber",
-    "FEA/CFD",
-    "swarm",
-    "firmware"
+    "Tilt-rotor",
+    "Composites",
+    "FEA",
+    "CFD",
+    "CAD",
+    "Avionics"
   ],
   "cover": {
     "kind": "image",
@@ -24,200 +29,217 @@
     "alt": ""
   },
   "links": [],
-  "pitch": "Fixed-wing in cruise, three-motor VTOL in hover. Designed, analyzed, and printed in carbon-fiber composite, on an 8-stage roadmap that ends in a fully autonomous 4-drone swarm with wireless charging at home base.",
+  "callouts": [
+    {
+      "label": "Wingspan",
+      "value": "1.34 m"
+    },
+    {
+      "label": "Structure",
+      "value": "~2 kg"
+    },
+    {
+      "label": "Cruise design point",
+      "value": "60 to 70 km/h"
+    }
+  ],
+  "pitch": "A tri-tiltrotor eVTOL built on the Flightory Stallion FPV airframe and redesigned part by part in carbon-fiber composite, on an 8-stage roadmap toward coordinated multi-drone autonomy.",
   "highlights": [
-    "Airframe structural build complete in PA612-CF15 carbon-fiber composite",
-    "Every part reverse-engineered and re-validated from the stock platform: new material, new constraints, new geometry",
-    "FEA on the main spar, motor mounts, and tail boom; CFD at 60 to 70 km/h cruise",
-    "Tensile and torsion coupon testing to characterize the printed composite",
-    "Designated senior design project and flagship hardware of a stealth AI startup",
-    "FAA Part 107 certification in progress"
+    "Tri-tiltrotor layout: two tilting wing motors and one fixed tail lift motor",
+    "Primary structure in PA612-CF15 carbon-fiber composite with carbon-fiber spar and boom tubes",
+    "FEA on the main spar, motor mounts, and tail-boom mount; CFD on the airfoil and the full airframe at cruise",
+    "Eppler E205 airfoil, CFD-optimized for a 60 to 70 km/h cruise",
+    "First subscale testbed built in Jul 2026: 1.34 m wingspan, about 2 kg of structure",
+    "Stage 1 avionics selected and integrated, with wiring designed for FAA Part 107 compliance"
   ],
   "progress": {
     "steps": [
       {
-        "label": "CAD & analysis",
+        "label": "CAD and analysis",
         "state": "done"
       },
       {
-        "label": "Airframe build",
+        "label": "Testbed build",
         "state": "done"
       },
       {
-        "label": "Electronics integration",
+        "label": "Stage 1: RC flight",
         "state": "current"
       },
       {
-        "label": "First flight",
-        "state": "todo"
-      },
-      {
-        "label": "Autonomy",
+        "label": "Stages 2 to 8",
         "state": "todo"
       }
     ]
   },
   "blocks": [
     {
-      "id": "r1",
+      "id": "rv-a",
       "type": "text",
-      "md": "Raven is a tilt-rotor eVTOL: two wing-mounted motors drive fixed-wing cruise, and a third motor near the tail joins them for vertical takeoff, hover, and landing. The airfoil is an Eppler E205, CFD-optimized for cruise at 60 to 70 km/h. It is built on the geometry of the Flightory Stallion FPV platform, but every part has been reverse-engineered and re-specified: stock LW-PLA/PETG replaced with PA612-CF15 carbon-fiber composite, custom carbon-fiber spar and boom tubes, self-selected programmable servos and avionics, and CAD modified wherever stock parts would not survive Raven's flight envelope."
+      "md": "Raven is my flagship, self-directed aircraft project, started in February 2026, and the flagship aircraft of the stealth AI hardware startup I founded. It is a custom redesign on the Flightory Stallion FPV airframe: Stallion is the stock base platform, and Raven is what I am building on it, with new materials, new structure, and my own electronics selection."
     },
     {
-      "id": "r2",
+      "id": "rv-b",
       "type": "specTable",
       "rows": [
         {
           "label": "Configuration",
-          "value": "Tilt-rotor; 2 motors in cruise, 3 in VTOL"
+          "value": "Tri-tiltrotor: fixed-wing cruise on the 2 wing motors, VTOL hover on all 3"
         },
         {
           "label": "Airfoil",
-          "value": "Eppler E205, CFD-optimized for 60-70 km/h cruise"
+          "value": "Eppler E205, CFD-optimized for a 60 to 70 km/h cruise"
         },
         {
           "label": "Primary structure",
-          "value": "PA612-CF15 carbon-fiber composite, custom carbon-fiber tubes"
+          "value": "Polymaker PA612-CF15 carbon-fiber composite filament"
         },
         {
-          "label": "Modularity",
-          "value": "5-segment fuselage, detachable wing panels, interchangeable nose for payload swaps, V-tail"
+          "label": "Secondary parts",
+          "value": "PLA Tough+"
         },
         {
-          "label": "Analysis",
-          "value": "SolidWorks Simulation + Ansys FEA; Ansys CFD; coupon tensile/torsion testing"
+          "label": "Spar and booms",
+          "value": "Custom-cut carbon-fiber tubes"
+        },
+        {
+          "label": "Airframe",
+          "value": "Modular: multi-segment fuselage, detachable wing panels, interchangeable payload nose, V-tail"
+        },
+        {
+          "label": "Testbed",
+          "value": "1.34 m wingspan, about 2 kg of structure (built Jul 2026)"
         },
         {
           "label": "Status",
-          "value": "Stage 1 of 8: airframe complete, integrating electronics and flight code"
+          "value": "Stage 1 of 8 in progress"
         }
       ]
     },
     {
-      "id": "r3",
+      "id": "rv-c",
       "type": "heading",
-      "text": "Engineering scope"
+      "text": "Structure and analysis"
     },
     {
-      "id": "r4",
+      "id": "rv-d",
       "type": "bullets",
       "items": [
-        "CAD: re-specified every part to the new material and load constraints; modified geometry where stock parts fail Raven's envelope.",
-        "FEA: static loading on the carbon-fiber main spar (bending), motor mounts (thrust and vibration), and tail boom mount (aerodynamic loads).",
-        "CFD: airfoil performance and full-airframe flow at cruise.",
-        "Materials: tensile and torsion testing on printed PA612-CF15 coupons; FDM/FFF print tuning with mandatory dry storage.",
-        "Kinematics: servo-to-pushrod control linkages and snap-fit wing locks with torsion springs.",
-        "Avionics: flight controller, ESCs, motors, receiver, and GPS selection; FAA Part 107-compliant wiring."
+        "Re-specified every airframe part in CAD from the stock STLs, with new material, constraints, and geometry.",
+        "Modeled the servo-to-pushrod linkages and the snap-fit wing locks with torsion springs.",
+        "Ran FEA in SolidWorks Simulation and Ansys: static loading on the carbon-fiber main spar, the motor mounts, and the tail-boom mount.",
+        "Ran CFD in Ansys on airfoil performance and full-airframe flow at cruise.",
+        "Ran tensile and torsion tests on printed PA612-CF15 coupons and tuned the print settings for the moisture-sensitive filament."
       ]
     },
     {
-      "id": "r5",
+      "id": "rv-e",
       "type": "heading",
-      "text": "The 8-stage roadmap"
+      "text": "Roadmap"
     },
     {
-      "id": "r6",
+      "id": "rv-f",
+      "type": "text",
+      "md": "Raven follows an 8-stage capability roadmap from the tilt-rotor prototype toward coordinated multi-drone autonomy. Stage 1, the mechanical build and RC flight, is in progress. Everything after it is a plan, not a result."
+    },
+    {
+      "id": "rv-g",
       "type": "roadmap",
       "stages": [
         {
           "n": 1,
-          "title": "Mechanical build + RC flight",
-          "desc": "Airframe complete; integrating off-the-shelf flight controller, ESCs, motors, GPS. Manual RC control.",
+          "title": "Mechanical build and RC flight",
+          "desc": "The tilt-rotor prototype under manual RC control.",
           "status": "in-progress"
         },
         {
           "n": 2,
           "title": "Autonomous flight",
-          "desc": "Programmable flight controller, GPS waypointing, basic mission planning.",
+          "desc": "Planned.",
           "status": "next"
         },
         {
           "n": 3,
-          "title": "4-drone swarm",
-          "desc": "Three more airframes; coordinated synchronized flight.",
+          "title": "Multi-drone coordination",
+          "desc": "Planned.",
           "status": "future"
         },
         {
           "n": 4,
           "title": "Object detection",
-          "desc": "Swarm flies pre-programmed patterns, detects trained objects, reports GPS coordinates to HQ.",
+          "desc": "Planned.",
           "status": "future"
         },
         {
           "n": 5,
           "title": "HQ-side AI",
-          "desc": "Drones stream live video; HQ AI does analysis and mid-mission flight-plan updates.",
+          "desc": "Planned.",
           "status": "future"
         },
         {
           "n": 6,
           "title": "Onboard control AI",
-          "desc": "AI moves onboard for adaptive control in harsh, uncertain conditions.",
+          "desc": "Planned.",
           "status": "future"
         },
         {
           "n": 7,
           "title": "Onboard sensor fusion",
-          "desc": "Autonomous fixed-wing/VTOL transition, onboard detection, swarm and foreign-object collision avoidance.",
+          "desc": "Planned.",
           "status": "future"
         },
         {
           "n": 8,
-          "title": "Full IoT + wireless charging",
-          "desc": "Drones autonomously return to base, land in wireless charging stations, recharge. Zero human in the loop.",
+          "title": "IoT with wireless autonomous charging",
+          "desc": "Planned.",
           "status": "future"
         }
       ]
     },
     {
-      "id": "r7",
+      "id": "rv-h",
       "type": "heading",
-      "text": "Startup context"
+      "text": "Build photos"
     },
     {
-      "id": "r8",
-      "type": "text",
-      "md": "Raven is the aircraft half of a two-product system at the stealth AI hardware startup I founded (pre-seed). The other half is an on-premise software brain that takes plain-language missions and coordinates a shared fleet, arbitrating multiple concurrent missions at once. The MVP is a live two-mission demo (a leak and an intrusion handled by one fleet), proven first in simulation and on commodity drones. An example end state: a fire department swarm that patrols a region on schedule, detects and classifies a hazardous fire, and dispatches verified information to first responders with no joystick involved. For more information, or if you are a VC or an investor, please contact me directly."
-    },
-    {
-      "id": "r9",
+      "id": "rv-i",
       "type": "gallery",
       "items": [
         {
           "kind": "image",
           "src": "/media/raven/build-01.webp",
-          "alt": "Printed PA612-CF15 fuselage segments"
+          "alt": ""
         },
         {
           "kind": "image",
           "src": "/media/raven/img-7666.webp",
-          "alt": "Wing assembly with carbon spar"
+          "alt": ""
+        },
+        {
+          "kind": "image",
+          "src": "/media/raven/img-7414.webp",
+          "alt": ""
         }
       ]
     },
     {
-      "id": "r10",
+      "id": "rv-j",
       "type": "log",
       "entries": [
         {
-          "date": "2026-06",
-          "title": "Airframe structural build complete",
-          "md": "All PA612-CF15 segments printed and assembled: 5-part fuselage, detachable wings, V-tail. Moving to electronics integration and flight-code bring-up."
+          "date": "2026-08-13",
+          "title": "Stage 1 avionics in",
+          "md": "Servos and electronics soldered, waterproofed, and installed. The Stage 1 avionics are the flight controller, ESCs, motors, receiver, and GPS."
         },
         {
-          "date": "2026-04",
-          "title": "FEA and CFD pass",
-          "md": "Static FEA on the main spar, motor mounts, and tail boom mount; CFD validation of the E205 section and full airframe at cruise."
-        },
-        {
-          "date": "2026-03",
-          "title": "Materials characterization",
-          "md": "Tensile and torsion testing on printed PA612-CF15 coupons; dialed FDM settings and dry-storage workflow for the moisture-sensitive filament."
+          "date": "2026-07",
+          "title": "First subscale testbed built",
+          "md": "Largely 3D-printed: 1.34 m wingspan and about 2 kg of structure."
         },
         {
           "date": "2026-02",
           "title": "Project start",
-          "md": "Selected the Stallion geometry as the base platform and began the full reverse-engineering and re-specification pass in CAD."
+          "md": "Began the custom redesign on the Flightory Stallion FPV airframe."
         }
       ]
     }

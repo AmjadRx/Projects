@@ -1,0 +1,76 @@
+/*
+ * Before and after inside the media frame (bundle BeforeAfter; the tags, the divider and its grip
+ * are app/sheet.css 25: .ar-mv__ba-tag, .ar-mv__ba-rule, .ar-mv__ba-grip). The divider's place is
+ * the custom property --at, from 0 to 1 (0.5 in the server HTML). Nothing here animates.
+ */
+.frame {
+  min-width: 0;
+}
+
+.surface {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  /* Up and down drags scroll the page and two fingers zoom it; sideways drags move the divider. */
+  touch-action: pan-y pinch-zoom;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: ew-resize;
+  --at: 0.5;
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* The before photo shows left of the divider, the after photo right of it. */
+.before {
+  z-index: 2;
+  clip-path: inset(0 calc((1 - var(--at)) * 100%) 0 0);
+}
+
+.after {
+  z-index: 1;
+  clip-path: inset(0 0 0 calc(var(--at) * 100%));
+}
+
+/* Never larger than the photo's natural size; the component sets max-width and max-height. */
+.fit {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.img {
+  object-fit: contain;
+  -webkit-user-drag: none;
+}
+
+/* The real control, laid over the photos and invisible; the divider shows its state. */
+.range {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* The divider sits above the photos and the range; the drag starts anywhere on the well. */
+.surface .rule {
+  z-index: 4;
+  pointer-events: none;
+}
+
+/* Keyboard focus on the hidden range input shows as the ring on the grip. */
+.range:focus-visible ~ .rule :global(.ar-mv__ba-grip) {
+  outline: var(--focus-width) solid var(--on-night);
+  outline-offset: var(--focus-offset);
+}

@@ -1,0 +1,112 @@
+/*
+ * The chrome's motion (Phase 5, stage 2; the bundle's motion sheet 7, "Page motion", and sheet 8
+ * for reduced motion): the numbers the link and button rules of app/sheet.css read, the heat rule
+ * under the nav, the phone menu's edge line, the panel rise's start state, and the theme
+ * cross-fade. Loaded after app/sheet.css (app/layout.tsx). Under reduced motion app/sheet.css 1
+ * already turns off every transition and animation in the frame and the menu; this file adds what
+ * must also stay still or out of the way there.
+ */
+
+/* ---------- The numbers ---------- */
+
+/* From `page` in lib/motion.ts, each transition as its duration and easing, and the distances;
+   tests/chrome-motion.test.ts checks every one against that file. On :root, so the menu's portal
+   and the view transition's pseudo-elements read them too. */
+:root {
+  --page-underline: 150ms cubic-bezier(0, 0, 0.58, 1);
+  --page-press: 120ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  --page-press-distance: 1px;
+  --page-fill: 150ms cubic-bezier(0, 0, 0.58, 1);
+  --page-sweep: 240ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  --page-nudge: 150ms cubic-bezier(0, 0, 0.58, 1);
+  --page-nudge-distance: 3px;
+  --page-readout-fill: 150ms cubic-bezier(0, 0, 0.58, 1);
+  --page-panel-rise: 16px;
+  --page-theme-duration: 300ms;
+  --page-theme-easing: cubic-bezier(0, 0, 0.58, 1);
+}
+
+/* ---------- The heat rule (DESIGN_DIRECTION.md 2.4, place 3; sheet 7.1) ---------- */
+
+/* components/site/HeatRule.tsx, along the nav's foot over its rule (the bundle's section 6). The
+   window (bar) slides in from the left by the page progress while the ramp (fill) slides back by
+   as much, so the ramp stays on the page width; at the top of the page nothing is drawn. Where the
+   browser ties animations to scroll, both run on the page's scroll with no easing; elsewhere the
+   component writes the same two translations from Motion's scroll progress. */
+.ar-heat {
+  position: absolute; left: 0; right: 0; bottom: -1px; height: var(--heat-rule-height);
+  overflow: hidden; pointer-events: none; contain: strict;
+}
+.ar-heat[hidden] { display: none; }
+.ar-heat__bar { height: 100%; overflow: hidden; transform: translateX(-100%); }
+.ar-heat__fill { height: 100%; background-image: var(--heat); transform: translateX(100%); }
+@supports (animation-timeline: scroll()) {
+  .ar-heat__bar { animation: ar-heat-bar auto linear both; animation-timeline: scroll(root block); }
+  .ar-heat__fill { animation: ar-heat-fill auto linear both; animation-timeline: scroll(root block); }
+}
+@keyframes ar-heat-bar {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0%); }
+}
+@keyframes ar-heat-fill {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0%); }
+}
+/* Not drawn under reduced motion (sheet 8.1). */
+@media (prefers-reduced-motion: reduce) { .ar-heat { display: none; } }
+/* Nor while the visitor has paused motion (D-67), from the first paint: the head script marks
+   <html data-motion-paused> before it, so the pause and reduced motion leave the same page. */
+[data-motion-paused] .ar-heat { display: none; }
+
+/* ---------- The phone menu (sheet 7.5) ---------- */
+
+/* The 1 px line on the roll's edge (components/site/menuMotion.ts shows it while the sheet
+   unrolls; its height comes from page.menu.edgeLine). A sheet rolling back up takes no input. */
+.ar-mmenu__edge { position: absolute; left: 0; right: 0; bottom: 0; background-color: var(--line); opacity: 0; pointer-events: none; }
+.ar-mmenu[data-phase="closing"] { pointer-events: none; }
+
+/* ---------- Panels coming into view (sheet 7.2) ---------- */
+
+/* The start state of a panel that lies below the window once the page is interactive
+   (components/site/risePanels.ts sets the attribute, never the server); its rise is a Web Animation
+   from here. While it waits, unseen, it takes no pointer input, so a tap at the window's foot never
+   opens a card nobody can see (focus entering it draws it at once). Nothing waits under reduced
+   motion, and a printed page shows every panel. */
+.ar-frame [data-ar-rise] { opacity: 0; translate: 0 var(--page-panel-rise); }
+@media (prefers-reduced-motion: no-preference) { .ar-frame [data-ar-rise] { pointer-events: none; } }
+@media (prefers-reduced-motion: reduce), print {
+  .ar-frame [data-ar-rise] { opacity: 1 !important; translate: none !important; }
+}
+
+/* ---------- The theme cross-fade (sheet 7.6) ---------- */
+
+/* components/site/themeFade.ts marks <html> for the length of the fade: the old page fades out
+   over the new one in 300 ms (fade), as the browser's own cross-fade with the sheet's timing, and
+   only then, so a card's view transition (sheet 7.3) keeps its own. The toggles are pictured
+   apart, so their new state shows at once (each name is used by one toggle at most: the compact
+   one shows from 1024 px, the menu's below). */
+:root[data-theme-fade]::view-transition-group(root),
+:root[data-theme-fade]::view-transition-old(root),
+:root[data-theme-fade]::view-transition-new(root) {
+  animation-duration: var(--page-theme-duration);
+  animation-timing-function: var(--page-theme-easing);
+}
+:root[data-theme-fade] .ar-theme--compact { view-transition-name: ar-theme-compact; }
+:root[data-theme-fade] .ar-theme--full { view-transition-name: ar-theme-full; }
+:root[data-theme-fade]::view-transition-group(ar-theme-compact),
+:root[data-theme-fade]::view-transition-group(ar-theme-full),
+:root[data-theme-fade]::view-transition-new(ar-theme-compact),
+:root[data-theme-fade]::view-transition-new(ar-theme-full) { animation: none; }
+:root[data-theme-fade]::view-transition-old(ar-theme-compact),
+:root[data-theme-fade]::view-transition-old(ar-theme-full) { animation: none; opacity: 0; }
+
+/* ---------- Links and buttons (sheet 7.7) ---------- */
+
+/* The transitions themselves are in app/sheet.css 3, 4, 8 and 13, on the numbers above, with the
+   hover states for a mouse or a pen only. Under reduced motion states show at once (app/sheet.css 1
+   turns the transitions off) and the arrows stay put (sheet 7.7 and 8.1: no travel). */
+@media (prefers-reduced-motion: reduce) {
+  .ar-btn--text:hover .ar-icon,
+  .ar-readout:hover .ar-readout__go,
+  .ar-card:hover .ar-card__open .ar-icon { transform: none; }
+}

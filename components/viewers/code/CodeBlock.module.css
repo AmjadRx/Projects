@@ -1,0 +1,56 @@
+/*
+ * The code block's well (bundle CodeBlock): the snippet in B612 Mono 13 px on night, over the
+ * well's grid. Highlighting uses the night's inks only: the css-variables theme's colors
+ * (lib/highlight.ts) are set here, inside the well, to keywords in the night's line color, comments
+ * in on-night-dim, and everything else in on-night. Never the thermal ramp.
+ *
+ * The well is as tall as the snippet, from 16:5 of its width up to 16:9, past which the snippet
+ * scrolls inside it (the well is its own inline-size container for those lengths).
+ */
+.well {
+  /* Long lines scroll inside the well; they never widen the page or a grid column. */
+  container-type: inline-size;
+  color: var(--on-night);
+  --shiki-foreground: var(--on-night);
+  --shiki-background: transparent;
+  --shiki-token-keyword: var(--night-line);
+  --shiki-token-comment: var(--on-night-dim);
+  --shiki-token-constant: var(--on-night);
+  --shiki-token-string: var(--on-night);
+  --shiki-token-string-expression: var(--on-night);
+  --shiki-token-parameter: var(--on-night);
+  --shiki-token-function: var(--on-night);
+  --shiki-token-punctuation: var(--on-night);
+  --shiki-token-link: var(--on-night);
+}
+
+.pre {
+  min-height: calc(100cqi * 5 / 16);
+  max-height: calc(100cqi * 9 / 16);
+  margin: 0;
+  overflow: auto;
+  padding: var(--space-4) var(--space-5);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.7;
+  white-space: pre;
+  tab-size: 2;
+  font-variant-ligatures: none;
+  color: var(--shiki-foreground);
+}
+
+/* The well clips anything outside it, so the focus ring is drawn inside the edge, in on-night. */
+.pre:focus-visible {
+  outline-color: var(--on-night);
+  outline-offset: -2px;
+}
+
+.pre code {
+  font: inherit;
+}
+
+@container frame (max-width: 767px) {
+  .pre {
+    padding: var(--space-3) var(--space-4);
+  }
+}

@@ -1,150 +1,43 @@
-import { NextResponse, type NextRequest } from 'next/server';
-import fs from 'fs';
-import path from 'path';
-import { sessionValid } from '@/lib/auth';
-import { ghConfigured, ghDeleteFile, ghListDir, ghPutFile } from '@/lib/github';
+/**
+ * The media library (ARCHITECTURE.md 11 "Uploads" and "Paths", 13A; docs/V3_PLAN.md D-23 to D-27).
+ *
+ * GET ?folder=<folder>[&refs=1]: the folder's files in the repository (draft branch) and in Vercel
+ * Blob, with reference counts in the draft and the published content when `refs=1`. A folder is
+ * "site", a project saved on the draft, or a folder that already holds files in either store (the
+ * files of a renamed or deleted project).
+ * GET ?folders=1: every media folder that exists in either store, with the project or "site" that
+ * owns it (null when no saved project does) and its number of files (MediaFoldersResponse).
+ * POST (multipart/form-data, UploadFields plus one or more "file" parts of at most 4 MB each):
+ * each file is checked from its bytes, cleaned, and content-checked; all of them become one commit
+ * on the draft branch. Larger files go to Blob through ./token and ./confirm.
+ * DELETE { src }: removes a file that the draft no longer uses (and, for Blob, that the published
+ * site no longer uses either); otherwise 409 'referenced' lists the fields.
+ *
+ * Every method needs a session; POST and DELETE also check the Origin. The work is in
+ * lib/admin/server/media.ts.
+ */
+import { MAX_JSON_BODY_BYTES, MAX_REPO_UPLOAD_BODY_BYTES, MediaDeleteBody } from '@/lib/admin/contract';
+import { adminRoute, json, readForm, readJson } from '@/lib/admin/server/guard';
+import { deleteMedia, listFolders, listMedia, uploadMedia } from '@/lib/admin/server/media';
+import { getContentRepo } from '@/lib/admin/server/repo';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+export const maxDuration = 60;
 
-const IMAGE_MAX = 8 * 1024 * 1024;
-const VIDEO_MAX = 25 * 1024 * 1024;
-const SCOPE_RE = /^[a-z0-9-]+$/;
+export const GET = adminRoute({}, async ({ req, env }) => {
+  const params = req.nextUrl.searchParams;
+  const ctx = { repo: getContentRepo(env), env };
+  if (params.get('folders') === '1') return json(await listFolders(ctx));
+  return json(await listMedia(ctx, params));
+});
 
-const GH_CONFIG_ERROR =
-  'GitHub CMS is not configured. Open Settings in this admin for a live diagnosis, or set GITHUB_TOKEN and GITHUB_REPO in your hosting dashboard and redeploy.';
+export const POST = adminRoute({}, async ({ req, env }) => {
+  const form = await readForm(req, MAX_REPO_UPLOAD_BODY_BYTES);
+  return json(await uploadMedia({ repo: getContentRepo(env), env }, form));
+});
 
-/** Production filesystems are read-only; media needs the GitHub CMS there. */
-function ghRequiredResponse(): NextResponse | null {
-  if (!ghConfigured() && process.env.NODE_ENV === 'production') {
-    return NextResponse.json({ error: GH_CONFIG_ERROR }, { status: 503 });
-  }
-  return null;
-}
-
-function sanitizeName(name: string): string {
-  const ext = path.extname(name).toLowerCase().replace(/[^a-z0-9.]/g, '');
-  const base = path
-    .basename(name, path.extname(name))
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 48);
-  return `${base || 'file'}${ext}`;
-}
-
-/** GET ?scope=slug — list media files for a scope. */
-export async function GET(req: NextRequest) {
-  if (!sessionValid(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const scope = req.nextUrl.searchParams.get('scope') ?? '';
-  if (!SCOPE_RE.test(scope)) return NextResponse.json({ error: 'Bad scope' }, { status: 400 });
-  const guard = ghRequiredResponse();
-  if (guard) return guard;
-
-  try {
-    if (ghConfigured()) {
-      const entries = await ghListDir(`public/media/${scope}`);
-      return NextResponse.json({
-        files: entries
-          .filter((e) => e.type === 'file' && e.name !== '.gitkeep')
-          .map((e) => ({ name: e.name, src: `/media/${scope}/${e.name}`, size: e.size })),
-      });
-    }
-    const dir = path.join(process.cwd(), 'public', 'media', scope);
-    if (!fs.existsSync(dir)) return NextResponse.json({ files: [] });
-    const files = fs
-      .readdirSync(dir)
-      .filter((f) => f !== '.gitkeep')
-      .map((f) => ({
-        name: f,
-        src: `/media/${scope}/${f}`,
-        size: fs.statSync(path.join(dir, f)).size,
-      }));
-    return NextResponse.json({ files });
-  } catch (err) {
-    return NextResponse.json({ error: (err as Error).message }, { status: 500 });
-  }
-}
-
-/** POST multipart — upload a file into public/media/{scope}/. */
-export async function POST(req: NextRequest) {
-  if (!sessionValid(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const guard = ghRequiredResponse();
-  if (guard) return guard;
-
-  let form: FormData;
-  try {
-    form = await req.formData();
-  } catch {
-    return NextResponse.json({ error: 'Expected multipart form data' }, { status: 400 });
-  }
-  const file = form.get('file');
-  const scope = String(form.get('scope') ?? '');
-  if (!(file instanceof File)) return NextResponse.json({ error: 'Missing file' }, { status: 400 });
-  if (!SCOPE_RE.test(scope)) return NextResponse.json({ error: 'Bad scope' }, { status: 400 });
-
-  const isImage = file.type.startsWith('image/');
-  const isVideo = file.type.startsWith('video/');
-  if (!isImage && !isVideo) {
-    return NextResponse.json({ error: 'Only image and video files allowed' }, { status: 400 });
-  }
-  if (isImage && file.size > IMAGE_MAX) {
-    return NextResponse.json({ error: 'Image exceeds 8 MB limit' }, { status: 400 });
-  }
-  if (isVideo && file.size > VIDEO_MAX) {
-    return NextResponse.json(
-      { error: 'Video exceeds 25 MB. Paste a YouTube or Vimeo link instead.' },
-      { status: 400 },
-    );
-  }
-
-  const name = sanitizeName(file.name);
-  const rel = `public/media/${scope}/${name}`;
-  const buffer = Buffer.from(await file.arrayBuffer());
-
-  try {
-    if (ghConfigured()) {
-      await ghPutFile(rel, buffer, `media: upload ${scope}/${name}`);
-    } else {
-      const abs = path.join(process.cwd(), rel);
-      fs.mkdirSync(path.dirname(abs), { recursive: true });
-      fs.writeFileSync(abs, buffer);
-    }
-    return NextResponse.json({
-      ok: true,
-      src: `/media/${scope}/${name}`,
-      kind: isVideo ? 'video' : 'image',
-    });
-  } catch (err) {
-    return NextResponse.json({ error: (err as Error).message }, { status: 500 });
-  }
-}
-
-/** DELETE {src} — remove a media file. */
-export async function DELETE(req: NextRequest) {
-  if (!sessionValid(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const guard = ghRequiredResponse();
-  if (guard) return guard;
-  let body: { src?: string };
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: 'Invalid body' }, { status: 400 });
-  }
-  const src = body.src ?? '';
-  const m = src.match(/^\/media\/([a-z0-9-]+)\/([a-z0-9.-]+)$/);
-  if (!m) return NextResponse.json({ error: 'Bad src' }, { status: 400 });
-
-  const rel = `public${src}`;
-  try {
-    if (ghConfigured()) {
-      await ghDeleteFile(rel, `media: remove ${m[1]}/${m[2]}`);
-    } else {
-      const abs = path.join(process.cwd(), rel);
-      if (fs.existsSync(abs)) fs.unlinkSync(abs);
-    }
-    return NextResponse.json({ ok: true });
-  } catch (err) {
-    return NextResponse.json({ error: (err as Error).message }, { status: 500 });
-  }
-}
+export const DELETE = adminRoute({}, async ({ req, env }) => {
+  const body = await readJson(req, MediaDeleteBody, MAX_JSON_BODY_BYTES);
+  return json(await deleteMedia({ repo: getContentRepo(env), env }, body));
+});

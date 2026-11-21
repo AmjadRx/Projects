@@ -1,36 +1,42 @@
 {
   "slug": "pipelined-cpu-verilog",
+  "visible": true,
   "title": "Pipelined CPU in Verilog",
-  "subtitle": "Custom-ISA pipelined processor in Xilinx Vivado",
-  "role": "Coursework",
-  "timeframe": "Jan 2025 - Mar 2025",
+  "subtitle": "A Computer Architecture course project",
+  "role": "Coursework (solo)",
+  "timeframe": "Jan 2025 to Mar 2025",
   "status": "completed",
+  "statusLabel": "",
+  "maturity": {
+    "step": 2,
+    "label": "Validated in simulation"
+  },
   "featured": false,
-  "order": 10,
+  "order": 11,
   "domain": "Digital design",
   "tags": [
     "Verilog",
-    "Vivado",
-    "CPU",
-    "pipelining"
+    "Xilinx Vivado ML",
+    "Computer architecture"
   ],
   "cover": {
     "kind": "image",
-    "src": "/media/pipelined-cpu-verilog/cover.jpg",
-    "alt": "Pipelined CPU block diagram"
+    "src": "",
+    "alt": ""
   },
   "links": [],
-  "pitch": "A pipelined CPU with a custom instruction set optimized for arithmetic, a forwarding unit for pipeline efficiency, and hazard detection, validated through simulation and performance analysis.",
+  "callouts": [],
+  "pitch": "A pipelined CPU in Verilog on Xilinx Vivado ML with a custom arithmetic-optimized instruction set, a forwarding unit, and hazard detection.",
   "highlights": [
-    "Custom instruction set optimized for arithmetic operations",
+    "Custom arithmetic-optimized instruction set",
     "Forwarding unit and hazard detection",
-    "Validated via simulation and performance analysis in Vivado ML"
+    "Validated in simulation, with performance analysis"
   ],
   "blocks": [
     {
-      "id": "v1",
+      "id": "cp-a",
       "type": "text",
-      "md": "Designed and implemented a pipelined processor in Xilinx Vivado ML with a custom arithmetic-optimized instruction set, a forwarding unit to keep the pipeline fed, and hazard detection. Verified through simulation and performance analysis."
+      "md": "A pipelined CPU written in Verilog on Xilinx Vivado ML for a Computer Architecture course: a custom arithmetic-optimized instruction set, a forwarding unit, and hazard detection, validated in simulation with performance analysis."
     }
   ]
 }

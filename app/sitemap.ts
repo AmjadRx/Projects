@@ -1,18 +1,21 @@
 import type { MetadataRoute } from 'next';
-import { loadProjects } from '@/lib/content';
+import { lastContentUpdate, projectRevDate } from '@/lib/history';
+import { siteData, siteUrl } from '@/lib/site';
 
+/** Visible pages only: the static routes, /log, and every visible project (docs/V3_PLAN.md D-65). */
 export default function sitemap(): MetadataRoute.Sitemap {
-  const base = 'https://amjadrehawi.com';
+  const { projects } = siteData();
+  const base = siteUrl();
+  const updated = lastContentUpdate(projects.map((p) => p.slug));
+  const staticRoutes = ['/', '/projects', '/about', '/experience', '/log', '/contact'];
   return [
-    { url: base, changeFrequency: 'monthly', priority: 1 },
-    { url: `${base}/projects`, changeFrequency: 'monthly', priority: 0.9 },
-    { url: `${base}/about`, changeFrequency: 'monthly', priority: 0.8 },
-    { url: `${base}/experience`, changeFrequency: 'monthly', priority: 0.8 },
-    { url: `${base}/contact`, changeFrequency: 'monthly', priority: 0.7 },
-    ...loadProjects().map((p) => ({
-      url: `${base}/projects/${p.slug}`,
-      changeFrequency: 'monthly' as const,
-      priority: p.featured ? 0.8 : 0.6,
+    ...staticRoutes.map((route) => ({
+      url: `${base}${route === '/' ? '' : route}`,
+      ...(updated ? { lastModified: updated } : {}),
     })),
+    ...projects.map((project) => {
+      const rev = projectRevDate(project.slug);
+      return { url: `${base}/projects/${project.slug}`, ...(rev ? { lastModified: rev } : {}) };
+    }),
   ];
 }

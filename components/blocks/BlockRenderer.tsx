@@ -1,211 +1,149 @@
-import ReactMarkdown from 'react-markdown';
-import type { Block, BlockState, LogEntry, MediaRef, ProjectLink } from '@/lib/types';
-import MediaView from '@/components/MediaView';
-import LinkButton from '@/components/LinkButton';
-import Reveal from '@/components/Reveal';
-import Gallery from './Gallery';
-import { cn } from '@/lib/utils';
+import type { ReactNode } from 'react';
+import { blockHasContent } from '@/lib/blocks';
+import { isKnownBlock } from '@/lib/schema';
+import { siteRepository } from '@/lib/site';
+import type { Block } from '@/lib/types';
+import AudioBlock from './AudioBlock';
+import BulletsBlock from './BulletsBlock';
+import CalloutBlock from './CalloutBlock';
+import CodeSnippetBlock from './CodeSnippetBlock';
+import CompareBlock from './CompareBlock';
+import { deeper, type BlockContext } from './context';
+import DocumentBlock from './DocumentBlock';
+import FileBlock from './FileBlock';
+import GalleryBlock from './GalleryBlock';
+import HeadingBlock from './HeadingBlock';
+import ImageBlock from './ImageBlock';
+import LinkRowBlock from './LinkRowBlock';
+import LogBlock from './LogBlock';
+import Model3dBlock from './Model3dBlock';
+import PanzoomBlock from './PanzoomBlock';
+import QuoteBlock from './QuoteBlock';
+import RepoBlock from './RepoBlock';
+import RoadmapBlock from './RoadmapBlock';
+import SpecTableBlock from './SpecTableBlock';
+import TextBlock from './TextBlock';
+import VideoBlock from './VideoBlock';
 
-function Markdown({ md }: { md: string }) {
-  return (
-    <div className="prose-md">
-      <ReactMarkdown>{md}</ReactMarkdown>
-    </div>
-  );
-}
+/**
+ * Renders a list of blocks in order, in the project body's column (the canvas's pj-blocks: 24 px
+ * between blocks, a heading block 32 px more above it). A block of an unknown type renders
+ * nothing and never throws (ARCHITECTURE.md 4), and a block with nothing to show renders nothing
+ * at all, not even its wrapper (lib/blocks.ts). Heading levels come from what precedes each block:
+ * a `heading` block sits at `ctx.level`, and a list heading after it one level deeper
+ * (docs/V3_PLAN.md D-67). A spec table is named for screen readers by the heading before it, or by
+ * `ctx.label` (the project's title) when none precedes it; a gallery by that heading too (its id),
+ * or by its own word ("Gallery") when none precedes it.
+ */
+export default function BlockRenderer({ blocks, ctx }: { blocks: Block[]; ctx: BlockContext }) {
+  let headingSeen = false;
+  let lastHeading = '';
+  let lastHeadingId = '';
+  const out: ReactNode[] = [];
+  const repository = siteRepository();
 
-function RoadmapBlock({ stages }: { stages: { n: number; title: string; desc: string; status: BlockState }[] }) {
-  const style: Record<BlockState, { dot: string; label: string }> = {
-    done: { dot: 'bg-accent/50', label: 'Done' },
-    'in-progress': { dot: 'bg-accent', label: 'In progress' },
-    next: { dot: 'bg-accent-2', label: 'Next' },
-    future: { dot: 'bg-ink-mute/40', label: 'Future' },
-  };
-  return (
-    <ol className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-      {stages.map((stage) => (
-        <li
-          key={stage.n}
-          className={cn('card p-4', stage.status === 'in-progress' && 'border-accent/50')}
-          style={
-            stage.status === 'in-progress'
-              ? { background: 'rgb(var(--accent) / 0.05)' }
-              : undefined
-          }
-        >
-          <div className="flex items-center justify-between">
-            <span className="font-mono text-[11px] text-ink-mute">
-              {String(stage.n).padStart(2, '0')}
-            </span>
-            <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-mute">
-              <span className={cn('h-1.5 w-1.5 rounded-full', style[stage.status].dot)} aria-hidden />
-              {style[stage.status].label}
-            </span>
-          </div>
-          <h4 className="mt-2.5 text-sm font-semibold leading-snug text-ink">{stage.title}</h4>
-          <p className="mt-1.5 text-xs leading-relaxed text-ink-dim">{stage.desc}</p>
-        </li>
-      ))}
-    </ol>
-  );
-}
+  blocks.forEach((block, index) => {
+    if (!isKnownBlock(block)) return;
+    if (!blockHasContent(block, repository)) return;
+    const key = `${block.id}-${index}`;
+    const wrap = (node: ReactNode, className?: string) => (
+      <div key={key} id={`${ctx.idPrefix}${block.id}`} className={className} data-block={block.type}>
+        {node}
+      </div>
+    );
 
-function LogBlock({ entries }: { entries: LogEntry[] }) {
-  return (
-    <div className="flex flex-col gap-6">
-      {entries.map((entry) => (
-        <article
-          key={entry.date + entry.title}
-          id={entry.date}
-          className="scroll-mt-24 border-l-2 pl-5"
-          style={{ borderColor: 'rgb(var(--accent) / 0.4)' }}
-        >
-          <a href={`#${entry.date}`} className="kicker text-accent hover:underline">
-            {entry.date}
-          </a>
-          <h4 className="mt-1.5 text-base font-semibold text-ink">{entry.title}</h4>
-          <div className="mt-2 text-sm">
-            <Markdown md={entry.md} />
-          </div>
-          {entry.media && entry.media.length > 0 && (
-            <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3">
-              {entry.media.map((m, i) => (
-                <div
-                  key={i}
-                  className="relative aspect-[4/3] overflow-hidden rounded-sm"
-                  style={{ border: '1px solid var(--line)' }}
-                >
-                  <MediaView media={m} placeholderLabel={m.alt} sizes="33vw" />
-                </div>
-              ))}
-            </div>
-          )}
-        </article>
-      ))}
-    </div>
-  );
-}
+    switch (block.type) {
+      case 'heading':
+        headingSeen = true;
+        lastHeading = block.text;
+        lastHeadingId = `${ctx.idPrefix}${block.id}`;
+        out.push(<HeadingBlock key={key} id={block.id} text={block.text} ctx={ctx} />);
+        return;
+      case 'text':
+        out.push(wrap(<TextBlock md={block.md} ctx={ctx} />));
+        return;
+      case 'image':
+        out.push(wrap(<ImageBlock media={block.media} />));
+        return;
+      case 'gallery':
+        out.push(wrap(<GalleryBlock items={block.items} labelledBy={lastHeadingId || undefined} />));
+        return;
+      case 'video':
+        out.push(wrap(<VideoBlock media={block.media} scrub={block.scrub} />));
+        return;
+      case 'specTable':
+        out.push(wrap(<SpecTableBlock rows={block.rows} caption={lastHeading || ctx.label} />));
+        return;
+      case 'bullets':
+        out.push(
+          wrap(
+            <BulletsBlock
+              heading={block.heading}
+              items={block.items}
+              headingLevel={headingSeen ? deeper(ctx.level) : ctx.level}
+              ctx={ctx}
+            />,
+          ),
+        );
+        return;
+      case 'twoCol': {
+        const columnCtx = { ...ctx, level: headingSeen ? deeper(ctx.level) : ctx.level };
+        out.push(
+          wrap(
+            <div className="pj-two">
+              <BlockRenderer blocks={block.left} ctx={columnCtx} />
+              <BlockRenderer blocks={block.right} ctx={columnCtx} />
+            </div>,
+          ),
+        );
+        return;
+      }
+      case 'quote':
+        out.push(wrap(<QuoteBlock text={block.text} attribution={block.attribution} />));
+        return;
+      case 'linkRow':
+        out.push(wrap(<LinkRowBlock links={block.links} ctx={ctx} />));
+        return;
+      case 'roadmap':
+        out.push(wrap(<RoadmapBlock stages={block.stages} label={ctx.label} />, 'pj-road'));
+        return;
+      case 'log':
+        out.push(wrap(<LogBlock id={block.id} entries={block.entries} ctx={ctx} />, 'pj-log'));
+        return;
+      case 'file':
+        out.push(wrap(<FileBlock label={block.label} src={block.src} note={block.note} />));
+        return;
+      case 'callout':
+        out.push(wrap(<CalloutBlock tone={block.tone} md={block.md} ctx={ctx} />));
+        return;
+      case 'model3d':
+        out.push(
+          wrap(<Model3dBlock media={block.media} views={block.views} explode={block.explode} callouts={block.callouts} />),
+        );
+        return;
+      case 'document':
+        out.push(wrap(<DocumentBlock media={block.media} title={block.title} />));
+        return;
+      case 'audio':
+        out.push(wrap(<AudioBlock media={block.media} title={block.title} />));
+        return;
+      case 'code':
+        out.push(wrap(<CodeSnippetBlock language={block.language} code={block.code} repoUrl={block.repoUrl} />));
+        return;
+      case 'compare':
+        out.push(wrap(<CompareBlock before={block.before} after={block.after} />));
+        return;
+      case 'panzoom':
+        out.push(wrap(<PanzoomBlock media={block.media} />));
+        return;
+      case 'repo':
+        out.push(wrap(<RepoBlock url={block.url} title={ctx.label} />));
+        return;
+      default:
+        return;
+    }
+  });
 
-function renderBlock(block: Block, slug: string): React.ReactNode {
-  switch (block.type) {
-    case 'heading':
-      return <h2 className="display-3 pt-6">{(block as { text: string }).text}</h2>;
-    case 'text':
-      return <Markdown md={(block as { md: string }).md} />;
-    case 'image': {
-      const media = (block as { media: MediaRef }).media;
-      return (
-        <figure>
-          <div
-            className="relative aspect-[16/10] w-full overflow-hidden rounded-md"
-            style={{ border: '1px solid var(--line)' }}
-          >
-            <MediaView media={media} placeholderLabel={media.alt || slug} sizes="760px" />
-          </div>
-          {media.caption && (
-            <figcaption className="mt-2.5 text-center text-sm text-ink-mute">
-              {media.caption}
-            </figcaption>
-          )}
-        </figure>
-      );
-    }
-    case 'gallery':
-      return <Gallery items={(block as { items: MediaRef[] }).items} />;
-    case 'video': {
-      const media = (block as { media: MediaRef }).media;
-      return (
-        <div
-          className="relative w-full overflow-hidden rounded-md"
-          style={{ border: '1px solid var(--line)' }}
-        >
-          <MediaView media={media} placeholderLabel="Video" />
-        </div>
-      );
-    }
-    case 'specTable': {
-      const rows = (block as { rows: { label: string; value: string }[] }).rows;
-      return (
-        <dl className="card overflow-hidden">
-          {rows.map((row, i) => (
-            <div
-              key={row.label}
-              className="grid grid-cols-1 gap-1 px-5 py-3.5 sm:grid-cols-[200px_1fr] sm:gap-6"
-              style={i > 0 ? { borderTop: '1px solid var(--line)' } : undefined}
-            >
-              <dt className="kicker pt-0.5">{row.label}</dt>
-              <dd className="text-sm leading-relaxed text-ink">{row.value}</dd>
-            </div>
-          ))}
-        </dl>
-      );
-    }
-    case 'bullets': {
-      const b = block as { heading?: string; items: string[] };
-      return (
-        <div>
-          {b.heading && <h3 className="mb-4 text-lg font-semibold text-ink">{b.heading}</h3>}
-          <ul className="flex flex-col gap-2.5">
-            {b.items.map((item, i) => (
-              <li key={i} className="flex gap-3 text-[15px] leading-relaxed text-ink-dim">
-                <span className="mt-[11px] h-px w-4 shrink-0 bg-accent/60" aria-hidden />
-                {item}
-              </li>
-            ))}
-          </ul>
-        </div>
-      );
-    }
-    case 'twoCol': {
-      const b = block as { left: Block[]; right: Block[] };
-      return (
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-          <div className="flex flex-col gap-6">{b.left.map((child) => (
-            <div key={child.id}>{renderBlock(child, slug)}</div>
-          ))}</div>
-          <div className="flex flex-col gap-6">{b.right.map((child) => (
-            <div key={child.id}>{renderBlock(child, slug)}</div>
-          ))}</div>
-        </div>
-      );
-    }
-    case 'quote': {
-      const b = block as { text: string; attribution?: string };
-      return (
-        <blockquote className="border-l-2 py-1 pl-6" style={{ borderColor: 'rgb(var(--accent))' }}>
-          <p className="display-3 !font-medium text-ink">{b.text}</p>
-          {b.attribution && <cite className="kicker mt-3 block not-italic">{b.attribution}</cite>}
-        </blockquote>
-      );
-    }
-    case 'linkRow': {
-      const links = (block as { links: ProjectLink[] }).links;
-      return (
-        <div className="flex flex-wrap gap-2.5">
-          {links.map((link) => (
-            <LinkButton key={link.url} {...link} />
-          ))}
-        </div>
-      );
-    }
-    case 'roadmap':
-      return <RoadmapBlock stages={(block as { stages: { n: number; title: string; desc: string; status: BlockState }[] }).stages} />;
-    case 'log':
-      return <LogBlock entries={(block as { entries: LogEntry[] }).entries} />;
-    default:
-      // Unknown block types render nothing (forward compatibility).
-      return null;
-  }
-}
-
-export default function BlockRenderer({ blocks, slug }: { blocks: Block[]; slug: string }) {
-  return (
-    <div className="flex flex-col gap-10">
-      {blocks.map((block) => {
-        const rendered = renderBlock(block, slug);
-        if (!rendered) return null;
-        return <Reveal key={block.id}>{rendered}</Reveal>;
-      })}
-    </div>
-  );
+  if (out.length === 0) return null;
+  return <div className="pj-blocks">{out}</div>;
 }

@@ -1,19 +1,20 @@
 {
   "slug": "smart-plant-care",
+  "visible": true,
   "title": "Smart Plant Care System",
-  "subtitle": "IoT plant monitor from the Possible Career Accelerator",
-  "role": "Possible Career Accelerator (1 of 25 fellows)",
-  "timeframe": "Mar 2025 - May 2025",
+  "subtitle": "An IoT sensing project from the Possible Career Accelerator",
+  "role": "Possible Career Accelerator Fellow (solo)",
+  "timeframe": "Mar 2025 to May 2025",
   "status": "completed",
+  "statusLabel": "",
   "featured": false,
-  "order": 7,
-  "domain": "IoT · Product design",
+  "order": 12,
+  "domain": "IoT, embedded, product design",
   "tags": [
-    "IoT",
     "STM32",
-    "sensors",
-    "product design",
-    "accessibility"
+    "Sensors",
+    "IoT",
+    "Product design"
   ],
   "cover": {
     "kind": "image",
@@ -21,18 +22,19 @@
     "alt": ""
   },
   "links": [],
-  "pitch": "An IoT plant monitor built in the faculty-nominated Possible Career Accelerator: soil, light, and temperature sensing on STM32 with a sensor-to-app protocol and a care-recommendation dashboard.",
+  "callouts": [],
+  "pitch": "Soil moisture, light, and temperature sensing on an STM32 with a sensor-to-mobile-app protocol and a care-recommendation dashboard.",
   "highlights": [
-    "Soil moisture, light, and temperature sensors into STM32 with a custom sensor-to-mobile protocol",
-    "Power management tuned for wireless battery life",
-    "Formal product-design methods: user research, journey maps, impact/effort matrices",
-    "Accessibility features (voice commands, high-contrast modes) and gamification"
+    "Soil moisture, light, and temperature sensors on an STM32",
+    "Sensor-to-mobile-app protocol and a care-recommendation dashboard",
+    "Power management, accessibility features, and gamification",
+    "Selected for the accelerator as 1 of 25 students"
   ],
   "blocks": [
     {
-      "id": "sp1",
+      "id": "sp-a",
       "type": "text",
-      "md": "Built during the Possible Career Accelerator (1 of 25 students, faculty-nominated). The system reads soil moisture, light, and temperature into an STM32, relays over a custom sensor-to-mobile protocol, and surfaces care recommendations in a user dashboard. The program paired the build with formal product-design methods: user research, journey mapping, and impact/effort prioritization, plus accessibility features like voice commands and high-contrast modes."
+      "md": "Built during the Possible Career Accelerator (March to May 2025): soil moisture, light, and temperature sensors on an STM32, a sensor-to-mobile-app protocol, a care-recommendation dashboard, and power management, designed with formal product-design methods, accessibility features, and gamification."
     }
   ]
 }

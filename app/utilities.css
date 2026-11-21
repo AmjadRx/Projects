@@ -1,0 +1,3 @@
+/* Tailwind's components and utilities, loaded last (see app/globals.css for the order). */
+@tailwind components;
+@tailwind utilities;

@@ -1,36 +1,45 @@
 {
   "slug": "can-bus-diagnostic-tool",
+  "visible": true,
   "title": "CAN Bus Diagnostic Tool",
-  "subtitle": "Custom hardware + Python GUI for real-time CAN monitoring",
+  "subtitle": "A hardware interface and Python GUI for live CAN monitoring",
   "role": "Personal project",
-  "timeframe": "Sep 2023 - Dec 2023",
-  "status": "completed",
+  "timeframe": "Sep 2023 to present",
+  "status": "active",
+  "statusLabel": "Validated on the bench",
+  "maturity": {
+    "step": 4,
+    "label": "Validated on the bench"
+  },
   "featured": false,
   "order": 9,
-  "domain": "Embedded · Tooling",
+  "domain": "Embedded, tooling",
   "tags": [
     "CAN",
     "STM32",
+    "Arduino",
     "Python",
-    "diagnostics"
+    "Diagnostics"
   ],
   "cover": {
     "kind": "image",
-    "src": "/media/can-bus-diagnostic-tool/cover.jpg",
-    "alt": "CAN diagnostic GUI"
+    "src": "",
+    "alt": ""
   },
   "links": [],
-  "pitch": "A custom STM32-based interface between a vehicle CAN bus and a computer, with a Python GUI for real-time monitoring, filtering, and automated diagnostics. Validated on the FSAE car.",
+  "callouts": [],
+  "pitch": "A custom hardware interface between a CAN bus and a computer, with a Python GUI for real-time monitoring, message filtering, and automated diagnostics.",
   "highlights": [
-    "Custom hardware interface (STM32 + Arduino Uno) between CAN and host",
-    "Python GUI with live message filtering and automated diagnostics",
-    "Validated on the FSAE vehicle's thermal-management subsystem"
+    "Custom hardware interface built on an STM32 and an Arduino Uno",
+    "Python GUI for real-time monitoring, message filtering, and automated diagnostics",
+    "Documented the protocol and wrote user manuals",
+    "Validated on the bench"
   ],
   "blocks": [
     {
-      "id": "cb1",
+      "id": "cb-a",
       "type": "text",
-      "md": "Built to make the FSAE car's CAN traffic visible and debuggable: a custom STM32-based hardware bridge to the host computer and a Python GUI that filters live messages and runs automated diagnostics. It became the team's standard tool for validating the thermal-management subsystem."
+      "md": "The tool is a custom hardware interface (STM32 and Arduino Uno) between a CAN bus and a computer, with a Python GUI for real-time monitoring, message filtering, and automated diagnostics. I documented the protocol and wrote user manuals for multiple designs. It is validated on the bench."
     }
   ]
 }

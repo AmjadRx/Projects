@@ -1,0 +1,27 @@
+/*
+ * The save bar's status line while it scrambles (StatusText.tsx; motion sheet 8.3). The new words
+ * hold the line's layout the whole time, so nothing moves and no line re-breaks while the
+ * characters change: unpainted under the scramble, which is drawn over them from the same place,
+ * then shown when it settles. Both are hidden from assistive technology; the line's live region is
+ * the visually hidden copy beside them. Opacity, not color, hides the words, so forced colors keep
+ * them hidden too.
+ *
+ * The scramble stays on one line and is not clipped: it draws from the new words' own characters,
+ * so it runs about as wide as they do, a little past their end or a little short of it, and never
+ * loses a word to a second line. Words that wrap are set at once instead (StatusText.tsx).
+ */
+
+.text {
+  position: relative;
+}
+
+.words[data-scrambling] {
+  opacity: 0;
+}
+
+.scramble {
+  position: absolute;
+  inset: 0;
+  white-space: nowrap;
+  pointer-events: none;
+}

@@ -1,0 +1,72 @@
+/*
+ * The home page's Motion+ pieces (Phase 5, stage 2, the Motion+ step; motion sheets 2.3, 6.4, 7.7
+ * and 8): the readouts counting up (AnimateNumber), the tools ticker (Ticker) and the phone strip
+ * of featured projects (Carousel). Each one's code loads on demand as it nears the view; until
+ * then, and wherever it does not run, the server's markup stands as app/sheet.css and
+ * app/styles/home.css draw it. Loaded after them (app/layout.tsx). In mask gradients write the
+ * keyword black, never a hex value.
+ */
+
+/* ---------- The readouts count up (sheet 2.3; components/sheet/readoutCount.ts) ---------- */
+
+/* While the load sequence plays (lib/intro.ts marks the hero before the first paint, only when
+   scripts run and motion may play), a value that will count shows no digits: its prefix and suffix
+   hold their places, and the digits keep their box. ReadoutValue holds that state itself once the
+   page is interactive (data-roll), or lets the digits show at once; a value nobody took over shows
+   when the mark goes, at the sequence's end. */
+.hm-hero[data-intro] ~ .hm-readouts .ar-readout__value[data-count],
+.ar-readout__value[data-roll] { color: transparent; }
+/* The count: AnimateNumber over the digits, which stay in the page, unseen, for their box and for
+   screen readers. Its line of digits is centred on theirs, line box on line box, so they share a
+   baseline and the hand-back to the text at the end moves nothing. */
+.ar-readout__num { position: relative; }
+.ar-readout__roll {
+  position: absolute; inset: 0; display: flex; align-items: center;
+  color: var(--ink); pointer-events: none;
+}
+@media print {
+  .hm-hero[data-intro] ~ .hm-readouts .ar-readout__value[data-count],
+  .ar-readout__value[data-roll] { color: var(--ink); }
+  .ar-readout__roll { display: none; }
+}
+
+/* ---------- The tools ticker (sheet 7.7; components/home/TickerStrip.tsx) ---------- */
+
+/* From a 768 px frame, with motion allowed, the row moves (MovingTicker): the same items at the
+   same height as the still row (app/styles/home.css), fading at both edges as the canvas draws the
+   moving strip, and dragged by hand. */
+.hm-ticker__view--moving {
+  -webkit-mask-image: linear-gradient(90deg, transparent, black 40px, black calc(100% - 40px), transparent);
+  mask-image: linear-gradient(90deg, transparent, black 40px, black calc(100% - 40px), transparent);
+  cursor: grab;
+}
+.hm-ticker__view--moving:active { cursor: grabbing; }
+/* The Ticker keeps its list unseen until it has measured it. Unmeasured, the list lies exactly
+   where the still row's did (MovingTicker starts at the start of the list), so it shows from the
+   start: a strip that comes alive in view never blinks. */
+.hm-ticker__view--moving > ul { opacity: 1 !important; }
+.hm-ticker__item {
+  display: flex; align-items: center; gap: var(--space-4); min-height: 56px; padding-left: var(--space-4);
+  font-size: 15px; line-height: 1.2; font-weight: 500; color: var(--ink); white-space: nowrap;
+}
+.hm-ticker__item::before { content: "+"; font-family: var(--font-mono); font-size: 15px; color: var(--line); }
+
+/* ---------- The phone strip of featured projects (DESIGN_DIRECTION.md 6.4 and 7) ---------- */
+
+/* Under 768 px, as the strip nears the view (out of the window), the featured cards become a
+   Motion+ Carousel (components/home/FeaturedStrip.tsx, PhoneCarousel.tsx) in the strip's own box:
+   the same gutters and gap, each card 84% of the strip's width, as the scrolling strip draws them. */
+.hm-feat--carousel { container-type: inline-size; }
+.hm-feat--carousel .hm-feat__item { width: 84cqi; }
+/* The Carousel keeps its cards unseen until it has measured them, which FeaturedStrip lets happen
+   out of the window. Started on the first card, unmeasured, they lie exactly where the strip drew
+   them, so they show from the start: a strip scrolled into view fast never blinks. */
+.hm-feat--from-start > ul { opacity: 1 !important; }
+/* Under the strip: the marks, and Previous and Next on the right (sheet 6.4: buttons and keys move
+   one card; at either end the unavailable button stays focusable and turns phantom at once). */
+.hm-swipe__dots { display: flex; gap: var(--space-2); align-items: center; }
+.hm-swipe__nav { display: flex; gap: var(--space-2); margin-left: auto; }
+.hm-swipe .ar-iconbtn[aria-disabled="true"] {
+  border-style: dashed; border-color: var(--ink-mute); color: var(--ink-mute); cursor: not-allowed; transform: none;
+}
+.hm-swipe .ar-iconbtn[aria-disabled="true"]::before { display: none; }

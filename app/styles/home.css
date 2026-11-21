@@ -1,0 +1,274 @@
+/*
+ * The home page (the canvas's home.css after "The page"): hero, readouts, thesis, now, selected
+ * work, about, tools, contact. The shared page frame (.hm, .hm-body, .hm-main, .hm-wrap, .hm-sec,
+ * .hm-foot, .hm-h1, .hm-h2, .hm-label, .hm-head, .hm-copy) is in frame.css. Breakpoints are
+ * container queries on the frame: phone under 768 px, tablet 768 to 1023 px, desktop 1024 px and up.
+ *
+ * Left out until Phase 5: the hero drawing, its thermal lens and the model hero (the hero shows
+ * its media), and the ticker's motion (the tools strip is a still row that scrolls sideways).
+ * In mask gradients write the keyword black, never a hex value.
+ */
+
+/* ---------- Hero ---------- */
+
+.hm-hero { position: relative; display: flex; align-items: flex-start; padding: var(--space-6) 0 var(--space-8); }
+@container frame (min-width: 1024px) {
+  .hm-hero { align-items: center; min-height: 836px; padding: var(--space-8) 0; }
+}
+/* The scrim under the hero copy: the vignette over the sky (the bundle's Sky vignette), on Blueprint only. */
+[data-theme="blueprint"] .hm-hero--scrim::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background-image: radial-gradient(70% 90% at 18% 42%, color-mix(in srgb, var(--sky-zenith) 72%, transparent), transparent 70%);
+}
+@container frame (max-width: 767px) {
+  [data-theme="blueprint"] .hm-hero--scrim::before { background-image: radial-gradient(150% 75% at 35% 48%, color-mix(in srgb, var(--sky-zenith) 72%, transparent), transparent 75%); }
+}
+.hm-hero > .hm-wrap { position: relative; }
+.hm-hero__grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-5); }
+.hm-hero__copy { display: grid; gap: var(--space-5); align-content: start; min-width: 0; }
+.hm-hero__rest { display: grid; gap: var(--space-3); justify-items: start; min-width: 0; }
+/* Phones and tablets: the headline, then the visual, then the rest. */
+@container frame (max-width: 1023px) {
+  .hm-hero__copy { display: contents; }
+  .hm-hero__title { order: 1; }
+  .hm-hero__art { order: 2; }
+  .hm-hero__rest { order: 3; margin-top: var(--space-2); }
+}
+@container frame (min-width: 1024px) {
+  .hm-hero__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter-desktop); align-items: center; }
+  .hm-hero__copy { grid-column: 1 / span 7; }
+  .hm-hero__art { grid-column: 8 / -1; }
+}
+
+/* One color, Archivo at width 125, at the size that sets it on three lines in seven columns. */
+.hm-hero__title {
+  margin: 0; color: var(--ink); text-wrap: balance;
+  font-size: clamp(44px, 4.03cqi, 58px); line-height: 0.98; font-weight: 700;
+  letter-spacing: -0.02em; font-variation-settings: "wdth" 125; font-stretch: 125%;
+}
+/* site: under about 357 px the 44 px floor sets "themselves." (7.06 em) wider than the column,
+   so on frames narrower than the 390 px boards the floor follows the frame (reflow at 320 px:
+   about 39 px there). */
+@container frame (max-width: 389px) {
+  .hm-hero__title { font-size: clamp(32px, calc(13.9cqi - 5.6px), 44px); }
+}
+.hm-hero__sub { margin: 0; max-width: 58ch; font-size: 19px; line-height: 1.6; color: var(--ink-dim); }
+@container frame (max-width: 767px) { .hm-hero__sub { font-size: 17px; line-height: 1.65; } }
+.hm-hero__degree { margin: 0; font-size: 15px; line-height: 1.6; font-weight: 500; color: var(--ink-dim); }
+.hm-hero__dot { margin: 0 var(--space-1); color: var(--ink-dim); }
+.hm-hero__gpa { font-family: var(--font-mono); font-weight: 400; color: var(--ink); white-space: nowrap; }
+.hm-hero__actions { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-4); }
+.hm-hero__avail { margin-top: var(--space-1); }
+
+/* The visual in media mode (the drawing and the model arrive in Phase 5): the owner's photo or
+   video at its own ratio in a night well, at most 78 percent of the window's height (the inline
+   width keeps the ratio under that cap), flush with the content's right edge on desktop. */
+.hm-hero__art { position: relative; display: grid; gap: var(--space-3); margin: 0; min-width: 0; justify-items: start; }
+@container frame (min-width: 1024px) { .hm-hero__art { justify-items: end; } }
+.hm-hero__media { position: relative; max-width: 100%; }
+.hm-hero__media.ar-well { aspect-ratio: auto; }
+.hm-hero__media .ar-mv__well { position: relative; }
+/* site: the media hero's picture did not load (components/home/HeroMediaFallback.tsx; the states
+   boards, S.5): the drawing takes the slot in a box of the height the picture held, so nothing
+   shifts, in the middle of it and at the largest size that fits. Its caption keeps at least 288 px
+   of width, where it sets on two lines at most (13 px at 1.54, .hm-art__cap), and the drawing has
+   the height the caption leaves. */
+.hm-hero__held { container-type: size; align-content: center; }
+.hm-hero__held > .hm-hero__art {
+  --hd-fit: min(100cqw, 78vh * var(--hd-w) / var(--hd-h), (100cqh - var(--space-3) - 2 * 1.54 * 13px) * var(--hd-w) / var(--hd-h));
+  grid-column: auto; order: 0; margin-right: 0;
+  grid-template-columns: max(var(--hd-fit), min(100cqw, 288px));
+}
+.hm-hero__held .hm-art { width: var(--hd-fit); }
+/* Printed, the held height (the screen's) no longer holds: the drawing takes its own size, as in drawing mode. */
+@media print {
+  .hm-hero__held { height: auto !important; container-type: normal; }
+  .hm-hero__held > .hm-hero__art { grid-template-columns: min(100%, calc(78vh * var(--hd-w) / var(--hd-h))); }
+  .hm-hero__held .hm-art { width: 100%; }
+}
+
+/* ---------- Readouts ---------- */
+
+.hm-readouts { position: relative; }
+
+/* ---------- Thesis and pillars ---------- */
+
+.hm-thesis__grid { display: grid; gap: var(--space-5); }
+.hm-thesis__head { display: grid; gap: var(--space-3); min-width: 0; }
+@container frame (min-width: 1024px) {
+  .hm-thesis__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter-desktop); row-gap: var(--space-7); align-items: start; }
+  .hm-thesis__head { grid-column: 1 / span 6; }
+  .hm-thesis__body { grid-column: 7 / -1; }
+  .hm-thesis__body--solo { grid-column: 1 / span 8; }
+  .hm-pillars { grid-column: 1 / -1; }
+}
+.hm-pillars { display: grid; gap: var(--space-3); margin: var(--space-3) 0 0; padding: 0; list-style: none; }
+@container frame (min-width: 768px) { .hm-pillars { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); } }
+@container frame (min-width: 1024px) { .hm-pillars { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--gutter-desktop); margin-top: 0; } }
+.hm-pillar { display: grid; gap: var(--space-2); align-content: start; padding: var(--space-5); }
+.hm-pillar__head {
+  display: flex; align-items: center; gap: var(--space-3); margin: 0;
+  font-size: 21px; line-height: 1.3; font-weight: 600; font-variation-settings: "wdth" 112; font-stretch: 112%; color: var(--ink);
+}
+.hm-pillar__d { margin: 0; font-size: 15px; line-height: 1.5; color: var(--ink-dim); }
+
+/* ---------- Now ---------- */
+
+.hm-now__grid { display: grid; gap: var(--space-4); }
+@container frame (min-width: 1024px) {
+  .hm-now__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter-desktop); align-items: start; }
+  .hm-now__label { grid-column: 1 / span 3; padding-top: var(--space-5); }
+  .hm-now__list { grid-column: 4 / span 8; }
+}
+.hm-now__list { margin: 0; padding: 0; list-style: none; }
+.hm-now__list > li + li { border-top: 1px solid var(--rule); }
+.hm-now__row {
+  display: flex; align-items: center; gap: var(--space-4); min-height: 60px; padding: var(--space-3) var(--space-5);
+  font-size: 17px; line-height: 1.5; color: var(--ink); text-decoration: none;
+}
+.hm-now__mark { width: 9px; height: 9px; flex: none; border: 1.5px solid var(--line); transform: rotate(45deg); }
+.hm-now__text { flex: 1 1 auto; min-width: 0; }
+.hm-now__go { display: inline-flex; flex: none; color: var(--ink-mute); transition: transform 150ms ease-out; }
+a.hm-now__row:hover .hm-now__go { color: var(--line); transform: translateX(3px); }
+a.hm-now__row:hover .hm-now__text { text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 0.22em; }
+/* site: the ring sits inside the glass panel, like a readout's. */
+a.hm-now__row:focus-visible { outline-offset: -2px; }
+
+/* ---------- Selected work: the featured cards, then the index of the rest ---------- */
+
+.hm-feat { display: grid; gap: var(--space-6); }
+@container frame (min-width: 768px) { .hm-feat { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@container frame (min-width: 1024px) { .hm-feat { gap: var(--gutter-desktop); } }
+.hm-feat__item { min-width: 0; height: 100%; }
+.hm-feat__item .ar-card { height: 100%; }
+/* Phones: the featured set is a swipe strip; the next card peeks in. */
+@container frame (max-width: 767px) {
+  /* site: 4 px of room above the cards (taken back with the margin) so the strip's scroller does
+     not clip the top of a card's focus ring. */
+  .hm-feat {
+    display: flex; gap: var(--space-4); margin: calc(-1 * var(--space-1)) calc(-1 * var(--gutter-phone)) 0; padding: var(--space-1) var(--gutter-phone) var(--space-2);
+    overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: var(--gutter-phone); scrollbar-width: none;
+  }
+  .hm-feat::-webkit-scrollbar { display: none; }
+  .hm-feat .hm-feat__item { flex: 0 0 84%; scroll-snap-align: start; }
+}
+.hm-swipe { display: none; margin: var(--space-3) 0 0; }
+@container frame (max-width: 767px) { .hm-swipe { display: flex; gap: var(--space-2); align-items: center; } }
+.hm-swipe__dot { width: 18px; height: 2px; background-color: var(--rule); }
+.hm-swipe__dot.is-on { background-color: var(--line); }
+
+.hm-more { margin-top: var(--space-7); }
+.hm-more--first { margin-top: 0; }
+.hm-index { padding: 0; overflow: hidden; }
+.hm-index__head, .hm-index__row {
+  display: grid; grid-template-columns: 40px minmax(0, 1fr); column-gap: var(--space-3); row-gap: var(--space-1);
+  padding: var(--space-4) var(--space-4);
+}
+.hm-index__head { display: none; }
+.hm-index__list { margin: 0; padding: 0; list-style: none; }
+.hm-index__list li + li { border-top: 1px solid var(--rule); }
+.hm-index__row { position: relative; color: var(--ink); text-decoration: none; align-items: baseline; }
+.hm-index__row:hover { background-color: color-mix(in srgb, var(--sheet-3) 55%, transparent); }
+.hm-index__row:focus-visible { outline-offset: -2px; }
+.hm-index__n { grid-column: 1; font-family: var(--font-mono); font-size: 13px; line-height: 1.5; color: var(--ink-mute); }
+.hm-index__t { grid-column: 2; margin: 0; font-size: 17px; line-height: 1.45; font-weight: 600; font-variation-settings: "wdth" 112; font-stretch: 112%; }
+/* site: the pitch, under the title (the fidelity of ARCHITECTURE.md 15.1: every visible project's pitch is on the home page). */
+.hm-index__p { grid-column: 2; max-width: var(--measure); font-size: 15px; line-height: 1.5; color: var(--ink-dim); }
+.hm-index__d { grid-column: 2; font-size: 15px; line-height: 1.5; color: var(--ink-dim); }
+.hm-index__s { grid-column: 2; font-family: var(--font-mono); font-size: 13px; line-height: 1.5; color: var(--ink-dim); }
+.hm-index__m { grid-column: 2; font-size: 15px; line-height: 1.5; color: var(--ink-dim); }
+.hm-index__go { display: none; color: var(--ink-mute); }
+.hm-index__row:hover .hm-index__t { color: var(--line); }
+/* The hover fill over glass at the dawn's peak takes ink-mute to 4.31: the sheet number rises to ink-dim with it. */
+.hm-index__row:hover .hm-index__n { color: var(--ink-dim); }
+.hm-index__row:hover .hm-index__go { color: var(--line); }
+@container frame (min-width: 1024px) {
+  .hm-index__head, .hm-index__row {
+    grid-template-columns: 56px minmax(0, 3fr) minmax(0, 2.4fr) minmax(0, 2.6fr) 176px 24px;
+    column-gap: var(--space-5); padding: var(--space-4) var(--space-5); align-items: center;
+  }
+  .hm-index__head {
+    display: grid; padding-top: var(--space-3); padding-bottom: var(--space-3); border-bottom: 1px solid var(--rule);
+    font-family: var(--font-mono); font-size: 13px; line-height: 1.5; letter-spacing: 0.04em; color: var(--ink-mute);
+  }
+  /* Each cell keeps its column whether or not its neighbours print; the pitch runs under the title. */
+  .hm-index__n { grid-column: 1; grid-row: 1; }
+  .hm-index__t { grid-column: 2; grid-row: 1; }
+  .hm-index__d { grid-column: 3; grid-row: 1; }
+  .hm-index__s { grid-column: 4; grid-row: 1; }
+  .hm-index__m { grid-column: 5; grid-row: 1; padding-top: 0; }
+  .hm-index__go { display: inline-flex; grid-column: 6; grid-row: 1; justify-self: end; }
+  .hm-index__p { grid-column: 2 / 6; grid-row: 2; align-self: start; }
+}
+
+/* ---------- About ---------- */
+
+.hm-about__grid { display: grid; gap: var(--space-5); }
+@container frame (min-width: 1024px) {
+  .hm-about__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter-desktop); align-items: center; }
+  .hm-about__photo { grid-column: 1 / span 4; }
+  .hm-about__text { grid-column: 6 / -1; }
+  .hm-about__text--solo { grid-column: 1 / span 8; }
+}
+.hm-about__photo {
+  position: relative; width: min(100%, 220px); margin: 0; aspect-ratio: 3 / 4; overflow: hidden;
+  border: 1px solid var(--rule); border-radius: var(--radius); background-color: var(--night);
+}
+@container frame (min-width: 1024px) { .hm-about__photo { width: 100%; } }
+.hm-about__text { display: grid; gap: var(--space-5); justify-items: start; min-width: 0; }
+.hm-about__text > .ar-glass { justify-self: stretch; }
+
+/* ---------- Tools strip ---------- */
+
+/* Still until Phase 5 brings the ticker's motion: one row that scrolls sideways (a thumb, a
+   trackpad, or the arrow keys once it has focus), with a fade on the right edge to say there is more. */
+.hm-tools__grid { display: grid; gap: var(--space-3); }
+@container frame (min-width: 1024px) {
+  .hm-tools__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter-desktop); align-items: center; }
+  .hm-tools__label { grid-column: 1 / span 2; }
+  .hm-ticker { grid-column: 3 / -1; }
+}
+.hm-ticker { position: relative; min-width: 0; overflow: hidden; border: 1px solid var(--rule); border-radius: var(--radius); }
+.hm-ticker__view {
+  overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(90deg, black calc(100% - 40px), transparent);
+  mask-image: linear-gradient(90deg, black calc(100% - 40px), transparent);
+}
+.hm-ticker__view::-webkit-scrollbar { display: none; }
+.hm-ticker__view:focus { outline: none; }
+.hm-ticker:has(.hm-ticker__view:focus-visible) { outline: var(--focus-width) solid var(--line); outline-offset: var(--focus-offset); }
+.hm-ticker__list { display: flex; align-items: center; width: max-content; margin: 0; padding: 0 var(--space-4) 0 0; list-style: none; }
+.hm-ticker__list li {
+  display: flex; align-items: center; gap: var(--space-4); min-height: 56px; padding-left: var(--space-4);
+  font-size: 15px; line-height: 1.2; font-weight: 500; color: var(--ink); white-space: nowrap;
+}
+.hm-ticker__list li::before { content: "+"; font-family: var(--font-mono); font-size: 15px; color: var(--line); }
+
+/* ---------- Contact ---------- */
+
+.hm-contact__grid { display: grid; gap: var(--space-5); }
+@container frame (min-width: 1024px) {
+  .hm-contact__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter-desktop); row-gap: var(--space-6); }
+  .hm-contact__head { grid-column: 1 / span 10; }
+  .hm-contact__panel { grid-column: 1 / span 8; }
+}
+.hm-contact__title { font-variation-settings: "wdth" 118; font-stretch: 118%; }
+.hm-contact__panel { display: grid; gap: var(--space-5); justify-items: start; }
+.hm-contact__email {
+  display: inline-flex; align-items: center; gap: var(--space-3); max-width: 100%; min-height: var(--touch-target);
+  font-size: clamp(22px, calc(1.1429cqi + 17.5px), 34px); line-height: 1.15; font-weight: 600; font-variation-settings: "wdth" 112; font-stretch: 112%;
+  color: var(--line); text-decoration: none; overflow-wrap: anywhere;
+}
+.hm-contact__addr { min-width: 0; }
+.hm-contact__email:hover .hm-contact__addr { text-decoration: underline; text-underline-offset: 0.18em; text-decoration-thickness: 1px; }
+.hm-contact__row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-5); }
+.hm-contact__links { display: flex; flex-wrap: wrap; gap: 0 var(--space-5); margin: 0; padding: 0; list-style: none; }
+.hm-contact__links a {
+  display: inline-flex; align-items: center; gap: var(--space-2); min-height: var(--touch-target);
+  font-size: 15px; line-height: 1.2; font-weight: 500; color: var(--ink-dim); text-decoration: none;
+}
+.hm-contact__links a:hover { color: var(--ink); }
+.hm-contact__links .ar-icon { color: var(--line); }
+@container frame (max-width: 767px) {
+  .hm-contact__links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; }
+}

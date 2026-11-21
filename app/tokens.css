@@ -1,0 +1,139 @@
+/*
+ * Design tokens: the one source of every token value and the only file with hex values
+ * (ARCHITECTURE.md 2). This is the Claude Design bundle's tokens.css without its @font-face rules:
+ * the fonts' rules are in app/fonts.css (written by scripts/subset-fonts.py), so --font-sans and
+ * --font-mono name its variables first. Blueprint is the default theme; <html data-theme="whiteprint"> switches.
+ * Tailwind reads these through tailwind.config.ts; app/sheet.css builds the components on them.
+ */
+:root, [data-theme="blueprint"] {
+  --sheet: #0b1f45;
+  --sheet-2: #0f2a5a;
+  --sheet-3: #143570;
+  --night: #070d1c;
+  --ink: #eaf2ff;
+  --ink-dim: #a9bedf;
+  --ink-mute: #7f97bf;
+  --line: #3de0ff;
+  --grid-minor: rgba(190, 220, 255, 0.07);
+  --grid-major: rgba(190, 220, 255, 0.14);
+  --rule: rgba(190, 220, 255, 0.22);
+  --t0: #12205c;
+  --t1: #4a2bb0;
+  --t2: #7c5cff;
+  --t3: #c2379c;
+  --t4: #f0523a;
+  --t5: #ff9a2e;
+  --t6: #ffe66b;
+  --action: var(--t5);
+  --on-action: #0b1f45;
+  --on-night: #eaf2ff;
+  --sky-zenith: #040a1c;
+  --sky-mid: #071535;
+  --sky-low: var(--sheet);
+  --ground: #050b1f;
+  --glass: rgba(15, 42, 90, 0.62);
+  --shadow-card: none;
+}
+[data-theme="whiteprint"] {
+  --sheet: #f4f7fb;
+  --sheet-2: #ffffff;
+  --sheet-3: #e8eef7;
+  --night: #0b1f45;
+  --ink: #0b1f45;
+  --ink-dim: #34496e;
+  --ink-mute: #5b6e90;
+  --line: #1557c0;
+  --grid-minor: rgba(21, 87, 192, 0.07);
+  --grid-major: rgba(21, 87, 192, 0.14);
+  --rule: rgba(11, 31, 69, 0.18);
+  --action: #c2410c;
+  --on-action: #ffffff;
+  --sky-zenith: var(--sheet);
+  --sky-mid: var(--sheet);
+  --sky-low: var(--sheet);
+  --ground: var(--sheet);
+  --glass: var(--sheet-2);
+  --shadow-card: 0 2px 12px rgba(11, 31, 69, 0.1);
+}
+:root {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 72px;
+  --space-10: 128px;
+  --columns: 12;
+  --max-content: 1280px;
+  --gutter-phone: 20px;
+  --gutter-desktop: 32px;
+  --frame-inset: 16px;
+  --grid-step-minor: 8px;
+  --grid-step-major: 64px;
+  --bp-tablet: 768px;
+  --bp-desktop: 1024px;
+  --touch-target: 44px;
+  --nav-height: 64px;
+  --heat-rule-height: 2px;
+  --focus-width: 2px;
+  --focus-offset: 2px;
+  --lens-size: 220px;
+  --measure: 68ch;
+  --cover-ratio: 16 / 10;
+  --glass-blur: 8px;
+  --glass-dim: 0.67;
+  --dawn-max: 0.32;
+  --horizon: 80%;
+  --radius-none: 0;
+  --radius: 2px;
+  --radius-pill: 9999px;
+  --font-sans: var(--font-archivo), Archivo, system-ui, "Segoe UI", Arial, sans-serif;
+  --font-mono: var(--font-b612-mono), "B612 Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+.hero { font-family: var(--font-sans); font-size: 96px; line-height: 0.95; font-weight: 700; letter-spacing: -0.025em; }
+.display { font-family: var(--font-sans); font-size: 80px; line-height: 1; font-weight: 700; letter-spacing: -0.02em; }
+.h1 { font-family: var(--font-sans); font-size: 56px; line-height: 1.08; font-weight: 600; letter-spacing: -0.015em; }
+.h2 { font-family: var(--font-sans); font-size: 40px; line-height: 1.1; font-weight: 600; letter-spacing: -0.01em; }
+.h3 { font-family: var(--font-sans); font-size: 28px; line-height: 1.15; font-weight: 600; letter-spacing: -0.005em; }
+.h4 { font-family: var(--font-sans); font-size: 21px; line-height: 1.33; font-weight: 600; }
+.body { font-family: var(--font-sans); font-size: 17px; line-height: 1.65; font-weight: 400; }
+.small { font-family: var(--font-sans); font-size: 15px; line-height: 1.6; font-weight: 500; }
+.micro { font-family: var(--font-sans); font-size: 13px; line-height: 1.54; font-weight: 500; letter-spacing: 0.01em; }
+.readout { font-family: var(--font-mono); font-size: 56px; line-height: 1; font-weight: 400; letter-spacing: -0.02em; }
+.data-lg { font-family: var(--font-mono); font-size: 21px; line-height: 1.33; font-weight: 400; }
+.data { font-family: var(--font-mono); font-size: 15px; line-height: 1.6; font-weight: 400; }
+.data-label { font-family: var(--font-mono); font-size: 13px; line-height: 1.54; font-weight: 400; letter-spacing: 0.08em; }
+
+/*
+ * Not part of the bundle: native controls and scrollbars follow the theme. (Code highlighting takes
+ * its colors from the night well's inks in components/viewers/code/CodeBlock.module.css.)
+ */
+:root, [data-theme="blueprint"] { color-scheme: dark; }
+[data-theme="whiteprint"] { color-scheme: light; }
+
+/*
+ * Not part of the bundle: the nav's glass, which the phone menu's sheet and the sheet frame's bands
+ * share, dims what passes under it by half; and the nav's shortcut hint. The reasons and the ratios
+ * are in tests/token-contrast.test.ts.
+ */
+:root { --nav-glass-dim: 0.5; }
+:root, [data-theme="blueprint"] { --nav-hint: var(--ink-dim); }
+[data-theme="whiteprint"] { --nav-hint: var(--ink-mute); }
+
+/*
+ * The printed page (app/print.css): the canvas's Print board's paper and inks, the same whichever
+ * theme is on screen. Near-black Prussian ink on white, dim and mute inks darker than the screen's
+ * for paper, the line color, and a firmer rule. app/print.css maps the theme tokens onto these.
+ */
+:root {
+  --print-paper: #ffffff;
+  --print-raised: #eef2f8;
+  --print-ink: #0b1f45;
+  --print-ink-dim: #2f4366;
+  --print-ink-mute: #4f6285;
+  --print-line: #1557c0;
+  --print-rule: rgba(11, 31, 69, 0.32);
+}

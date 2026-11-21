@@ -1,0 +1,71 @@
+/*
+ * The sample page for the viewers, laid out like a project body (app/styles/project.css): the
+ * title over the wrap, then a main column of eight in the 12-column grid with the samples, and the
+ * index of samples in the right rail from 1024 px (above the samples on phones and tablets).
+ * Container queries on the page frame; no viewport media queries. Removed before release.
+ */
+
+/* The samples in the main column, one block section after another, each on a rule. */
+.samples {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.sample {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--rule);
+  scroll-margin-top: calc(var(--nav-height) + var(--space-4));
+}
+
+.sample:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.note {
+  margin: 0;
+}
+
+/* The index: the samples' names as standalone links on glass, above the samples on phones and
+   tablets, and sticky under the nav in the rail from 1024 px. */
+.rail {
+  order: -1;
+}
+
+.index {
+  min-width: 0;
+}
+
+.indexList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+@container frame (min-width: 1024px) {
+  .sample {
+    scroll-margin-top: calc(var(--frame-inset) + var(--nav-height) + var(--space-4));
+  }
+
+  .index {
+    position: sticky;
+    top: calc(var(--frame-inset) + var(--nav-height) + var(--space-5));
+    max-height: calc(100vh - var(--nav-height) - 2 * var(--frame-inset) - 2 * var(--space-5));
+    overflow-y: auto;
+  }
+
+  .indexList {
+    display: grid;
+    gap: 0;
+  }
+}
