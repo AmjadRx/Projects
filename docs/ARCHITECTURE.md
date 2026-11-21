@@ -9,6 +9,9 @@ engineering drawing sheet, with an admin that edits the content through git.
   `app/tokens.css`, in two themes: Blueprint (dark) and Whiteprint (light).
 - Content as JSON validated by a zod schema; Motion and Motion+ for animation; three.js for the
   sky and the 3D model viewer.
+- Archivo and B612 Mono, served as subsets: a preloaded file for the characters the pages use and
+  a second file fetched only for any other character, with fallback faces sized to match them so
+  nothing shifts when they arrive.
 - Hosted on Vercel. GitHub holds the code and the content; Vercel Blob holds media files over
   4 MB.
 - A framework upgrade (Next.js 16, React 19, Tailwind CSS 4) is planned and has not run yet.
@@ -112,4 +115,5 @@ both themes, and text over the sky is checked for contrast from screenshots.
 Before each commit: the content check and the lockfile check. In CI, on every push to `v3` and
 every pull request to `main`: lint, types, unit tests, the content check, the production build with
 its weight and secret checks, the build tests, Lighthouse CI against the budgets above, the
-end-to-end and axe suite, and a secret scan of the new commits.
+end-to-end and axe suite, and a secret scan of the new commits with a check that no commit message
+holds an em or en dash.

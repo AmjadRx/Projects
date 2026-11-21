@@ -40,14 +40,16 @@ holds the published site.
 | `npm run check:lockfile`, `npm run check:secrets` | The lockfile and token check (also a pre-commit hook), and the scan of tracked files or, with `--build`, of the build output. |
 | `npm run check:sky`, `npm run build:sky`, `npm run render:stills` | The sky's data and budgets, the star data build, and the still images. |
 | `npm run screenshots` | Screenshots of every page at four widths in both themes. |
+| `scripts/subset-fonts.py` | Remakes the font subsets in `public/fonts/`, `app/fonts.css` and `lib/fontFiles.ts` from the full files in `app/fonts/`, with Python, fontTools and brotli (its header says how). |
 
 ## Continuous integration
 
 `.github/workflows/ci.yml` runs on pushes to `v3` and on pull requests to `main`. It never deploys.
 Its jobs: lint, types, unit tests and the content check; the production build with its weight and
-secret checks, then the build tests; Lighthouse CI for phone and desktop in both themes; the
-end-to-end suite; and a secret scan with gitleaks. It needs two repository secrets, which the
-owner adds under Settings, Secrets and variables, Actions: `MOTION_TOKEN` and `CONTENT_BLOCKLIST`.
+secret checks; the build tests, in a job of their own; Lighthouse CI for phone and desktop in both
+themes; the end-to-end suite on that build; and a secret scan with gitleaks, with a check that no
+commit message holds an em or en dash. It needs two repository secrets, which the owner adds under
+Settings, Secrets and variables, Actions: `MOTION_TOKEN` and `CONTENT_BLOCKLIST`.
 
 ## Deploying
 
